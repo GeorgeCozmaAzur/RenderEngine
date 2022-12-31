@@ -1,0 +1,53 @@
+#pragma once
+#include <map>
+#include "render/VulkanDescriptorSet.h"
+#include "render/VulkanPipeline.h"
+#include "render/VulkanDescriptorSetLayout.h"
+#include "render/VertexLayout.h"
+#include "BoundingObject.h"
+#include "render/VulkanBuffer.hpp"
+#include "scene/Geometry.h"
+
+namespace engine
+{
+	namespace scene
+	{
+		class RenderObject
+		{
+		public:
+
+			render::VertexLayout* _vertexLayout = nullptr;
+			render::VulkanDescriptorSetLayout* _descriptorLayout = nullptr;
+			render::VulkanPipeline* _pipeline = nullptr;
+			std::vector <render::VulkanDescriptorSet*> m_descriptorSets;
+			std::vector<Geometry*> m_geometries;
+			std::vector<uint32_t> m_dynamicUniformBufferIndices;
+
+			std::vector<BoundingBox*> m_boundingBoxes;//TODO should be in the scene manager
+			std::vector<Geometry*> m_boundingBoxesGeometries;
+
+			virtual ~RenderObject()
+			{
+				for (auto geo : m_geometries)delete geo;
+				for (auto box : m_boundingBoxes)delete box;
+			};
+
+			RenderObject& operator = (const RenderObject& t);
+
+			virtual bool LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos = glm::vec3(0.0f));
+			void AdoptGeometriesFrom(const RenderObject& t);
+			void ComputeTangents(glm::vec3 pos1, glm::vec3 pos2, glm::vec3 pos3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, glm::vec3& tangent1, glm::vec3& bitangent1);
+			void SetVertexLayout(render::VertexLayout* vlayout) { _vertexLayout = vlayout; };
+			void SetDescriptorSetLayout(render::VulkanDescriptorSetLayout* val) { _descriptorLayout = val; }
+			void AddPipeline(render::VulkanPipeline*);
+			void AddDescriptor(render::VulkanDescriptorSet*);
+			void AddGeometry(Geometry*);
+
+			void PopulateDynamicUniformBufferIndices();
+
+			bool IsSimilar(RenderObject* another) { return _pipeline == another->_pipeline /*|| m_descriptorSet == another->m_descriptorSet*/; };
+
+			void Draw(VkCommandBuffer, uint32_t swapchainImageIndex = 0, render::VulkanPipeline* currentPipeline = nullptr, render::VulkanDescriptorSet* currentDescriptorSet = nullptr);
+		};
+	}
+}
