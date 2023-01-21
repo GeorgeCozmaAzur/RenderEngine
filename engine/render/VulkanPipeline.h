@@ -43,7 +43,8 @@ namespace engine
 				uint32_t vertexConstantBlockSize = 0,
 				uint32_t* fragmentConstants = nullptr,
 				uint32_t attachmentCount = 0,
-				const VkPipelineColorBlendAttachmentState* pAttachments = nullptr
+				const VkPipelineColorBlendAttachmentState* pAttachments = nullptr,
+				bool depthBias = false
 			);
 			void Draw(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindpoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 

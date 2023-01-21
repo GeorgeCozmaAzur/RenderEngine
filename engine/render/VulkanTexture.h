@@ -61,13 +61,13 @@ namespace engine
 			VkFormat m_format;
 			VkDeviceSize m_imageSize;
 
-			uint32_t m_width, m_height;
+			uint32_t m_width, m_height, m_depth;
 			uint32_t m_mipLevelsCount;
 			uint32_t m_layerCount;
 
 			VulkanTexture::~VulkanTexture() { Destroy(); }
 
-			void Create(VkDevice device, VkPhysicalDeviceMemoryProperties* memoryProperties, uint32_t width, uint32_t height, VkFormat format,
+			void Create(VkDevice device, VkPhysicalDeviceMemoryProperties* memoryProperties, VkExtent3D extent, VkFormat format,
 				VkImageUsageFlags imageUsageFlags,
 				VkImageLayout imageLayout,
 				uint32_t mipLevelsCount = 1, uint32_t layersCount = 1, VkImageCreateFlags flags = 0

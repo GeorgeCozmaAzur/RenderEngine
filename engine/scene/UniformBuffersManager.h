@@ -3,7 +3,7 @@
 #include "render/VulkanBuffer.hpp"
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 namespace engine
 {
@@ -13,10 +13,14 @@ namespace engine
 		{
 			UNIFORM_PROJECTION,
 			UNIFORM_VIEW,
+			UNIFORM_PROJECTION_VIEW,
 			UNIFORM_CAMERA_POSITION,
+			UNIFORM_CAMERA_NEAR_FAR,
 			UNIFORM_LIGHT0_SPACE,
+			UNIFORM_LIGHT0_SPACE_BIASED,
 			UNIFORM_LIGHT0_POSITION,
 			UNIFORM_LIGHT1_SPACE,
+			UNIFORM_LIGHT1_SPACE_BIASED,
 			UNIFORM_LIGHT1_POSITION
 		};
 
@@ -35,7 +39,7 @@ namespace engine
 			VkDevice _device = VK_NULL_HANDLE;
 			render::VulkanDevice* _engine_device;
 			std::map<int, render::VulkanBuffer*> m_buffers;
-			std::map<UniformKey, UniformDataEntry*> m_uniforms;
+			std::unordered_map<UniformKey, UniformDataEntry*> m_uniforms;
 
 		public:
 			void SetDevice(VkDevice device) { _device = device; }

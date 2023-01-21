@@ -36,7 +36,8 @@ namespace engine
 			uint32_t vertexConstantBlockSize,
 			uint32_t* fragmentConstants,
 			uint32_t attachmentCount,
-			const VkPipelineColorBlendAttachmentState* pAttachments)
+			const VkPipelineColorBlendAttachmentState* pAttachments,
+			bool depthBias)
 		{
 			if (m_vkPipeline != VK_NULL_HANDLE)
 				return;
@@ -73,8 +74,8 @@ namespace engine
 			VkPipelineColorBlendStateCreateInfo colorBlendStateCI = (attachmentCount && pAttachments) ?
 				engine::initializers::pipelineColorBlendStateCreateInfo(attachmentCount, pAttachments) :
 				engine::initializers::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
-
-			VkPipelineDepthStencilStateCreateInfo depthStencilStateCI = engine::initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+			//TODO there will be times when we want to write to depth when there is blend enabled
+			VkPipelineDepthStencilStateCreateInfo depthStencilStateCI = engine::initializers::pipelineDepthStencilStateCreateInfo(VkBool32(!m_blendEnable), VkBool32(!m_blendEnable), VK_COMPARE_OP_LESS_OR_EQUAL);
 			VkPipelineViewportStateCreateInfo viewportStateCI = engine::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
 			VkPipelineMultisampleStateCreateInfo multisampleStateCI = engine::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
 			VkPipelineDynamicStateCreateInfo dynamicStateCI = engine::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables.data(), static_cast<uint32_t>(dynamicStateEnables.size()), 0);
@@ -103,12 +104,8 @@ namespace engine
 				LoadShader(fragment_file, VK_SHADER_STAGE_FRAGMENT_BIT)
 			};*/
 
-			//TODO remove hardcode
-			if (fragmentFile.empty())
+			if (depthBias)
 			{
-				pipelineCreateInfoCI.stageCount = 1;
-				// No blend attachment states (no color attachments used)
-				colorBlendStateCI.attachmentCount = 0;
 				// Cull front faces
 				depthStencilStateCI.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 				// Enable depth bias
@@ -120,6 +117,15 @@ namespace engine
 						dynamicStateEnables.data(),
 						dynamicStateEnables.size(),
 						0);
+			}
+
+			//TODO remove hardcode
+			if (fragmentFile.empty())
+			{
+				pipelineCreateInfoCI.stageCount = 1;
+				// No blend attachment states (no color attachments used)
+				colorBlendStateCI.attachmentCount = 0;
+				
 			}
 			else
 			{

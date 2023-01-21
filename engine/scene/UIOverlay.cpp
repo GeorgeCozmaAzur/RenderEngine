@@ -89,7 +89,7 @@ namespace engine
 
 			m_fontTexture = new render::VulkanTexture;
 
-			m_fontTexture->Create(_device->logicalDevice, &_device->memoryProperties, texWidth, texHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+			m_fontTexture->Create(_device->logicalDevice, &_device->memoryProperties, { touint(texWidth), touint(texHeight), 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 
 			// Staging buffers for font data upload
 			render::VulkanBuffer* stagingBuffer = _device->CreateStagingBuffer(uploadSize, fontData);;

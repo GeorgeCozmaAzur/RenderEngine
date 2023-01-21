@@ -67,7 +67,16 @@ namespace engine
 			render::VulkanDevice* _device;
 			Camera* m_camera = nullptr;
 			UniformBuffersManager uniform_manager;
+			std::vector<render::VulkanDescriptorSetLayout*> descriptorSetlayouts;
 			std::vector<RenderObject*> render_objects;
+
+			std::string forwardShadersFolder = "basic";
+			std::string deferredShadersFolder = "basicdeferred";
+			std::string lightingVS = "phong.vert.spv";
+			std::string lightingFS = "phong.frag.spv";
+			std::string lightingTexturedFS = "phongtextured.frag.spv";
+			std::string normalmapVS = "normalmap.vert.spv";
+			std::string normalmapFS = "normalmap.frag.spv";
 
 			struct {
 				glm::mat4 depthMVP;
@@ -75,16 +84,16 @@ namespace engine
 			render::VulkanBuffer* shadow_uniform_buffer;
 			render::VulkanRenderPass* shadowPass;
 			render::VulkanTexture* shadowmap;
+			render::VulkanTexture* shadowmapColor;
 			std::vector <RenderObject*> shadow_objects;
 
-			struct {
-				glm::mat4 projection;
-				glm::mat4 view;
-				glm::mat4 depthBiasMVP;
-				glm::vec4 lightPos;
-				glm::vec3 cameraPos;
-			} uboVSscene;
-			render::VulkanBuffer* scene_uniform_buffer;
+			std::vector<render::VulkanTexture*> globalTextures;
+
+			render::VulkanBuffer* sceneVertexUniformBuffer;
+
+			render::VulkanBuffer* sceneFragmentUniformBuffer = nullptr;
+
+			std::vector<render::VulkanBuffer*> individualFragmentUniformBuffers;
 
 			float lightFOV = 45.0f;
 			glm::vec4 light_pos = glm::vec4(0.0f, 10.0f, 0.0f, 1.0f);
@@ -107,9 +116,11 @@ namespace engine
 
 			void SetCamera(Camera* cam) { m_camera = cam; }
 
-			void CreateShadow();
+			void CreateShadow(VkQueue copyQueue);
 			void CreateShadowObjects(VkPipelineCache pipelineCache);
 			void DrawShadowsInSeparatePass(VkCommandBuffer command_buffer);
+
+			render::VulkanDescriptorSetLayout* GetDescriptorSetlayout(std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> layoutBindigs);
 
 			std::vector<RenderObject*> LoadFromFile2(const std::string& foldername, const std::string& filename, ModelCreateInfo2* createInfo,
 				engine::render::VulkanDevice* device,
@@ -124,6 +135,8 @@ namespace engine
 			);
 
 			void Update(float timer);
+
+			void UpdateView(float timer);
 
 			void destroy()
 			{

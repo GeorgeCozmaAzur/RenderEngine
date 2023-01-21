@@ -9,12 +9,15 @@ namespace engine
 		{
 			switch (key)
 			{
-			case UNIFORM_PROJECTION:		return sizeof(float) * 16;
-			case UNIFORM_VIEW:				return sizeof(float) * 16;
-			case UNIFORM_CAMERA_POSITION:	return sizeof(float) * 3;
-			case UNIFORM_LIGHT0_SPACE:		return sizeof(float) * 16;
-			case UNIFORM_LIGHT0_POSITION:	return sizeof(float) * 4;
-			default:						return 0;
+			case UNIFORM_PROJECTION:			return sizeof(float) * 16;
+			case UNIFORM_VIEW:					return sizeof(float) * 16;
+			case UNIFORM_PROJECTION_VIEW:		return sizeof(float) * 16;
+			case UNIFORM_CAMERA_POSITION:		return sizeof(float) * 3;
+			case UNIFORM_CAMERA_NEAR_FAR:		return sizeof(float) * 4;
+			case UNIFORM_LIGHT0_SPACE:			return sizeof(float) * 16;
+			case UNIFORM_LIGHT0_SPACE_BIASED:	return sizeof(float) * 16;
+			case UNIFORM_LIGHT0_POSITION:		return sizeof(float) * 4;
+			default:							return 0;
 			}
 		}
 
@@ -28,10 +31,16 @@ namespace engine
 				mask |= (1 << key);
 			}
 
-			it = m_buffers.find(mask);
+			it = m_buffers.find(mask);//TODO check not good enough
 			if (it != m_buffers.end())
 			{
 				return it->second;
+			}
+
+			for (auto key : keys)
+			{
+				UniformDataEntry* data = new UniformDataEntry;
+				m_uniforms.insert(std::pair<UniformKey, UniformDataEntry*>(key, data));
 			}
 
 			size_t total_buffer_size = 0;
@@ -78,7 +87,7 @@ namespace engine
 					int KK = 1 << value.first;
 					if (buffer.first & KK)
 					{
-						//if (value.second->dirty)//TODO do dirty functionality
+						if (value.second->dirty)//TODO do dirty functionality
 						{
 							memcpy((char*)buffer.second->m_mapped + old_size, value.second->data, value.second->size);
 							value.second->dirty = false;

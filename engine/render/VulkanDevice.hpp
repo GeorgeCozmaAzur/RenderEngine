@@ -557,7 +557,7 @@ namespace engine
 			data.LoadFromFile(filename, format);
 			data.CreateStagingBuffer(logicalDevice, &memoryProperties);
 			
-			tex->Create(logicalDevice, &memoryProperties, data.m_width, data.m_height, data.m_format, imageUsageFlags,
+			tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
 				imageLayout,
 				data.m_mips_no);
 
@@ -585,7 +585,7 @@ namespace engine
 			VkFormatProperties formatProperties;
 			vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
 
-			tex->Create(logicalDevice, &memoryProperties, data.m_width, data.m_height, data.m_format, imageUsageFlags,
+			tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
 				imageLayout,
 				data.m_mips_no, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
 
@@ -602,10 +602,35 @@ namespace engine
 			return tex;
 		}
 
-		VulkanTexture *GetRenderTarget(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspect, VkImageLayout imageLayout)
+		VulkanTexture* GetTextureStorage(VkExtent3D extent, VkFormat format, VkQueue copyQueue,
+			VkImageViewType viewType,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_GENERAL)
 		{
-			VulkanTexture *tex = new VulkanTexture;
-			tex->Create(logicalDevice, &memoryProperties, width, height, format, usage, imageLayout);
+			VulkanTexture* tex = new VulkanTexture;
+
+			tex->Create(logicalDevice, &memoryProperties, extent, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, imageLayout);
+
+			VkCommandBuffer layoutCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+			tex->m_descriptor.imageLayout = imageLayout;//TODO maybe also shader read only optimal
+			tools::setImageLayout(
+				layoutCmd, tex->m_vkImage,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				tex->m_descriptor.imageLayout);
+
+			flushCommandBuffer(layoutCmd, copyQueue, true);
+
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, viewType, VK_IMAGE_ASPECT_COLOR_BIT, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
+
+			m_textures.push_back(tex);
+
+			return tex;
+		}
+
+		VulkanTexture* GetRenderTarget(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspect, VkImageLayout imageLayout)
+		{
+			VulkanTexture* tex = new VulkanTexture;
+			tex->Create(logicalDevice, &memoryProperties, { width, height, 1 }, format, usage, imageLayout);
 			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_2D, aspect);
 			m_textures.push_back(tex);
 			return tex;
@@ -618,7 +643,7 @@ namespace engine
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 
-		VulkanTexture *GetDepthRenderTarget(uint32_t width, uint32_t height, bool useInShaders, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT)
+		VulkanTexture *GetDepthRenderTarget(uint32_t width, uint32_t height, bool useInShaders, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, bool updateLayout = false, VkQueue copyQueue = VK_NULL_HANDLE)
 		{
 			VkFormat fbDepthFormat;
 			VkBool32 validDepthFormat = engine::tools::getSupportedDepthFormat(physicalDevice, &fbDepthFormat);
@@ -632,7 +657,32 @@ namespace engine
 				imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 			}
 
-			return GetRenderTarget(width, height, fbDepthFormat, usageflags, aspectMask, imageLayout);
+			VulkanTexture* texture = GetRenderTarget(width, height, fbDepthFormat, usageflags, aspectMask, imageLayout);
+
+			if (updateLayout && copyQueue)
+			{
+				VkCommandBuffer layoutCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+				tools::setImageLayout(
+					layoutCmd, texture->m_vkImage,
+					aspectMask,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					texture->m_descriptor.imageLayout);
+
+				flushCommandBuffer(layoutCmd, copyQueue, true);
+			}
+			return texture;
+		}
+
+		void UpdateTexturelayout(VulkanTexture * texture, VkQueue copyQueue)
+		{
+			VkCommandBuffer layoutCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+			tools::setImageLayout(
+				layoutCmd, texture->m_vkImage,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				texture->m_descriptor.imageLayout);
+
+			flushCommandBuffer(layoutCmd, copyQueue, true);
 		}
 
 		void DestroyTexture(VulkanTexture *texture)
@@ -671,11 +721,12 @@ namespace engine
 			uint32_t vertexConstantBlockSize = 0,
 			uint32_t *fConstants = nullptr,
 			uint32_t attachmentCount = 0,
-			const VkPipelineColorBlendAttachmentState* pAttachments = nullptr)
+			const VkPipelineColorBlendAttachmentState* pAttachments = nullptr,
+			bool depthBias = false)
 		{
 			VulkanPipeline *pipeline = new VulkanPipeline;
 			pipeline->SetBlending(blendEnable);
-			pipeline->Create(logicalDevice, descriptorSetLayout, vertexInputBindings, vertexInputAttributes, vertexFile, fragmentFile, renderPass, cache, topology, vertexConstantBlockSize, fConstants, attachmentCount, pAttachments);
+			pipeline->Create(logicalDevice, descriptorSetLayout, vertexInputBindings, vertexInputAttributes, vertexFile, fragmentFile, renderPass, cache, topology, vertexConstantBlockSize, fConstants, attachmentCount, pAttachments, depthBias);
 			m_pipelines.push_back(pipeline);
 			return pipeline;
 		}

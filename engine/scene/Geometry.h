@@ -12,8 +12,8 @@ namespace engine
 
 			bool m_isVisible = true;
 
-			float* m_vertices;
-			uint32_t* m_indices;//TODO what we do with these when copying the geometry
+			float* m_vertices = nullptr;
+			uint32_t* m_indices = nullptr;//TODO what we do with these when copying the geometry
 
 			uint32_t m_indexCount = 0;
 			uint64_t m_vertexCount = 0;

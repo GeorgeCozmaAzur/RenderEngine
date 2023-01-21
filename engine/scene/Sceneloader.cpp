@@ -23,7 +23,7 @@ namespace engine
 {
 	namespace scene
 	{
-		#define SHADOWMAP_DIM 2048
+		#define SHADOWMAP_DIM 1024
 		/*void PrintNode(FbxNode* pNode) {
 			//PrintTabs();
 			const char* nodeName = pNode->GetName();
@@ -63,27 +63,10 @@ namespace engine
 			uniform_manager.SetDevice(device->logicalDevice);
 			uniform_manager.SetEngineDevice(device);
 			_device = device;
-			render::VulkanBuffer* vub = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION });
-			render::VulkanBuffer* smvub = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_LIGHT0_SPACE ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION });
-			scene_uniform_buffer = _device->GetUniformBuffer(sizeof(uboVSscene));
-			VK_CHECK_RESULT(scene_uniform_buffer->map());
+			sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_LIGHT0_SPACE_BIASED ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION });
+			shadow_uniform_buffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_SPACE });
 
-			std::string shaderfolder = deferred ? std::string("shaders/basicdeferred/") : std::string("shaders/basic/");
-
-			std::string basic_vertex_file(engine::tools::getAssetPath() + shaderfolder + std::string("phong.vert.spv"));
-			std::string basic_fragment_file(engine::tools::getAssetPath() + shaderfolder + std::string("phong.frag.spv"));
-			std::string textured_fragment_file(engine::tools::getAssetPath() + shaderfolder + std::string("phongtextured.frag.spv"));
-			std::string normalmap_vertex_file(engine::tools::getAssetPath() + shaderfolder + std::string("normalmap.vert.spv"));
-			std::string normalmap_fragment_file(engine::tools::getAssetPath() + shaderfolder + std::string("normalmap.frag.spv"));
-
-			std::string normalmap_shadowmap_vertex_file(engine::tools::getAssetPath() + shaderfolder + std::string("normalmapshadowmap.vert.spv"));
-			std::string normalmap_shadowmap_fragment_file(engine::tools::getAssetPath() + shaderfolder + std::string("normalmapshadowmap.frag.spv"));
-
-			render::VulkanPipeline* textured_pipeline = nullptr;
-			render::VulkanPipeline* simple_pipeline = nullptr;
-			render::VulkanPipeline* simple_pipeline_trans = nullptr;
-			render::VulkanPipeline* normalmap_pipeline = nullptr;
-			render::VulkanPipeline* normalmap_shadowmap_pipeline = nullptr;
+			std::string shaderfolder = engine::tools::getAssetPath() + "shaders/" + (deferred ? deferredShadersFolder : forwardShadersFolder) + "/";
 
 			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
 			blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
@@ -94,37 +77,6 @@ namespace engine
 			blendAttachmentStatestrans.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
 			if (deferred)
 				blendAttachmentStatestrans.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
-
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> simple_bindings
-			{
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
-			};
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> textured_bindings
-			{
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-			};
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> doubled_textured_bindings
-			{
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-			};
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> triple_textured_bindings
-			{
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-			};
-
-			render::VulkanDescriptorSetLayout* simple_layout = device->GetDescriptorSetLayout(simple_bindings);
-			render::VulkanDescriptorSetLayout* textured_layout = device->GetDescriptorSetLayout(textured_bindings);
-			render::VulkanDescriptorSetLayout* doubled_textured_layout = device->GetDescriptorSetLayout(doubled_textured_bindings);
-			render::VulkanDescriptorSetLayout* triple_textured_layout = device->GetDescriptorSetLayout(triple_textured_bindings);
-
-			CreateShadow();
 
 			Assimp::Importer Importer;
 			const aiScene* pScene;
@@ -230,14 +182,15 @@ namespace engine
 					engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 				}
 
-				//descriptorSets.resize(pScene->mNumMaterials);//TODO
-
 				render_objects.resize(pScene->mNumMaterials);//TODO
+
+				individualFragmentUniformBuffers.resize(pScene->mNumMaterials);
+				std::fill(individualFragmentUniformBuffers.begin(), individualFragmentUniformBuffers.end(), nullptr);
 
 				//TODO see exactly how many descriptors are needed
 				std::vector<VkDescriptorPoolSize> poolSizes =
 				{
-					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 * static_cast<uint32_t>(render_objects.size())),
+					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4 * static_cast<uint32_t>(render_objects.size())),
 					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * static_cast<uint32_t>(render_objects.size())),
 					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2)
 				};
@@ -254,6 +207,15 @@ namespace engine
 					pScene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &texturefile);
 					pScene->mMaterials[i]->GetTexture(aiTextureType_NORMALS, 0, &texturefilen);
 					pScene->mMaterials[i]->GetTexture(aiTextureType_DISPLACEMENT, 0, &texturefiled);
+
+					std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
+					buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
+
+					std::vector<VkDescriptorImageInfo*> texturesDescriptors;
+
+					render::VulkanDescriptorSetLayout* currentDesclayout = nullptr;
+					render::VulkanPipeline* currentPipeline = nullptr;
+					render::VertexLayout* currentVertexLayout = nullptr;				
 
 					if (pScene->mMaterials[i]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 					{
@@ -274,44 +236,70 @@ namespace engine
 						}
 
 						render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue);
-
-						std::vector<VkDescriptorImageInfo*> tex_descriptors;
-						tex_descriptors.push_back(&tex->m_descriptor);
+						
+						texturesDescriptors.push_back(&tex->m_descriptor);
 
 						if (pScene->mMaterials[i]->GetTextureCount(aiTextureType_NORMALS) > 0)
 						{
 							std::string texfilenamen = std::string(texturefilen.C_Str());
 							tex = device->GetTexture(foldername + texfilenamen, texFormat, copyQueue);
-							tex_descriptors.push_back(&tex->m_descriptor);
+							texturesDescriptors.push_back(&tex->m_descriptor);
+							for(auto tex : globalTextures)
+								texturesDescriptors.push_back(&tex->m_descriptor);
 
-							tex_descriptors.push_back(&shadowmap->m_descriptor);
-							if (!normalmap_shadowmap_pipeline)
-								normalmap_shadowmap_pipeline = device->GetPipeline(triple_textured_layout->m_descriptorSetLayout, vnlayout.m_vertexInputBindings, vnlayout.m_vertexInputAttributes,
-									normalmap_shadowmap_vertex_file, normalmap_shadowmap_fragment_file, renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
-							render_objects[i]->SetDescriptorSetLayout(triple_textured_layout);
-							render_objects[i]->_vertexLayout = &vnlayout;
-							render_objects[i]->AddPipeline(normalmap_shadowmap_pipeline);
-							render::VulkanDescriptorSet* desc = device->GetDescriptorSet({ &scene_uniform_buffer->m_descriptor }, tex_descriptors,
-								triple_textured_layout->m_descriptorSetLayout, triple_textured_layout->m_setLayoutBindings);
+							std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
+							{ { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT } };
+							if (sceneFragmentUniformBuffer)
+							{
+								bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
+								buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
+							}
 
-							render_objects[i]->AddDescriptor(desc);
+							for (auto td : texturesDescriptors)
+								bindings.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT });
+
+							currentDesclayout = GetDescriptorSetlayout(bindings);
+
+							currentVertexLayout = &vnlayout;
+						
+							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vnlayout.m_vertexInputBindings, vnlayout.m_vertexInputAttributes,
+								shaderfolder+normalmapVS, shaderfolder+normalmapFS, renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
+							
 						}
 						else
 						{
-							if (!textured_pipeline)
-								textured_pipeline = device->GetPipeline(textured_layout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
-									basic_vertex_file, textured_fragment_file, renderPass, pipelineCache,
+							if (!render_objects[i])
+								continue;
+
+							for (auto tex : globalTextures)
+								texturesDescriptors.push_back(&tex->m_descriptor);
+
+							std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
+							{ { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT } };
+							if (sceneFragmentUniformBuffer)
+							{
+								bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
+								buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
+							}
+
+							for (auto td : texturesDescriptors)
+								bindings.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT });
+
+							currentDesclayout = GetDescriptorSetlayout(bindings);
+
+							currentVertexLayout = &vlayout;
+
+							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
+								shaderfolder + lightingVS, shaderfolder + lightingTexturedFS, renderPass, pipelineCache,
 									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
-							render_objects[i]->AddPipeline(textured_pipeline);
-							render::VulkanDescriptorSet* desc = device->GetDescriptorSet({ &vub->m_descriptor }, { &tex->m_descriptor },
-								textured_layout->m_descriptorSetLayout, textured_layout->m_setLayoutBindings);
-							render_objects[i]->SetDescriptorSetLayout(textured_layout);
-							render_objects[i]->_vertexLayout = &vlayout;
-							render_objects[i]->AddDescriptor(desc);
+
 						}
 					}
 					else
 					{
+						if (!render_objects[i])
+							continue;
+
 						struct frag_data
 						{
 							aiColor3D diffuse = aiColor3D(0.3f, 0.3f, 0.3f);;
@@ -324,28 +312,54 @@ namespace engine
 
 						render::VulkanBuffer* frag_buffer = device->GetUniformBuffer(sizeof(fdata), false, copyQueue, &fdata);
 
+						individualFragmentUniformBuffers[i] = frag_buffer;
+
+						for (auto tex : globalTextures)
+							texturesDescriptors.push_back(&tex->m_descriptor);
+
+						std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
+						{ 
+							{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT }
+						};
+
+						if (sceneFragmentUniformBuffer)
+						{
+							bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
+							buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
+						}
+
+						bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
+						buffersDescriptors.push_back(&frag_buffer->m_descriptor);
+
+						for (auto td : texturesDescriptors)
+							bindings.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT });
+
+						currentDesclayout = GetDescriptorSetlayout(bindings);
+
+						currentVertexLayout = &vlayout;
+
 						if (fdata.transparency != 1.0f)
 						{
-							if (!simple_pipeline_trans)
-								simple_pipeline_trans = device->GetPipeline(simple_layout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
-									basic_vertex_file, basic_fragment_file, renderPass, pipelineCache, true,
+							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
+									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache, true,
 									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStatestrans.size(), blendAttachmentStatestrans.data());
-							render_objects[i]->AddPipeline(simple_pipeline_trans);
 						}
 						else
 						{
-							if (!simple_pipeline)
-								simple_pipeline = device->GetPipeline(simple_layout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
-									basic_vertex_file, basic_fragment_file, renderPass, pipelineCache,
+							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
+									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache,
 									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
-							render_objects[i]->AddPipeline(simple_pipeline);
 						}
+					}
 
-						render::VulkanDescriptorSet* desc = device->GetDescriptorSet({ &vub->m_descriptor, &frag_buffer->m_descriptor }, { },
-							simple_layout->m_descriptorSetLayout, simple_layout->m_setLayoutBindings);
+					if (render_objects[i])
+					{
+						render_objects[i]->SetDescriptorSetLayout(currentDesclayout);
+						render_objects[i]->_vertexLayout = currentVertexLayout;
+						render_objects[i]->AddPipeline(currentPipeline);
+						render::VulkanDescriptorSet* desc = device->GetDescriptorSet(buffersDescriptors, texturesDescriptors,
+							currentDesclayout->m_descriptorSetLayout, currentDesclayout->m_setLayoutBindings);
 						render_objects[i]->AddDescriptor(desc);
-						render_objects[i]->SetDescriptorSetLayout(simple_layout);
-						render_objects[i]->_vertexLayout = &vlayout;
 					}
 				}
 
@@ -477,12 +491,14 @@ namespace engine
 					}
 
 					//if (pScene->mMaterials[paiMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) == 0)
+					if(render_objects[paiMesh->mMaterialIndex])
 					render_objects[paiMesh->mMaterialIndex]->AddGeometry(geometry);
 				}
 
 				timer.start();
 				for (auto robj : render_objects)
 				{
+					if(robj)
 					for (auto geo : robj->m_geometries)
 					{
 						geo->SetIndexBuffer(device->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
@@ -492,8 +508,6 @@ namespace engine
 				timer.stop();
 				uint64_t time = timer.elapsedMilliseconds();
 				std::cout << "------time uploading: " << time << "\n";
-
-				CreateShadowObjects(pipelineCache);
 
 				return render_objects;
 			}
@@ -523,17 +537,15 @@ namespace engine
 			return LoadFromFile2(foldername, filename, &modelCreateInfo, device, copyQueue, renderPass, pipelineCache, deferred);
 		}
 
-		void SceneLoader::CreateShadow()
+		void SceneLoader::CreateShadow(VkQueue copyQueue)
 		{
+			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, true, copyQueue);
 			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true);
-			shadowPass = _device->GetRenderPass({ { shadowmap->m_format, shadowmap->m_descriptor.imageLayout} });
-			render::VulkanFrameBuffer* fb = _device->GetFrameBuffer(shadowPass->GetRenderPass(), SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmap->m_descriptor.imageView });
+			shadowmapColor = _device->GetColorRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, FB_COLOR_FORMAT);
+			//_device->UpdateTexturelayout(shadowmap, copyQueue);
+			shadowPass = _device->GetRenderPass({ { shadowmapColor->m_format, shadowmapColor->m_descriptor.imageLayout}, { shadowmap->m_format, shadowmap->m_descriptor.imageLayout} });
+			render::VulkanFrameBuffer* fb = _device->GetFrameBuffer(shadowPass->GetRenderPass(), SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor->m_descriptor.imageView, shadowmap->m_descriptor.imageView });
 			shadowPass->AddFrameBuffer(fb);
-
-			shadow_uniform_buffer = _device->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				sizeof(uboShadowOffscreenVS));
-			VK_CHECK_RESULT(shadow_uniform_buffer->map());
 		}
 
 		void SceneLoader::CreateShadowObjects(VkPipelineCache pipelineCache)
@@ -543,10 +555,21 @@ namespace engine
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
 			};
 			render::VulkanDescriptorSetLayout* desc_layout = _device->GetDescriptorSetLayout(offscreenbindings);
+
+			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> offscreencolorbindings
+			{
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
+			};
+			render::VulkanDescriptorSetLayout* descColorLayout = _device->GetDescriptorSetLayout(offscreencolorbindings);
+
 			std::vector<render::VertexLayout*> vlayouts;
 
-			for (auto ro : render_objects)
+			for (int ro_index=0;ro_index<render_objects.size();ro_index++)
 			{
+				RenderObject* ro = render_objects[ro_index];
+				if (!ro)
+					continue;
 				render::VertexLayout* l = ro->_vertexLayout;
 				//it = std::find(vlayouts.begin(), vlayouts.end(), l);
 				int index = -1;
@@ -556,27 +579,48 @@ namespace engine
 						index = i;
 				}
 
-				if (index != -1)
+				/*if (index != -1 && !individualFragmentUniformBuffers[ro_index])
 				{
-					//shadow_objects[index]->m_geometries.insert(shadow_objects[index]->m_geometries.end(), ro->m_geometries.begin(), ro->m_geometries.end());
 					shadow_objects[index]->AdoptGeometriesFrom(*ro);
 				}
-				else
+				else*/
+				//if(!individualFragmentUniformBuffers[ro_index])
 				{
 					RenderObject* sro = new RenderObject;
 					sro->_vertexLayout = l;
-					sro->SetDescriptorSetLayout(desc_layout);
+					
 
 					//sro->m_geometries.insert(sro->m_geometries.end(), ro->m_geometries.begin(), ro->m_geometries.end());
 					sro->AdoptGeometriesFrom(*ro);
 
-					std::string sm_vertex_file(engine::tools::getAssetPath() + std::string("shaders/shadowmapping/offscreen.vert.spv"));
-					render::VulkanPipeline* p = _device->GetPipeline(desc_layout->m_descriptorSetLayout, l->m_vertexInputBindings, l->m_vertexInputAttributes,
-						sm_vertex_file, "", shadowPass->GetRenderPass(), pipelineCache);
-					sro->AddPipeline(p);
+					render::VulkanDescriptorSetLayout* currentdescayout = nullptr;
 
-					render::VulkanDescriptorSet* set = _device->GetDescriptorSet({ &shadow_uniform_buffer->m_descriptor }, {},
-						desc_layout->m_descriptorSetLayout, desc_layout->m_setLayoutBindings);
+					std::vector<VkDescriptorBufferInfo*> buffersDescriptors{ &shadow_uniform_buffer->m_descriptor };
+					if (individualFragmentUniformBuffers[ro_index])
+					{
+						buffersDescriptors.push_back(&individualFragmentUniformBuffers[ro_index]->m_descriptor);
+						currentdescayout = descColorLayout;
+					}
+					else
+						currentdescayout = desc_layout;
+
+					sro->SetDescriptorSetLayout(currentdescayout);
+
+					std::string sm_vertex_file(engine::tools::getAssetPath() + std::string("shaders/shadowmapping/offscreen.vert.spv"));
+					std::string sm_fragment_file(engine::tools::getAssetPath() + ((individualFragmentUniformBuffers[ro_index] == nullptr) ? std::string("shaders/shadowmapping/offscreen.frag.spv") : std::string("shaders/shadowmapping/offscreencolor.frag.spv")) );
+
+					bool blendenable = individualFragmentUniformBuffers[ro_index];
+
+					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatestrans;
+					blendAttachmentStatestrans.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+
+					render::VulkanPipeline* p = _device->GetPipeline(currentdescayout->m_descriptorSetLayout, l->m_vertexInputBindings, l->m_vertexInputAttributes,
+						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache,
+						blendenable, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStatestrans.size(), blendAttachmentStatestrans.data(), true);
+					sro->AddPipeline(p);			
+
+					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(buffersDescriptors, {},
+						currentdescayout->m_descriptorSetLayout, currentdescayout->m_setLayoutBindings);
 					sro->AddDescriptor(set);
 
 					vlayouts.push_back(l);
@@ -588,9 +632,9 @@ namespace engine
 
 		void SceneLoader::DrawShadowsInSeparatePass(VkCommandBuffer command_buffer)
 		{
-			float depthBiasConstant = 1.25f;
+			float depthBiasConstant = 0.25f;
 			// Slope depth bias factor, applied depending on polygon's slope
-			float depthBiasSlope = 1.75f;
+			float depthBiasSlope = 0.75f;
 			shadowPass->Begin(command_buffer, 0);
 
 			// Set depth bias (aka "Polygon offset")
@@ -605,6 +649,32 @@ namespace engine
 				obj->Draw(command_buffer);
 
 			shadowPass->End(command_buffer);
+		}
+
+		render::VulkanDescriptorSetLayout* SceneLoader::GetDescriptorSetlayout(std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> layoutBindigs)
+		{
+			for (auto dl : descriptorSetlayouts)
+			{
+				if (dl->m_setLayoutBindings.size() != layoutBindigs.size())
+					continue;
+				
+				bool match = true;
+				for (uint32_t i=0; i<dl->m_setLayoutBindings.size();i++)
+				{
+					if (dl->m_setLayoutBindings[i].descriptorType != layoutBindigs[i].first || dl->m_setLayoutBindings[i].stageFlags != layoutBindigs[i].second)
+					{
+						match = false;
+						break;
+					}
+				}
+				if (match)
+				{
+					return dl;
+				}
+			}
+			render::VulkanDescriptorSetLayout* dsl = _device->GetDescriptorSetLayout(layoutBindigs);
+			descriptorSetlayouts.push_back(dsl);
+			return dsl;
 		}
 
 		void SceneLoader::Update(float timer)
@@ -622,23 +692,44 @@ namespace engine
 
 			uboShadowOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
 
-			memcpy(shadow_uniform_buffer->m_mapped, &uboShadowOffscreenVS, sizeof(uboShadowOffscreenVS));
+			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE, &uboShadowOffscreenVS.depthMVP, 0, sizeof(uboShadowOffscreenVS.depthMVP));
 
-			uboVSscene.projection = m_camera->matrices.perspective;
-			uboVSscene.view = m_camera->matrices.view;
-			uboVSscene.depthBiasMVP = uboShadowOffscreenVS.depthMVP;
-			uboVSscene.cameraPos = -m_camera->position;
-			uboVSscene.lightPos = light_pos;
-			memcpy(scene_uniform_buffer->m_mapped, &uboVSscene, sizeof(uboVSscene));
+			glm::mat4 depthbiasMatrix = glm::mat4(
+				glm::vec4(0.5, 0.0, 0.0, 0.0),
+				glm::vec4(0.0, 0.5, 0.0, 0.0),
+				glm::vec4(0.0, 0.0, 1.0, 0.0),
+				glm::vec4(0.5, 0.5, 0.0, 1.0)
+			);
 
+			glm::mat4 biasedDepthMVP = depthbiasMatrix * uboShadowOffscreenVS.depthMVP;
 
 			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION, &m_camera->matrices.perspective, 0, sizeof(m_camera->matrices.perspective));
-			//uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &depthViewMatrix, 0, sizeof(depthViewMatrix));
 			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &m_camera->matrices.view, 0, sizeof(m_camera->matrices.view));
-			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE, &uboShadowOffscreenVS.depthMVP, 0, sizeof(uboShadowOffscreenVS.depthMVP));
+			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &biasedDepthMVP, 0, sizeof(biasedDepthMVP));
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
-			glm::vec3 cucu = -m_camera->position;
+			glm::vec3 cucu = m_camera->position;
+			cucu.y = -cucu.y;
 			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->position));
+
+			/*glm::mat4 viewproj = m_camera->matrices.perspective * m_camera->matrices.view;
+			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION_VIEW, &viewproj, 0, sizeof(viewproj));
+			glm::vec4 bias_near_far_pow = glm::vec4(0.002f, m_camera->getNearClip(), m_camera->getFarClip(), 1.0f);
+			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &bias_near_far_pow, 0, sizeof(bias_near_far_pow));*/
+			uniform_manager.Update();
+		}
+
+		void SceneLoader::UpdateView(float timer)
+		{
+			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &m_camera->matrices.view, 0, sizeof(m_camera->matrices.view));
+			glm::vec3 cucu = m_camera->position;
+			cucu.y = -cucu.y;
+			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->position));
+
+			/*glm::mat4 viewproj = m_camera->matrices.perspective * m_camera->matrices.view;
+			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION_VIEW, &viewproj, 0, sizeof(viewproj));
+			glm::vec4 bias_near_far_pow = glm::vec4(0.002f, m_camera->getNearClip(), m_camera->getFarClip(), 1.0f);
+			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &bias_near_far_pow, 0, sizeof(bias_near_far_pow));*/
+
 			uniform_manager.Update();
 		}
 

@@ -15,7 +15,7 @@ namespace engine
 		void Geometry::SetVertexBuffer(render::VulkanBuffer* buf, bool keepRAMData)
 		{
 			_vertexBuffer = buf;
-			if (!keepRAMData)
+			if (!keepRAMData && m_vertices)
 			{
 				delete[]m_vertices;
 				m_vertices = nullptr;
@@ -24,7 +24,7 @@ namespace engine
 		void Geometry::SetIndexBuffer(render::VulkanBuffer* buf, bool keepRAMData)
 		{
 			_indexBuffer = buf;
-			if (!keepRAMData)
+			if (!keepRAMData && m_indices)
 			{
 				delete[]m_indices;
 				m_indices = nullptr;

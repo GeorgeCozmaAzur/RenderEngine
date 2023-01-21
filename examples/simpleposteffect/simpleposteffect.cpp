@@ -65,8 +65,22 @@ public:
 		scenepass = vulkanDevice->GetRenderPass({ scenecolor , scenedepth }, 0);
 		VulkanFrameBuffer* fb = vulkanDevice->GetFrameBuffer(scenepass->GetRenderPass(), width, height, { scenecolor->m_descriptor.imageView, scenedepth->m_descriptor.imageView }, { { 30.8f, 100.95f, 300.f, 1.0f } });
 		scenepass->AddFrameBuffer(fb);
+
+		scene.normalmapVS = "normalmapshadowmap.vert.spv";
+		scene.normalmapFS = "normalmapshadowmap.frag.spv";
+		scene.lightingVS = "phongshadowmap.vert.spv";
+		scene.lightingFS = "phongshadowmap.frag.spv";
+		scene.lightingTexturedFS = "phongtexturedshadowmap.frag.spv";
+
+		scene._device = vulkanDevice;
+		scene.CreateShadow(queue);
+		scene.globalTextures.push_back(scene.shadowmap);
+
 		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/sibenik/", "sibenik.dae", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
-		scene.light_pos = glm::vec4(34.0f, -87.0f, 190.0f, 1.0f);
+		scene.light_pos = glm::vec4(34.0f, -157.0f, 190.0f, 1.0f);
+		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
+
+		scene.CreateShadowObjects(pipelineCache);
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> blurbindings
 		{
@@ -137,7 +151,7 @@ public:
 		init();
 		prepareUI();
 		buildCommandBuffers();
-		scene.uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &camera.matrices.perspective, 0, sizeof(camera.matrices.perspective));
+		//scene.uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &camera.matrices.perspective, 0, sizeof(camera.matrices.perspective));
 		updateUniformBuffers();
 		prepared = true;
 	}
@@ -156,7 +170,8 @@ public:
 
 	virtual void viewChanged()
 	{
-		updateUniformBuffers();
+		//updateUniformBuffers();
+		scene.UpdateView(timer * 0.05f);
 	}
 
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)

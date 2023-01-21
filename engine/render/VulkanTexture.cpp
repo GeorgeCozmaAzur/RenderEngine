@@ -221,7 +221,7 @@ namespace engine
 				vkDestroyBuffer(_device, m_stagingBuffer, nullptr);
 		}
 
-		void VulkanTexture::Create(VkDevice device, VkPhysicalDeviceMemoryProperties* memoryProperties, uint32_t width, uint32_t height, VkFormat format,
+		void VulkanTexture::Create(VkDevice device, VkPhysicalDeviceMemoryProperties* memoryProperties, VkExtent3D extent, VkFormat format,
 			VkImageUsageFlags imageUsageFlags,
 			VkImageLayout imageLayout,
 			uint32_t mipLevelsCount, uint32_t layersCount,
@@ -229,8 +229,9 @@ namespace engine
 		{
 			_device = device;
 			m_format = format;
-			m_width = width;
-			m_height = height;
+			m_width = extent.width;
+			m_height = extent.height;
+			m_depth = extent.depth;
 			m_mipLevelsCount = mipLevelsCount;
 			m_layerCount = layersCount;
 			m_descriptor.imageLayout = imageLayout;
@@ -240,7 +241,8 @@ namespace engine
 
 			// Create optimal tiled target image
 			VkImageCreateInfo imageCreateInfo = engine::initializers::imageCreateInfo();
-			imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+
+			extent.depth > 1 ? imageCreateInfo.imageType = VK_IMAGE_TYPE_3D : imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;	
 			imageCreateInfo.format = m_format;
 			imageCreateInfo.mipLevels = m_mipLevelsCount;
 			imageCreateInfo.arrayLayers = m_layerCount;
@@ -248,7 +250,7 @@ namespace engine
 			imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 			imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			imageCreateInfo.extent = { m_width, m_height, 1 };
+			imageCreateInfo.extent = extent;
 			imageCreateInfo.usage = imageUsageFlags;
 			imageCreateInfo.flags = flags;
 

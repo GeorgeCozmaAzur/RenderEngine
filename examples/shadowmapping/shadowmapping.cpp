@@ -53,9 +53,9 @@ public:
 
 	// Depth bias (and slope) are used to avoid shadowing artefacts
 	// Constant depth bias factor (always applied)
-	float depthBiasConstant = 1.25f;
+	float depthBiasConstant = 0.5f;
 	// Slope depth bias factor, applied depending on polygon's slope
-	float depthBiasSlope = 1.75f;
+	float depthBiasSlope = 0.75f;
 
 	glm::vec3 lightPos = glm::vec3();
 	float lightFOV = 45.0f;
@@ -318,7 +318,8 @@ public:
 		vertexInputAttributes.push_back(engine::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0));
 
 		pipelines.offscreen = vulkanDevice->GetPipeline(layouts.offscreen_layout->m_descriptorSetLayout, layouts.scene_vlayout->m_vertexInputBindings, vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache);
+			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache//);
+			,false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true);
 
 		pipelines.sceneShadow = vulkanDevice->GetPipeline(layouts.scene_layout->m_descriptorSetLayout, layouts.scene_vlayout->m_vertexInputBindings, layouts.scene_vlayout->m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/shadowmapping/scene.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/scene.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache);
@@ -339,7 +340,7 @@ public:
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		
 
-		uniformBuffers.tree = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW });
+		//uniformBuffers.tree = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW });
 		uniformBuffers.offscreen = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			sizeof(uboOffscreenVS));
@@ -382,9 +383,9 @@ public:
 
 		memcpy(uniformBuffers.scene->m_mapped, &uboVSscene, sizeof(uboVSscene));
 
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &uboVSscene.projection, 0, sizeof(camera.matrices.perspective));
+		/*uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &uboVSscene.projection, 0, sizeof(camera.matrices.perspective));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &uboVSscene.view, 0, sizeof(camera.matrices.view));
-		uniform_manager.Update();
+		uniform_manager.Update();*/
 
 	}
 

@@ -58,6 +58,20 @@ namespace engine
 			vkUpdateDescriptorSets(_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 		}
 
+		void VulkanDescriptorSet::Update(uint32_t binding, VkDescriptorType descType, VkDescriptorBufferInfo *bufferInfo, VkDescriptorImageInfo *imageInfo)
+		{
+			VkWriteDescriptorSet writeDescriptorSet{};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = m_vkDescriptorSet;
+			writeDescriptorSet.descriptorType = descType;
+			writeDescriptorSet.dstBinding = binding;
+			writeDescriptorSet.pBufferInfo = bufferInfo;
+			writeDescriptorSet.pImageInfo = imageInfo;
+			writeDescriptorSet.descriptorCount = 1;
+
+			vkUpdateDescriptorSets(_device, 1, &writeDescriptorSet, 0, NULL);
+		}
+
 		void VulkanDescriptorSet::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t indexInDynamicUniformBuffer, VkPipelineBindPoint pipelineBindpoint)
 		{
 			uint32_t dynamicOffset = indexInDynamicUniformBuffer * m_dynamicAlignment;

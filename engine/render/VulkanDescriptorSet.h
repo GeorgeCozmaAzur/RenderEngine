@@ -28,6 +28,8 @@ namespace engine
 
 			void SetupDescriptors(VkDevice, VkDescriptorPool, VkDescriptorSetLayout, std::vector<VkDescriptorSetLayoutBinding>);
 
+			void Update(uint32_t binding, VkDescriptorType descType, VkDescriptorBufferInfo* bufferInfo, VkDescriptorImageInfo* imageInfo);
+
 			void AddTextureDescriptor(VkDescriptorImageInfo* desc) { _TexturesDescriptors.push_back(desc); };
 			size_t GetTexturesNo() { return _TexturesDescriptors.size(); }
 

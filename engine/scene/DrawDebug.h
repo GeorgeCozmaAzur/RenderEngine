@@ -1,0 +1,38 @@
+#pragma once
+#include <map>
+#include "RenderObject.h"
+#include "render/VulkanDevice.hpp"
+
+namespace engine
+{
+	namespace scene
+	{	
+		class DrawDebugTexture : public RenderObject
+		{
+			render::VertexLayout m_vertexLayout = render::VertexLayout({
+		render::VERTEX_COMPONENT_POSITION,
+		render::VERTEX_COMPONENT_UV
+				}, {});
+			struct {
+				glm::mat4 projection;
+				glm::mat4 modelView;
+			} uboVS;
+
+			struct {
+				glm::mat4 projection;
+				glm::mat4 modelView;
+				float depth;
+			} uboVSdepth;
+
+			bool m_hasDepth = false;
+
+			render::VulkanTexture* m_texture = nullptr;
+			render::VulkanBuffer* uniformBufferVS = nullptr;
+
+		public:
+			void SetTexture(render::VulkanTexture *texture);
+			void Init(render::VulkanDevice * vulkanDevice, render::VulkanTexture* texture, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache);
+			void UpdateUniformBuffers(glm::mat4 projection, glm::mat4 view, float depth = -1);
+		};
+	}
+}
