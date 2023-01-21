@@ -23,12 +23,11 @@ layout (binding = 1) uniform OUBO
 } oubo;*/
 
 layout (location = 0) out vec2 outUV;
-layout (location = 1) out vec3 outLightPos;
-layout (location = 2) out vec3 outPosition;
-layout (location = 3) out vec3 outCamPosition;
-layout (location = 4) out vec4 outShadowCoord;
+layout (location = 1) out vec4 outShadowCoord;
+layout (location = 2) out vec3 outLightPos;
+layout (location = 3) out vec3 outPosition;
+layout (location = 4) out vec3 outCamPosition;
 layout (location = 5) out mat3 TBN;
-
 
 out gl_PerVertex 
 {

@@ -1,0 +1,92 @@
+#version 450
+
+#define VOXEL_GRID_SIZE_X 128
+#define VOXEL_GRID_SIZE_Y 64
+#define VOXEL_GRID_SIZE_Z 128
+#define COMPUTE_GROUP_SIZE 16
+#define COMPUTE_GROUP_SIZE_Z 4
+#define EPSILON 0.0001f
+
+layout (local_size_x = COMPUTE_GROUP_SIZE, local_size_y = COMPUTE_GROUP_SIZE, local_size_z = COMPUTE_GROUP_SIZE_Z) in;
+layout (binding = 0) uniform sampler3D inputImage;
+
+layout (binding = 1) uniform UBO 
+{
+	mat4  view;
+    mat4  projection;
+	mat4  inv_view_proj;
+	mat4  prev_view_proj;
+	mat4  light_view_proj;
+	vec4  camera_position;
+	vec4  bias_near_far_pow;
+	vec4  light_color;
+	float time;
+} ubo;
+
+layout (binding = 2, rgba16) uniform writeonly image3D i_VoxelGrid;
+
+
+float slice_distance(int z)
+{
+    float n = ubo.bias_near_far_pow.y;
+    float f = ubo.bias_near_far_pow.z;
+
+    return n * pow(f / n, (float(z) + 0.5f) / float(VOXEL_GRID_SIZE_Z));
+}
+
+// ------------------------------------------------------------------
+
+float slice_thickness(int z)
+{
+    return abs(slice_distance(z + 1) - slice_distance(z));
+}
+
+// ------------------------------------------------------------------
+
+// https://github.com/Unity-Technologies/VolumetricLighting/blob/master/Assets/VolumetricFog/Shaders/Scatter.compute
+vec4 accumulate(int z, vec3 accum_scattering, float accum_transmittance, vec3 slice_scattering, float slice_density)
+{
+    const float thickness = slice_thickness(z);
+    const float slice_transmittance = exp(-slice_density * thickness * 0.01f);
+
+    vec3 slice_scattering_integral = slice_scattering * (1.0 - slice_transmittance) / slice_density;
+
+    accum_scattering += slice_scattering_integral * accum_transmittance;
+    accum_transmittance *= slice_transmittance;
+
+    return vec4(accum_scattering, accum_transmittance);
+}
+
+// ------------------------------------------------------------------
+// MAIN -------------------------------------------------------------
+// ------------------------------------------------------------------
+
+void main()
+{
+    vec4 accum_scattering_transmittance = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Accumulate scattering
+    for (int z = 0; z < VOXEL_GRID_SIZE_Z; z++)
+    {
+        ivec3 coord = ivec3(gl_GlobalInvocationID.xy, z);
+
+        vec4 slice_scattering_density = texelFetch(inputImage, coord, 0);
+        
+		const float thickness = slice_thickness(z);
+		const float slice_transmittance = exp(-slice_scattering_density.a * thickness * 0.01f);
+
+		vec3 slice_scattering_integral = slice_scattering_density.rgb * (1.0 - slice_transmittance) / slice_scattering_density.a;
+
+		accum_scattering_transmittance.rgb += slice_scattering_integral * accum_scattering_transmittance.a;
+		accum_scattering_transmittance.a *= slice_transmittance;
+		//accum_scattering_transmittance.r += 1.0/VOXEL_GRID_SIZE_Z;
+		//slice_scattering_density.r += float(z)/VOXEL_GRID_SIZE_Z * 0.01;
+
+		//slice_scattering_density *= thickness;
+        imageStore(i_VoxelGrid, coord, accum_scattering_transmittance);
+    }
+	/*ivec3 coord = ivec3(gl_GlobalInvocationID.xyz);
+	accum_scattering_transmittance.r = float(gl_GlobalInvocationID.x)/VOXEL_GRID_SIZE_X;
+	accum_scattering_transmittance.g = float(gl_GlobalInvocationID.y)/VOXEL_GRID_SIZE_Y;
+	imageStore(i_VoxelGrid, coord, accum_scattering_transmittance);*/
+}
