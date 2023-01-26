@@ -42,6 +42,7 @@ namespace engine
 		struct Texture2DData : TextureData
 		{
 			virtual void LoadFromFile(std::string filename, VkFormat format);
+			virtual void LoadFromFiles(std::vector<std::string> filenames, VkFormat format);
 		};
 
 		struct TextureCubeMapData : TextureData

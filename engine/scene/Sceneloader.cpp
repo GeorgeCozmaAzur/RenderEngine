@@ -190,8 +190,8 @@ namespace engine
 				//TODO see exactly how many descriptors are needed
 				std::vector<VkDescriptorPoolSize> poolSizes =
 				{
-					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4 * static_cast<uint32_t>(render_objects.size())),
-					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * static_cast<uint32_t>(render_objects.size())),
+					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size())),
+					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size())+globalTextures.size()),
 					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2)
 				};
 
@@ -539,8 +539,8 @@ namespace engine
 
 		void SceneLoader::CreateShadow(VkQueue copyQueue)
 		{
-			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, true, copyQueue);
-			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true);
+			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true, VK_IMAGE_ASPECT_DEPTH_BIT, false);
+			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true);
 			shadowmapColor = _device->GetColorRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, FB_COLOR_FORMAT);
 			//_device->UpdateTexturelayout(shadowmap, copyQueue);
 			shadowPass = _device->GetRenderPass({ { shadowmapColor->m_format, shadowmapColor->m_descriptor.imageLayout}, { shadowmap->m_format, shadowmap->m_descriptor.imageLayout} });

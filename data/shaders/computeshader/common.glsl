@@ -1,5 +1,6 @@
-#define VOXEL_GRID_SIZE_X 128
-#define VOXEL_GRID_SIZE_Y 64
+//https://github.com/diharaw/volumetric-fog/blob/main/src/shaders/common.glsl
+#define VOXEL_GRID_SIZE_X 160
+#define VOXEL_GRID_SIZE_Y 80
 #define VOXEL_GRID_SIZE_Z 128
 #define BLUE_NOISE_TEXTURE_SIZE 128
 

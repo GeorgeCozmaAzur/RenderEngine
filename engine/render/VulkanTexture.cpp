@@ -117,6 +117,62 @@ namespace engine
 			}
 #endif
 		}
+
+		void Texture2DData::LoadFromFiles(
+			std::vector<std::string> filenames,
+			VkFormat format
+		)
+		{
+			m_format = format;
+
+			m_layers_no = filenames.size();
+			m_extents = new TextureExtent * [m_layers_no];
+
+			m_imageSize = 0;
+
+			std::vector<stbi_uc*> pixelsarrays;
+			//int total_image_size = 0;
+			for (auto filename : filenames)
+#if !defined(__ANDROID__)
+			{
+				int texWidth, texHeight, texChannels;
+				stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+				assert(pixels);
+
+				pixelsarrays.push_back(pixels);
+
+				m_imageSize += texWidth * texHeight * 4;
+				//total_image_size += m_imageSize;
+
+				m_width = static_cast<uint32_t>(texWidth);
+				m_height = static_cast<uint32_t>(texHeight);
+				m_mips_no = 1;
+			}
+
+			m_ram_data = new char[m_imageSize];
+
+			for (int i=0;i< pixelsarrays.size();i++)
+			{
+				stbi_uc* pixels = pixelsarrays[i];
+				//m_layers_no = 1;
+				int image_face_size = m_width * m_height * 4;
+				
+				memcpy(m_ram_data + i * image_face_size, pixels, image_face_size);
+
+				//m_extents = new TextureExtent * [1];
+				m_extents[i] = new TextureExtent[1];
+				{
+					m_extents[i][0].width = m_width;
+					m_extents[i][0].height = m_height;
+					m_extents[i][0].size = image_face_size;
+
+				}
+				stbi_image_free(pixels);
+			}
+#endif
+		}
+
 		void TextureCubeMapData::LoadFromFile(
 			std::string filename,
 			VkFormat format
@@ -151,7 +207,7 @@ namespace engine
 			m_width = static_cast<uint32_t>(texCube.extent().x);
 			m_height = static_cast<uint32_t>(texCube.extent().y);
 			m_mips_no = static_cast<uint32_t>(texCube.levels());
-			m_layers_no = 6;
+			m_layers_no = static_cast<uint32_t>(texCube.layers());
 
 			m_imageSize = texCube.size();
 			m_ram_data = new char[m_imageSize];

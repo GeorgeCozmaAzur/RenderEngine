@@ -1,10 +1,10 @@
 #version 450
 
-#define VOXEL_GRID_SIZE_X 128
-#define VOXEL_GRID_SIZE_Y 64
-#define VOXEL_GRID_SIZE_Z 128
-#define COMPUTE_GROUP_SIZE 16
-#define COMPUTE_GROUP_SIZE_Z 4
+#extension GL_GOOGLE_include_directive : enable
+#include "common.glsl"
+
+#define COMPUTE_GROUP_SIZE 8
+#define COMPUTE_GROUP_SIZE_Z 1
 #define EPSILON 0.0001f
 
 layout (local_size_x = COMPUTE_GROUP_SIZE, local_size_y = COMPUTE_GROUP_SIZE, local_size_z = COMPUTE_GROUP_SIZE_Z) in;
@@ -21,6 +21,7 @@ layout (binding = 1) uniform UBO
 	vec4  bias_near_far_pow;
 	vec4  light_color;
 	float time;
+	int noise_index;
 } ubo;
 
 layout (binding = 2, rgba16) uniform writeonly image3D i_VoxelGrid;
@@ -79,14 +80,7 @@ void main()
 
 		accum_scattering_transmittance.rgb += slice_scattering_integral * accum_scattering_transmittance.a;
 		accum_scattering_transmittance.a *= slice_transmittance;
-		//accum_scattering_transmittance.r += 1.0/VOXEL_GRID_SIZE_Z;
-		//slice_scattering_density.r += float(z)/VOXEL_GRID_SIZE_Z * 0.01;
 
-		//slice_scattering_density *= thickness;
         imageStore(i_VoxelGrid, coord, accum_scattering_transmittance);
     }
-	/*ivec3 coord = ivec3(gl_GlobalInvocationID.xyz);
-	accum_scattering_transmittance.r = float(gl_GlobalInvocationID.x)/VOXEL_GRID_SIZE_X;
-	accum_scattering_transmittance.g = float(gl_GlobalInvocationID.y)/VOXEL_GRID_SIZE_Y;
-	imageStore(i_VoxelGrid, coord, accum_scattering_transmittance);*/
 }

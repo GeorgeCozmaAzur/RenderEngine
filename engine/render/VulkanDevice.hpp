@@ -574,6 +574,32 @@ namespace engine
 			return tex;
 		}
 
+		VulkanTexture* GetTextureArray(std::vector<std::string> filenames, VkFormat format, VkQueue copyQueue,
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			VulkanTexture* tex = new VulkanTexture;
+			Texture2DData data;
+			data.LoadFromFiles(filenames, format);
+			data.CreateStagingBuffer(logicalDevice, &memoryProperties);
+
+			tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
+				imageLayout,
+				data.m_mips_no,data.m_layers_no);
+
+			VkCommandBuffer copyCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+			tex->Update(&data, copyCmd, copyQueue);
+			flushCommandBuffer(copyCmd, copyQueue);
+
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_ASPECT_COLOR_BIT, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
+
+			data.Destroy(logicalDevice);
+
+			m_textures.push_back(tex);
+
+			return tex;
+		}
+
 		VulkanTexture *GetTextureCubeMap(std::string filename, VkFormat format, VkQueue copyQueue, VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		{
@@ -587,7 +613,7 @@ namespace engine
 
 			tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
 				imageLayout,
-				data.m_mips_no, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
+				data.m_mips_no, data.m_layers_no, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
 
 			VkCommandBuffer copyCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			tex->Update(&data, copyCmd, copyQueue);
@@ -604,11 +630,12 @@ namespace engine
 
 		VulkanTexture* GetTextureStorage(VkExtent3D extent, VkFormat format, VkQueue copyQueue,
 			VkImageViewType viewType,
-			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_GENERAL)
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+			uint32_t mipLevelsCount = 1U, uint32_t layersCount = 1U)
 		{
 			VulkanTexture* tex = new VulkanTexture;
 
-			tex->Create(logicalDevice, &memoryProperties, extent, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, imageLayout);
+			tex->Create(logicalDevice, &memoryProperties, extent, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, imageLayout, mipLevelsCount, layersCount);
 
 			VkCommandBuffer layoutCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			tex->m_descriptor.imageLayout = imageLayout;//TODO maybe also shader read only optimal
@@ -643,11 +670,13 @@ namespace engine
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 
-		VulkanTexture *GetDepthRenderTarget(uint32_t width, uint32_t height, bool useInShaders, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, bool updateLayout = false, VkQueue copyQueue = VK_NULL_HANDLE)
+		VulkanTexture *GetDepthRenderTarget(uint32_t width, uint32_t height, bool useInShaders, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, bool withStencil = true, bool updateLayout = false, VkQueue copyQueue = VK_NULL_HANDLE)
 		{
 			VkFormat fbDepthFormat;
 			VkBool32 validDepthFormat = engine::tools::getSupportedDepthFormat(physicalDevice, &fbDepthFormat);
 			assert(validDepthFormat);
+			if (!withStencil)
+				fbDepthFormat = VK_FORMAT_D32_SFLOAT;
 
 			VkImageUsageFlags usageflags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -664,7 +693,8 @@ namespace engine
 				VkCommandBuffer layoutCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 				tools::setImageLayout(
 					layoutCmd, texture->m_vkImage,
-					aspectMask,
+					//aspectMask,
+					VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,//TODO why
 					VK_IMAGE_LAYOUT_UNDEFINED,
 					texture->m_descriptor.imageLayout);
 

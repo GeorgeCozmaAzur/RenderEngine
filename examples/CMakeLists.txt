@@ -49,6 +49,7 @@ set(EXAMPLES
 	reflections
 	shadowmapping
 	simpleposteffect
+	volumetriclighting
 )
 
 buildExamples()
