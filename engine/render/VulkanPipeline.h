@@ -44,7 +44,10 @@ namespace engine
 				uint32_t* fragmentConstants = nullptr,
 				uint32_t attachmentCount = 0,
 				const VkPipelineColorBlendAttachmentState* pAttachments = nullptr,
-				bool depthBias = false
+				bool depthBias = false,
+				bool depthTestEnable = true,
+				bool depthWriteEnable = true,
+				uint32_t subpass = 0
 			);
 			void Draw(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindpoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 

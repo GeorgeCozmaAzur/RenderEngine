@@ -752,11 +752,14 @@ namespace engine
 			uint32_t *fConstants = nullptr,
 			uint32_t attachmentCount = 0,
 			const VkPipelineColorBlendAttachmentState* pAttachments = nullptr,
-			bool depthBias = false)
+			bool depthBias = false,
+			bool depthTestEnable = true,
+			bool depthWriteEnable = true,
+			uint32_t subpass = 0)
 		{
 			VulkanPipeline *pipeline = new VulkanPipeline;
 			pipeline->SetBlending(blendEnable);
-			pipeline->Create(logicalDevice, descriptorSetLayout, vertexInputBindings, vertexInputAttributes, vertexFile, fragmentFile, renderPass, cache, topology, vertexConstantBlockSize, fConstants, attachmentCount, pAttachments, depthBias);
+			pipeline->Create(logicalDevice, descriptorSetLayout, vertexInputBindings, vertexInputAttributes, vertexFile, fragmentFile, renderPass, cache, topology, vertexConstantBlockSize, fConstants, attachmentCount, pAttachments, depthBias, depthTestEnable, depthWriteEnable, subpass);
 			m_pipelines.push_back(pipeline);
 			return pipeline;
 		}
@@ -816,7 +819,7 @@ namespace engine
 			}
 		}
 
-		VulkanRenderPass *GetRenderPass(std::vector <VulkanTexture*> textures, int pula)
+		VulkanRenderPass *GetRenderPass(std::vector <VulkanTexture*> textures, int pula=0, std::vector<RenderSubpass> subpasses = {})
 		{
 			std::vector <std::pair<VkFormat, VkImageLayout>> layouts;
 			VulkanRenderPass *pass = new VulkanRenderPass;
@@ -825,7 +828,7 @@ namespace engine
 			{
 				layouts.push_back({tex->m_format, tex->m_descriptor.imageLayout});
 			}
-			pass->Create(logicalDevice, layouts);
+			pass->Create(logicalDevice, layouts, false, subpasses);
 			m_renderPasses.push_back(pass);
 			return pass;
 		}

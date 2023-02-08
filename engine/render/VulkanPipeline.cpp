@@ -37,7 +37,10 @@ namespace engine
 			uint32_t* fragmentConstants,
 			uint32_t attachmentCount,
 			const VkPipelineColorBlendAttachmentState* pAttachments,
-			bool depthBias)
+			bool depthBias,
+			bool depthTestEnable,
+			bool depthWriteEnable,
+			uint32_t subpass)
 		{
 			if (m_vkPipeline != VK_NULL_HANDLE)
 				return;
@@ -74,8 +77,10 @@ namespace engine
 			VkPipelineColorBlendStateCreateInfo colorBlendStateCI = (attachmentCount && pAttachments) ?
 				engine::initializers::pipelineColorBlendStateCreateInfo(attachmentCount, pAttachments) :
 				engine::initializers::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
+				
+			VkBool32 enableDepthWrite = VkBool32(depthWriteEnable && !m_blendEnable);
 			//TODO there will be times when we want to write to depth when there is blend enabled
-			VkPipelineDepthStencilStateCreateInfo depthStencilStateCI = engine::initializers::pipelineDepthStencilStateCreateInfo(VkBool32(!m_blendEnable), VkBool32(!m_blendEnable), VK_COMPARE_OP_LESS_OR_EQUAL);
+			VkPipelineDepthStencilStateCreateInfo depthStencilStateCI = engine::initializers::pipelineDepthStencilStateCreateInfo(depthTestEnable, enableDepthWrite, VK_COMPARE_OP_LESS_OR_EQUAL);
 			VkPipelineViewportStateCreateInfo viewportStateCI = engine::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
 			VkPipelineMultisampleStateCreateInfo multisampleStateCI = engine::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
 			VkPipelineDynamicStateCreateInfo dynamicStateCI = engine::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables.data(), static_cast<uint32_t>(dynamicStateEnables.size()), 0);
@@ -95,6 +100,7 @@ namespace engine
 			pipelineCreateInfoCI.pViewportState = &viewportStateCI;
 			pipelineCreateInfoCI.pDepthStencilState = &depthStencilStateCI;
 			pipelineCreateInfoCI.pDynamicState = &dynamicStateCI;
+			pipelineCreateInfoCI.subpass = subpass;
 
 			std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 			shaderStages.push_back(LoadShader(vertexFile, VK_SHADER_STAGE_VERTEX_BIT));

@@ -42,7 +42,7 @@ namespace engine
 					writeDescriptorSets[binding.binding].pBufferInfo = _BuffersDescriptors[buffers_iterator++];
 				}
 				else
-				if (binding.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+				if (binding.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE || binding.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
 				{
 					writeDescriptorSets[binding.binding].pImageInfo = _TexturesDescriptors[textures_iterator++];
 				}

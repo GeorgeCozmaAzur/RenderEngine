@@ -28,8 +28,13 @@ void main()
 {
 	outUV = inUV;
 	outColor = inColor;
-	outNormal = inNormal;
-	outPosition = vec3(uboView.model * vec4(inPos.xyz, 1.0));
 	
-	gl_Position = uboView.projection * uboView.view * uboView.model * vec4(inPos.xyz + instancePos, 1.0);
+	mat3 mNormal = transpose(inverse(mat3(uboView.model)));
+	vec3 N =  normalize(inNormal);	
+	outNormal = N;
+	
+	vec4 P = uboView.model * vec4(inPos.xyz + instancePos, 1.0);
+	outPosition = P.xyz;
+	
+	gl_Position = uboView.projection * uboView.view * P;
 }

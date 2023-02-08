@@ -19,6 +19,14 @@ namespace engine
 			~VulkanFrameBuffer();
 		};
 
+		struct RenderSubpass
+		{
+			RenderSubpass(std::vector<uint32_t> i, std::vector<uint32_t> o) :
+				inputAttachmanets(i), outputAttachmanets(o) {}		
+			std::vector<uint32_t> inputAttachmanets;
+			std::vector<uint32_t> outputAttachmanets;
+		};
+
 		class VulkanRenderPass {
 
 			VkDevice _device = VK_NULL_HANDLE;
@@ -26,6 +34,8 @@ namespace engine
 			
 			std::vector<VkClearValue> m_currentClearValues;
 			VulkanFrameBuffer* m_currentFrameBuffer = nullptr;
+
+			std::vector<RenderSubpass> m_subpasses;
 			VkRenderPassBeginInfo m_renderPassBeginInfo;
 			VkRenderPass m_vkRenderPass;
 
@@ -35,12 +45,13 @@ namespace engine
 				Destroy();
 			}
 
-			void Create(VkDevice device, std::vector <std::pair<VkFormat, VkImageLayout>> layouts, bool bottom_of_pipe = false);
+			void Create(VkDevice device, std::vector <std::pair<VkFormat, VkImageLayout>> layouts, bool bottom_of_pipe = false, std::vector<RenderSubpass> subpasses = {});
 			void AddFrameBuffer(VulkanFrameBuffer* fb);
 			void ResetFrameBuffers() { m_frameBuffers.clear(); }
 			VkRenderPass GetRenderPass() { return m_vkRenderPass; }
 			void Begin(VkCommandBuffer command_buffer, int fb_index);
 			void End(VkCommandBuffer command_buffer);
+			void SetClearColor(VkClearColorValue value, int attachment);
 			void Destroy();
 		};
 	}
