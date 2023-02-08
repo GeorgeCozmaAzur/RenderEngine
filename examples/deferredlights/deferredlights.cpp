@@ -14,8 +14,11 @@
 #include <vulkan/vulkan.h>
 #include "vulkanexamplebase.h"
 #include "scene/SimpleModel.h"
+#include "scene/DeferredLights.h"
 
 using namespace engine;
+
+#define LIGHTS_NO 500
 
 class VulkanExample : public VulkanExampleBase
 {
@@ -42,15 +45,14 @@ public:
 		scene::SimpleModel quad;
 		scene::SimpleModel plane;
 	} models;
+	scene::DeferredLights deferredLights;
 
 	struct UBO {
 		glm::mat4 projection;
 		glm::mat4 view;
 		glm::mat4 model;
-		//glm::vec4 lightPos = glm::vec4(5.0f, 0.0f, 0.0f, 1.0f);
 	} uboShared;
 
-#define LIGHTS_NO 50
 	struct Light {
 		glm::vec4 position;
 		glm::vec3 color;
@@ -64,48 +66,51 @@ public:
 
 	struct {
 		render::VulkanBuffer* vsModel;
-		render::VulkanBuffer* vsDebugQuad;
 		render::VulkanBuffer* fsdeferred;
 	} uniformBuffers;
 
 	render::VulkanTexture* colorMap;
+	render::VulkanTexture* colorMap2;
 	render::VulkanTexture* colorTex;
 	render::VulkanTexture* depthTex;
 	render::VulkanTexture* scenecolor;
 	render::VulkanTexture* scenepositions;
 	render::VulkanTexture* scenenormals;
+	render::VulkanTexture* sceneLightscolor;
 	render::VulkanTexture* scenedepth;
 
 	struct {
 		render::VulkanDescriptorSetLayout* model;
 		render::VulkanDescriptorSetLayout* deferred;
+		render::VulkanDescriptorSetLayout* simpletexture;
 	} layouts;
 
 	struct {
 		render::VulkanPipeline* plane;
 		render::VulkanPipeline* model;
-		render::VulkanPipeline* debugQuad;
 		render::VulkanPipeline* deferred;
+		render::VulkanPipeline* simpletexture;
 	} pipelines;
 
 	struct {
+		render::VulkanDescriptorSet* plane;
 		render::VulkanDescriptorSet* model;
-		render::VulkanDescriptorSet* debugQuad;
 		render::VulkanDescriptorSet* deferred;
+		render::VulkanDescriptorSet* simpletexture;
 	} descriptorSets;
 
 	glm::vec3 meshPos = glm::vec3(0.0f, -1.5f, 0.0f);
 	glm::vec3 meshRot = glm::vec3(0.0f);
 
 	render::VulkanRenderPass* scenepass = nullptr;
-	render::VulkanRenderPass* lightingpass = nullptr;
 
 	glm::vec3 light_positions[LIGHTS_NO];
 	glm::vec3 light_colors[LIGHTS_NO];
+	std::vector<glm::vec3> models_positions;
 
 	VulkanExample() : VulkanExampleBase(true)
 	{
-		zoom = -6.75f;
+		zoom = -60.75f;
 		rotationSpeed = 0.5f;
 		rotation = glm::vec3(0.0f, 0.f, 0.0f);
 		title = "Deferred lighting example";
@@ -129,46 +134,62 @@ public:
 
 	void init()
 	{
-		scenecolor = vulkanDevice->GetColorRenderTarget(width, height, FB_COLOR_FORMAT);
-		scenepositions = vulkanDevice->GetColorRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT);
-		scenenormals = vulkanDevice->GetColorRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT);
+		scenecolor = vulkanDevice->GetRenderTarget(width, height, FB_COLOR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
+		scenepositions = vulkanDevice->GetRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		scenenormals = vulkanDevice->GetRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		sceneLightscolor = vulkanDevice->GetRenderTarget(width, height, FB_COLOR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		scenedepth = vulkanDevice->GetDepthRenderTarget(width, height, false);
 
-		scenepass = vulkanDevice->GetRenderPass({ scenecolor ,scenepositions, scenenormals, scenedepth }, 0);
+		scenepass = vulkanDevice->GetRenderPass({ scenecolor ,scenepositions, scenenormals, sceneLightscolor, scenedepth }, 0, { render::RenderSubpass({}, {0,1,2,4}), render::RenderSubpass({1,2}, {3}) } );
 		render::VulkanFrameBuffer* fb = vulkanDevice->GetFrameBuffer(scenepass->GetRenderPass(), width, height, 
-			{ scenecolor->m_descriptor.imageView, scenepositions->m_descriptor.imageView, scenenormals->m_descriptor.imageView, scenedepth->m_descriptor.imageView },
+			{ scenecolor->m_descriptor.imageView, scenepositions->m_descriptor.imageView, scenenormals->m_descriptor.imageView, sceneLightscolor->m_descriptor.imageView, scenedepth->m_descriptor.imageView },
 			{ { 0.95f, 0.95f, 0.95f, 1.0f } });
 		scenepass->AddFrameBuffer(fb);
+		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f }, 1);
+		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f }, 2);
+		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f }, 3);
 
 		models.plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 10.0f, 1, glm::vec3(0.0,1.5,0.0));
-		models.example.LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0));
+		//models.example.LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0));
+		models.example.LoadGeometry(engine::tools::getAssetPath() + "models/armor/armor.dae", &vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0), glm::vec2(1.0,-1.0));
+		//models.example.LoadGeometry(engine::tools::getAssetPath() + "models/medieval/Medieval_House.obj", &vertexLayoutInstanced, 0.01f, MODELS_NO, glm::vec3(0.0, 2.0, 0.0));
 
 		// Textures
 		if (vulkanDevice->features.textureCompressionBC) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
+			colorMap2 = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "models/armor/color_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
 		}
 		else if (vulkanDevice->features.textureCompressionASTC_LDR) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
+			colorMap2 = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/armor/color_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
 		}
 		else if (vulkanDevice->features.textureCompressionETC2) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
+			colorMap2 = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/armor/color_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
 		}
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
-
-		std::vector<glm::vec3> models_positions;
+				
 		models_positions.resize(LIGHTS_NO);
 
 		for (int i = 0; i < LIGHTS_NO; i++)
 		{
 			float x = randomFloat() * 100 - 50;
-			float y = randomFloat() * 100 - 50;
+			float z = randomFloat() * 100 - 50;
 			light_positions[i].x = x;
-			light_positions[i].z = y;
-			light_positions[i].y = -1.0f;
+			light_positions[i].z = z;
+			light_positions[i].y = 0.0f;
 
-			models_positions[i] = glm::vec3(x, 0, y);
+			models_positions[i] = glm::vec3(x, 0, z);
 
 			light_colors[i].x = randomFloat();
 			light_colors[i].y = randomFloat();
@@ -193,13 +214,7 @@ public:
 		//setup layouts
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
 		{
-			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
-		};
-
-		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> mirrorbindings
-		{
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
 
@@ -215,6 +230,13 @@ public:
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
 		layouts.deferred = vulkanDevice->GetDescriptorSetLayout(deferredbindings);
+
+		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> simpletexurebinding
+		{
+			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+		};
+		layouts.simpletexture = vulkanDevice->GetDescriptorSetLayout(simpletexurebinding);
 		
 	}
 
@@ -222,10 +244,11 @@ public:
 	{
 		// Example uses three ubos and two image samplers
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8)
+			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8),
+			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10),
+			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4)
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
 	}
 
 	void prepareUniformBuffers()
@@ -236,15 +259,13 @@ public:
 		uniformBuffers.fsdeferred = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboDeferred));
 
-		uniformBuffers.vsDebugQuad = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboShared));
-
 
 		// Map persistent
 		VK_CHECK_RESULT(uniformBuffers.vsModel->map());
 		VK_CHECK_RESULT(uniformBuffers.fsdeferred->map());
-		VK_CHECK_RESULT(uniformBuffers.vsDebugQuad->map());
 		updateUniformBuffers();
+
+		deferredLights.Init(uniformBuffers.vsModel,vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, LIGHTS_NO, scenepositions, scenenormals);
 	}
 
 	void updateUniformBuffers()
@@ -258,15 +279,10 @@ public:
 		uboShared.view = glm::rotate(uboShared.view, glm::radians(rotation.y + meshRot.y), glm::vec3(0.0f, 1.0f, 0.0f));
 		uboShared.view = glm::rotate(uboShared.view, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
+		uboShared.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 		uboShared.model = glm::translate(uboShared.model, meshPos);
 
 		memcpy(uniformBuffers.vsModel->m_mapped, &uboShared, sizeof(uboShared));
-
-		// Debug quad
-		uboShared.projection = glm::ortho(4.0f, 0.0f, 0.0f, 4.0f * (float)height / (float)width, -1.0f, 1.0f);
-		uboShared.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-
-		memcpy(uniformBuffers.vsDebugQuad->m_mapped, &uboShared, sizeof(uboShared));
 
 		for (int i = 0; i < LIGHTS_NO; i++)
 		{
@@ -277,15 +293,19 @@ public:
 
 	void setupDescriptors()
 	{
-		descriptorSets.model = vulkanDevice->GetDescriptorSet({ &uniformBuffers.vsModel->m_descriptor }, {},
+		descriptorSets.plane = vulkanDevice->GetDescriptorSet({ &uniformBuffers.vsModel->m_descriptor }, {&colorMap->m_descriptor},
 			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
 
-		models.example.AddDescriptor(descriptorSets.model);
-		models.plane.AddDescriptor(descriptorSets.model);
+		descriptorSets.model = vulkanDevice->GetDescriptorSet({ &uniformBuffers.vsModel->m_descriptor }, { &colorMap2->m_descriptor },
+			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
+
+		models.plane.AddDescriptor(descriptorSets.plane);
+		models.example.AddDescriptor(descriptorSets.model);	
 
 		descriptorSets.deferred = vulkanDevice->GetDescriptorSet({ &uniformBuffers.fsdeferred->m_descriptor },
 			{ &scenecolor->m_descriptor , &scenepositions->m_descriptor, &scenenormals->m_descriptor }, layouts.deferred->m_descriptorSetLayout, layouts.deferred->m_setLayoutBindings);
 
+		descriptorSets.simpletexture = vulkanDevice->GetDescriptorSet({}, { &scenecolor->m_descriptor , &sceneLightscolor->m_descriptor }, layouts.simpletexture->m_descriptorSetLayout, layouts.simpletexture->m_setLayoutBindings);
 	}
 
 	void setupPipelines()
@@ -297,16 +317,20 @@ public:
 		blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
 
 		pipelines.plane = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basiccolored.frag.spv", 
+			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.frag.spv", 
 			scenepass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
 		pipelines.model = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayoutInstanced.m_vertexInputBindings, vertexLayoutInstanced.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcoloredinstanced.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basiccolored.frag.spv",
+			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcoloredinstanced.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.frag.spv",
 			scenepass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
 		models.example.AddPipeline(pipelines.model);
 		models.plane.AddPipeline(pipelines.plane);
 
 		pipelines.deferred = vulkanDevice->GetPipeline(layouts.deferred->m_descriptorSetLayout, {}, {},
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/deferredlighting.frag.spv",
+			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,0,nullptr,0,nullptr,false,false);
+
+		pipelines.simpletexture = vulkanDevice->GetPipeline(layouts.simpletexture->m_descriptorSetLayout, {}, {},
+			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/posteffects/simpletexture.frag.spv",
 			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	}
 
@@ -321,13 +345,21 @@ public:
 			scenepass->Begin(drawCmdBuffers[i], 0);
 			models.example.Draw(drawCmdBuffers[i]);
 			models.plane.Draw(drawCmdBuffers[i]);
+
+			vkCmdNextSubpass(drawCmdBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
+			//vkCmdSetDepthTestEnable(drawCmdBuffers[i],true);
+			deferredLights.Draw(drawCmdBuffers[i]);
+
 			scenepass->End(drawCmdBuffers[i]);
 
 			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			
 			//draw here
-			pipelines.deferred->Draw(drawCmdBuffers[i]);
-			descriptorSets.deferred->Draw(drawCmdBuffers[i], pipelines.deferred->getPipelineLayout(), 0);
+			pipelines.simpletexture->Draw(drawCmdBuffers[i]);
+			descriptorSets.simpletexture->Draw(drawCmdBuffers[i], pipelines.simpletexture->getPipelineLayout(), 0);
 			vkCmdDraw(drawCmdBuffers[i], 3, 1, 0, 0);
+
+			//deferredLights.Draw(drawCmdBuffers[i]);
 
 			drawUI(drawCmdBuffers[i]);
 
@@ -368,19 +400,26 @@ public:
 		updateUniformBuffers();
 		draw();
 	}
-
+	float kk = 0;
 	virtual void update(float dt)
 	{
-		for (int i = 0; i < LIGHTS_NO; i++)
+		int j = 0;
+		for (int i = 0; i < deferredLights.m_pointLights.size(); i++)
 		{
-			uboDeferred.lights[i].position.x = light_positions[i].x + cos(glm::radians(timer * 360.0f)) * 3.0f;
-			uboDeferred.lights[i].position.z = light_positions[i].z + sin(glm::radians(timer * 360.0f)) * 3.0f;
-			uboDeferred.lights[i].position.y = -1.0f;
+			//deferredLights.m_pointLights[i] = glm::vec4();
+			deferredLights.m_pointLights[i].x = light_positions[j].x + cos(glm::radians(timer * 360.0f)) * 1.0f;
+			deferredLights.m_pointLights[i].z = light_positions[j].z + sin(glm::radians(timer * 360.0f)) * 1.0f;
+			deferredLights.m_pointLights[i].y = -1.0f;
 
-			uboDeferred.lights[i].color.x = light_colors[i].x;
-			uboDeferred.lights[i].color.y = light_colors[i].y;
-			uboDeferred.lights[i].color.z = light_colors[i].z;
+			deferredLights.m_pointLights[++i].x = light_colors[j].x;
+			deferredLights.m_pointLights[i].y = light_colors[j].y;
+			deferredLights.m_pointLights[i].z = light_colors[j].z;
+			j++;
 		}
+
+		deferredLights.Update();
+
+	
 	}
 
 	virtual void viewChanged()

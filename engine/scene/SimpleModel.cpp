@@ -13,7 +13,7 @@ namespace engine
 {
 	namespace scene
 	{
-		bool SimpleModel::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
+		bool SimpleModel::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec2 uvCoefficient)
 		{
 			//m_device = device->logicalDevice;
 
@@ -59,16 +59,6 @@ namespace engine
 				parts.clear();
 				parts.resize(pScene->mNumMeshes);
 
-				//glm::vec3 scale(scale);
-				glm::vec2 uvscale(1.0f);
-				//glm::vec3 center(0.0f);
-				/*if (createInfo)
-				{
-					scale = createInfo->scale;
-					uvscale = createInfo->uvscale;
-					center = createInfo->center;
-				}*/
-
 				// Load meshes
 				for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
 				{
@@ -113,8 +103,8 @@ namespace engine
 								geometry->m_vertices[vertex_index++] = pNormal->z;
 								break;
 							case render::VERTEX_COMPONENT_UV:
-								geometry->m_vertices[vertex_index++] = pTexCoord->x * uvscale.s;
-								geometry->m_vertices[vertex_index++] = pTexCoord->y * uvscale.t;
+								geometry->m_vertices[vertex_index++] = pTexCoord->x * uvCoefficient.s;
+								geometry->m_vertices[vertex_index++] = pTexCoord->y * uvCoefficient.t;
 								break;
 							case render::VERTEX_COMPONENT_COLOR:
 								geometry->m_vertices[vertex_index++] = pColor.r;

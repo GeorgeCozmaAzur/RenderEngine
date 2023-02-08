@@ -45,6 +45,7 @@ endfunction(buildExamples)
 
 set(EXAMPLES
 	deferred
+	deferredlights
 	emptyproject
 	reflections
 	shadowmapping
