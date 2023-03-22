@@ -47,8 +47,10 @@ set(EXAMPLES
 	deferred
 	deferredlights
 	emptyproject
+	normalparallax
 	reflections
 	shadowmapping
+	simplemodel
 	simpleposteffect
 	volumetriclighting
 )
