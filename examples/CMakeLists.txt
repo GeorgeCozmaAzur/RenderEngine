@@ -53,6 +53,7 @@ set(EXAMPLES
 	simplemodel
 	simpleposteffect
 	volumetriclighting
+	wind
 )
 
 buildExamples()
