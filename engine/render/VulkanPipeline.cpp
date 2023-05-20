@@ -57,7 +57,7 @@ namespace engine
 
 			if (vertexConstantBlockSize > 0)
 			{
-				VkPushConstantRange pushConstantRange = engine::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, vertexConstantBlockSize, 0);
+				VkPushConstantRange pushConstantRange = engine::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, vertexConstantBlockSize, 0);
 				pipelineLayoutCI.pushConstantRangeCount = 1;
 				pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
 			}

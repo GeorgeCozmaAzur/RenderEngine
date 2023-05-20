@@ -262,7 +262,7 @@ namespace engine
 			_pipeline->Draw(commandBuffer);
 			pushConstBlock.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
 			pushConstBlock.translate = glm::vec2(-1.0f);
-			vkCmdPushConstants(commandBuffer, _pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
+			vkCmdPushConstants(commandBuffer, _pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
 
 			m_descriptorSets[0]->Draw(commandBuffer, _pipeline->getPipelineLayout(), 0);
 

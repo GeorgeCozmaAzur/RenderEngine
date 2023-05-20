@@ -207,7 +207,7 @@ namespace engine
 			m_width = static_cast<uint32_t>(texCube.extent().x);
 			m_height = static_cast<uint32_t>(texCube.extent().y);
 			m_mips_no = static_cast<uint32_t>(texCube.levels());
-			m_layers_no = static_cast<uint32_t>(texCube.layers());
+			m_layers_no = static_cast<uint32_t>(texCube.faces());
 
 			m_imageSize = texCube.size();
 			m_ram_data = new char[m_imageSize];

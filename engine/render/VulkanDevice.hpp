@@ -628,6 +628,27 @@ namespace engine
 			return tex;
 		}
 
+		VulkanTexture* GetTextureCubeMap(uint32_t dimension, VkFormat format, VkQueue copyQueue, VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			VulkanTexture* tex = new VulkanTexture;
+
+			const uint32_t numMips = static_cast<uint32_t>(floor(log2(dimension))) + 1;
+
+			VkFormatProperties formatProperties;
+			vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
+
+			tex->Create(logicalDevice, &memoryProperties, { dimension, dimension, 1}, format, imageUsageFlags,
+				imageLayout,
+				numMips, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
+
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_CUBE, VK_IMAGE_ASPECT_COLOR_BIT, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
+
+			m_textures.push_back(tex);
+
+			return tex;
+		}
+
 		VulkanTexture* GetTextureStorage(VkExtent3D extent, VkFormat format, VkQueue copyQueue,
 			VkImageViewType viewType,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_GENERAL,

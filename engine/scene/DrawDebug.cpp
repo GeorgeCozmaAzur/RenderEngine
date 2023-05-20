@@ -78,5 +78,60 @@ namespace engine
 				memcpy(uniformBufferVS->m_mapped, &uboVSdepth, sizeof(uboVSdepth));
 			}
 		}
+
+		void DrawDebugVectors::CreateDebugVectorsGeometry(glm::vec3 position, std::vector<glm::vec3> directions, std::vector<glm::vec3> colors)
+		{
+			Geometry* geo = new Geometry;
+			geo->m_indexCount = directions.size() * 2;
+			geo->m_indices = new uint32_t[geo->m_indexCount];
+			int ii = 0;
+			for (int i = 0; i < directions.size(); i++)
+			{
+				geo->m_indices[ii++] = 0;
+				geo->m_indices[ii++] = i + 1;
+			}
+
+			int vindex = 0;
+			geo->m_vertexCount = directions.size() + 1;
+			geo->m_verticesSize = geo->m_vertexCount * 6;
+			geo->m_vertices = new float[geo->m_verticesSize];
+
+			geo->m_vertices[vindex++] = position.x;
+			geo->m_vertices[vindex++] = position.y;
+			geo->m_vertices[vindex++] = position.z;
+			geo->m_vertices[vindex++] = 1.0;
+			geo->m_vertices[vindex++] = 1.0;
+			geo->m_vertices[vindex++] = 1.0;
+
+			for (int i = 0; i < directions.size(); i++)
+			{
+				geo->m_vertices[vindex++] = position.x + directions[i].x;
+				geo->m_vertices[vindex++] = position.y + directions[i].y;
+				geo->m_vertices[vindex++] = position.z + directions[i].z;
+				geo->m_vertices[vindex++] = colors[i].x;//abs(directions[i].x);
+				geo->m_vertices[vindex++] = colors[i].y;//abs(directions[i].y);
+				geo->m_vertices[vindex++] = colors[i].z;//abs(directions[i].z);
+			}
+
+			geo->m_instanceNo = 1;
+			m_geometries.push_back(geo);
+		}
+
+		void DrawDebugVectors::Init(render::VulkanDevice* vulkanDevice, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache)
+		{
+			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
+			{
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
+			};
+			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(bindings);
+
+			_vertexLayout = &debugVertexLayout;
+
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &globalUniformBufferVS->m_descriptor }, {},
+				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
+
+			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
+				engine::tools::getAssetPath() + "shaders/basic/debug.vert.spv", engine::tools::getAssetPath() + "shaders/basic/debug.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+		}
 	}
 }

@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <string>
 
-#include <gli/gli.hpp>
-
 #include "VulkanTools.h"
 
 #if defined(__ANDROID__)
