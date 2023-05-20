@@ -131,7 +131,7 @@ namespace engine
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/basic/debug.vert.spv", engine::tools::getAssetPath() + "shaders/basic/debug.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+				engine::tools::getAssetPath() + "shaders/drawdebug/colored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
 		}
 	}
 }
