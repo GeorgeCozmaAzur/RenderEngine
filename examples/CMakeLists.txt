@@ -48,6 +48,10 @@ set(EXAMPLES
 	deferredlights
 	emptyproject
 	normalparallax
+	pbr
+	pbribl
+	pbribltextured
+	planetsexplorer
 	reflections
 	shadowmapping
 	simplemodel
