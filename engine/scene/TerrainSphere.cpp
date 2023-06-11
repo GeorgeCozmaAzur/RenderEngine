@@ -5,14 +5,62 @@ namespace engine
 {
 	namespace scene
 	{
-		void UVSphere::Init(const std::string& filename, float radius, render::VulkanDevice* vulkanDevice, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, VkQueue queue)
+		uint32_t* TerrainUVSphere::BuildPatchIndices(int offsetX, int offsetY, int width, int height, int& size)
+		{
+			size = (width) * (height - 1) * 6;
+			uint32_t* indices = new uint32_t[size];
+
+			for (int y = 0; y < height - 1; y++)
+			{
+				for (int x = 0; x < width; x++)
+				{
+					int i = x + y * (width );
+					int vi = x + y * width;
+
+					int x0y0 = vi;
+					int x1y0 = vi + 1;
+					int x0y1 = vi + width;
+					int x1y1 = vi + width + 1;
+
+					if (x == (width - 1))
+					{
+						x1y0 = y * width;
+						x1y1 = (y+1) * width;
+					}
+
+
+					/*   0___
+					 *   |  /|
+					 *   | / |
+					 *   |/__|
+					 *
+					 */
+					 /*indices[i * 6 + 0] = x1y0;
+					 indices[i * 6 + 1] = x0y0;
+					 indices[i * 6 + 2] = x0y1;*/
+					indices[i * 6 + 0] = x1y0;
+					indices[i * 6 + 1] = x0y1;
+					indices[i * 6 + 2] = x0y0;
+					indices[i * 6 + 3] = x0y1;
+					indices[i * 6 + 4] = x1y0;
+					indices[i * 6 + 5] = x1y1;
+
+				}
+			}
+
+			return indices;
+		}
+
+		void TerrainUVSphere::Init(const std::string& filename, float radius, render::VulkanDevice* vulkanDevice, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, VkDeviceSize vertexUniformBufferSize, VkDeviceSize fragmentUniformBufferSize, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue, int fallbackRings, int fallbackSlices)
 		{
 			_vertexLayout = vertex_layout;
-	
-			LoadHeightmap(filename, 2.0);
 
-			int slices = m_width;
-			int rings = m_length;
+			m_radius = radius;
+	
+			bool haveHeightmap = LoadHeightmap(filename, 2.0);
+
+			int slices = haveHeightmap ? m_width : fallbackSlices;
+			int rings = haveHeightmap ? m_length : fallbackRings;
 
 			Geometry* geometry = new Geometry;
 			geometry->m_vertexCount = (rings - 1) * slices;
@@ -37,7 +85,9 @@ namespace engine
 				{
 					auto theta = 2.0 * M_PI * double(j) / double(slices);
 
-					finalradius = radius + GetHeight(j, i) * 0.1f;
+					float height = haveHeightmap ? GetHeight(j, i) : 0.0f;
+
+					finalradius = radius + height * radius * 0.01f;
 					auto x = std::sin(phi) * std::cos(theta) * finalradius;
 					auto y = std::cos(phi) * finalradius;
 					auto z = std::sin(phi) * std::sin(theta) * finalradius;
@@ -49,19 +99,22 @@ namespace engine
 							geometry->m_vertices[vertex_index++] = x;
 							geometry->m_vertices[vertex_index++] = y;
 							geometry->m_vertices[vertex_index++] = z;
-							positions.push_back(glm::vec3(x,y,z));
+							positions.push_back(glm::vec3(x, y, z));
 							break;
 						case render::VERTEX_COMPONENT_NORMAL:
-							glm::vec3 normal(x,y,z);
+							glm::vec3 normal(x, y, z);
 							normal = glm::normalize(normal);
 							geometry->m_vertices[vertex_index++] = normal.x;
 							geometry->m_vertices[vertex_index++] = normal.y;
 							geometry->m_vertices[vertex_index++] = normal.z;
 							normals.push_back(normal);
-							glm::vec3 heightmapnormal = GetNormal(j, i);
-							heightmapnormals.push_back(heightmapnormal);
-							tangents.push_back(glm::vec3(0.0f));
-							bitangents.push_back(glm::vec3(0.0f));
+							if (haveHeightmap)
+							{
+								glm::vec3 heightmapnormal = GetNormal(j, i);
+								heightmapnormals.push_back(heightmapnormal);
+								tangents.push_back(glm::vec3(0.0f));
+								bitangents.push_back(glm::vec3(0.0f));
+							}
 							break;
 						case render::VERTEX_COMPONENT_UV:
 						{
@@ -99,7 +152,7 @@ namespace engine
 			geometry->m_indices = BuildPatchIndices(0, 0, slices, rings-1, sizeofindices);
 			geometry->m_indexCount = sizeofindices;
 
-			hastangents = true;
+			hastangents = haveHeightmap;
 
 			if (hastangents)
 			{
@@ -172,14 +225,35 @@ namespace engine
 			geometry->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_verticesSize * sizeof(float), geometry->m_vertices), true);
 			m_geometries.push_back(geometry);
 
-			uniformBufferVS = vulkanDevice->GetUniformBuffer(sizeof(uboVS), true, queue);
-			uniformBufferVS->map();
+			if (vertexUniformBufferSize > 0)
+			{
+				uniformBufferVS = vulkanDevice->GetUniformBuffer(vertexUniformBufferSize, true, queue);
+				uniformBufferVS->map();
+			}
+			if (fragmentUniformBufferSize > 0)
+			{
+				uniformBufferFS = vulkanDevice->GetUniformBuffer(fragmentUniformBufferSize, true, queue);
+				uniformBufferFS->map();
+			}
+
+			std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
+			buffersDescriptors.push_back(&globalUniformBufferVS->m_descriptor);
 
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 			{
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
 			};
+			if (vertexUniformBufferSize)
+			{
+				bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT });
+				buffersDescriptors.push_back(&uniformBufferVS->m_descriptor);
+			}
+			if (fragmentUniformBufferSize)
+			{
+				bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
+				buffersDescriptors.push_back(&uniformBufferFS->m_descriptor);
+			}
+
 			for (auto desc : texturesDescriptors)
 			{
 				bindings.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT });
@@ -187,14 +261,14 @@ namespace engine
 
 			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(bindings);
 
-			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &globalUniformBufferVS->m_descriptor, &uniformBufferVS->m_descriptor }, texturesDescriptors,
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(buffersDescriptors, texturesDescriptors,
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/" + vertexShaderFilename +".vert.spv", engine::tools::getAssetPath() + "shaders/" + fragmentShaderFilename + ".frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+				engine::tools::getAssetPath() + "shaders/" + vertexShaderFilename +".vert.spv", engine::tools::getAssetPath() + "shaders/" + fragmentShaderFilename + ".frag.spv", renderPass, pipelineCache, pipelineProperties);
 		}
 
-		void UVSphere::UpdateUniforms(glm::mat4& model)
+		void TerrainUVSphere::UpdateUniforms(glm::mat4& model)
 		{
 			if(uniformBufferVS)
 			uniformBufferVS->copyTo(&model, sizeof(model));

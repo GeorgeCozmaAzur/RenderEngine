@@ -1142,6 +1142,9 @@ void VulkanExampleBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	{
 		short wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
 		zoom += (float)wheelDelta * 0.005f * zoomSpeed;
+		if (camera.subtype == scene::Camera::surface)
+			camera.translateSphere(glm::vec3((float)wheelDelta * 0.0001f * camera.movementSpeed, 0.0f, 0.0f));
+		else
 		camera.translate(glm::vec3(0.0f, 0.0f, (float)wheelDelta * 0.005f * zoomSpeed));
 		viewUpdated = true;
 		break;

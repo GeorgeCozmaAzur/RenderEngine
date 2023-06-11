@@ -7,12 +7,13 @@ namespace engine
 {
 	namespace scene
 	{
-		void Terrain::LoadHeightmap(const std::string& filename, float scale)
+		bool Terrain::LoadHeightmap(const std::string& filename, float scale)
 		{
 			int texWidth, texHeight, texChannels;
 			stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
-			assert(pixels);
+			if (!pixels)
+				return false;
 
 			int m_imageSize = texWidth * texHeight * 4;
 
@@ -44,6 +45,8 @@ namespace engine
 			computedNormals = false;
 
 			ComputeNormals();
+
+			return true;
 		}
 
 		void Terrain::ComputeNormals() {
@@ -367,12 +370,15 @@ namespace engine
 					 *   |/__|
 					 *
 					 */
-					indices[i * 6 + 0] = x1y0;
+					/*indices[i * 6 + 0] = x1y0;
 					indices[i * 6 + 1] = x0y0;
-					indices[i * 6 + 2] = x0y1;
+					indices[i * 6 + 2] = x0y1;*/
+					indices[i * 6 + 0] = x1y0;
+					indices[i * 6 + 1] = x0y1;
+					indices[i * 6 + 2] = x0y0;
 					indices[i * 6 + 3] = x0y1;
-					indices[i * 6 + 4] = x1y1;
-					indices[i * 6 + 5] = x1y0;
+					indices[i * 6 + 4] = x1y0;
+					indices[i * 6 + 5] = x1y1;
 
 				}
 			}

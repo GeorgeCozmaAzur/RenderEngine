@@ -23,41 +23,96 @@ namespace engine
 			float m_fov;
 			float m_znear, m_zfar;
 
-			Frustum m_frustum;
+			glm::vec3 m_SpherePosition = glm::vec3();
+			float m_SphereRadius = 1.0f;
+			float m_theta = 0.0f;
+			float m_phi = 0.0f;
 
-			void updateViewMatrix()
+			Frustum m_frustum;
+		public:
+			void updateViewMatrix(glm::mat4 externalmat = glm::mat4(1.0f))
 			{
 				glm::mat4 rotM = glm::mat4(1.0f);
 				glm::mat4 transM;
 
-				rotM = glm::rotate(rotM, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-				rotM = glm::rotate(rotM, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-				rotM = glm::rotate(rotM, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-
-				transM = glm::translate(glm::mat4(1.0f), position);
-
-				if (type == CameraType::firstperson)
+				if (subtype == Camera::normal)
 				{
-					matrices.view = rotM * transM;
+					rotM = glm::rotate(rotM, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+					rotM = glm::rotate(rotM, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+					rotM = glm::rotate(rotM, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+					transM = glm::translate(glm::mat4(1.0f), position);
+					if (type == CameraType::firstperson)
+					{
+						matrices.view = rotM * transM;
+					}
+					else
+					{
+						matrices.view = transM * rotM;
+					}
 				}
 				else
 				{
-					matrices.view = transM * rotM;
+					rotM = glm::rotate(rotM, float(-m_phi), glm::vec3(0.0f, 1.0f, 0.0f));
+					rotM = glm::rotate(rotM, float(-m_theta), glm::vec3(0.0f, 0.0f, 1.0f));
+
+					camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
+					camFront.y = sin(glm::radians(rotation.x));
+					camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
+
+					camWorldFront = rotM * glm::vec4(glm::normalize(camFront), 0.0);
+
+					glm::vec3 WorldUp = -glm::normalize(position);
+					glm::vec3 Right = glm::normalize(glm::cross(camWorldFront, WorldUp));
+					glm::vec3 Up = glm::normalize(glm::cross(Right, camWorldFront));
+					lookatpoint = position + camWorldFront;
+					matrices.view = glm::lookAt(position, lookatpoint, Up);
 				}
+				
+				matrices.view = matrices.view * externalmat;
 
 				updated = true;
 			};
 		public:
 			enum CameraType { lookat, firstperson };
+			enum CameraSubType { normal, surface };
 			CameraType type = CameraType::lookat;
+			CameraSubType subtype = CameraSubType::normal;
 
 			glm::vec3 rotation = glm::vec3();
 			glm::vec3 position = glm::vec3();
+			glm::vec3 camFront;
+			glm::vec3 camWorldFront;
+			glm::vec3 lookatpoint;
 
 			float rotationSpeed = 1.0f;
 			float movementSpeed = 1.0f;
 
 			bool updated = false;
+
+			void ToSphere(glm::vec3 point)
+			{
+				m_SphereRadius = sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+				m_theta = acos(point.y / m_SphereRadius);
+				m_phi = atan2(point.z, point.x);
+			}
+
+			glm::vec3 ToSphereV(glm::vec3 point)
+			{				
+				float radius = sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+				//std::cout << "a = " << point.y / radius << " b = " << acos(point.y / radius) << std::endl;
+				return glm::vec3(radius,
+				 acos(point.y / radius),
+				 atan2(point.z, point.x));
+			}
+
+			glm::vec3 ToCartesian()
+			{
+				
+				return glm::vec3(m_SphereRadius * sin(m_theta) * cos(m_phi),
+					m_SphereRadius * cos(m_theta),
+					m_SphereRadius * sin(m_theta) * sin(m_phi)
+					);				
+			}
 
 			struct
 			{
@@ -72,6 +127,11 @@ namespace engine
 				bool up = false;
 				bool down = false;
 			} keys;
+
+			glm::vec3 GetWorldPosition()
+			{
+				return -matrices.view[3];
+			}
 
 			bool moving()
 			{
@@ -120,6 +180,8 @@ namespace engine
 			void setTranslation(glm::vec3 translation)
 			{
 				this->position = translation;
+				if(type == surface)
+				ToSphere(translation);
 				updateViewMatrix();
 			};
 
@@ -128,6 +190,15 @@ namespace engine
 				this->position += delta;
 				updateViewMatrix();
 			}
+			void translateSphere(glm::vec3 delta)
+			{
+				this->m_SphereRadius += delta.x;
+				this->m_theta += delta.y;
+				this->m_phi += delta.z;
+				position = ToCartesian();
+				updateViewMatrix();
+			}
+			
 
 			void update(float deltaTime)
 			{
@@ -136,7 +207,7 @@ namespace engine
 				{
 					if (moving())
 					{
-						glm::vec3 camFront;
+						//glm::vec3 camFront;
 						camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
 						camFront.y = sin(glm::radians(rotation.x));
 						camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
@@ -145,13 +216,57 @@ namespace engine
 						float moveSpeed = deltaTime * movementSpeed;
 
 						if (keys.up)
+						{
+							if(subtype != CameraSubType::surface)
 							position += camFront * moveSpeed;
+							else
+							{
+								glm::vec3 lookatpoint2 = position + camWorldFront * moveSpeed;
+								//std::cout << "otheta = " << m_theta << " ophi = " << m_phi << std::endl;
+								//std::cout << "x = " << position.x << " y = " << position.y << " z = " << position.z << "  ";
+								//std::cout << "lx = " << lookatpoint2.x << " ly = " << lookatpoint2.y << " lz = " << lookatpoint2.z << "  ";
+								glm::vec3 sc = ToSphereV(lookatpoint2);
+								//std::cout << "theta = " << sc.y << " phi = " << sc.z << std::endl;
+								m_theta = sc.y;
+								m_phi = sc.z;
+								//m_theta -= moveSpeed * 0.001;
+								position = ToCartesian();
+							}
+						}
 						if (keys.down)
+						{
+							if (subtype != CameraSubType::surface)
 							position -= camFront * moveSpeed;
+							else
+							{
+								glm::vec3 lookatpoint2 = position - camWorldFront * moveSpeed;
+								glm::vec3 sc = ToSphereV(lookatpoint2);
+								m_theta = sc.y;
+								m_phi = sc.z;
+								//m_theta -= moveSpeed * 0.001;
+								position = ToCartesian();
+							}
+						}
 						if (keys.left)
+						{
+							if (subtype != CameraSubType::surface)
 							position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+							else
+							{
+								m_phi += moveSpeed * 0.001;
+								position = ToCartesian();
+							}
+						}
 						if (keys.right)
+						{
+							if (subtype != CameraSubType::surface)
 							position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+							else
+							{
+								m_phi -= moveSpeed * 0.001;
+								position = ToCartesian();
+							}
+						}
 
 						updateViewMatrix();
 					}
@@ -172,7 +287,7 @@ namespace engine
 					const float deadZone = 0.0015f;
 					const float range = 1.0f - deadZone;
 
-					glm::vec3 camFront;
+					
 					camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
 					camFront.y = sin(glm::radians(rotation.x));
 					camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));

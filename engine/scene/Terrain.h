@@ -11,8 +11,8 @@ namespace engine
 		protected:
 			int m_width; 
 			int m_length; 
-			float** m_heights; 
-			glm::vec3** m_normals;
+			float** m_heights = NULL;
+			glm::vec3** m_normals = NULL;
 			bool computedNormals; //Whether normals is up-to-date
 		public:
 			Terrain() {}
@@ -40,7 +40,7 @@ namespace engine
 
 			void ComputeNormals();
 
-			uint32_t* BuildPatchIndices(int offsetX, int offsetY, int width, int heights, int& size);
+			virtual uint32_t* BuildPatchIndices(int offsetX, int offsetY, int width, int heights, int& size);
 
 			glm::vec3 GetNormal(int x, int z) {
 				if (!computedNormals) {
@@ -49,7 +49,7 @@ namespace engine
 				return m_normals[z][x];
 			}
 
-			void LoadHeightmap(const std::string& filename, float scale);
+			bool LoadHeightmap(const std::string& filename, float scale);
 
 			//static Terrain* LoadTerrain(std::string filename, float height, engine::EngineDevice *vdevice, VkQueue copyQueue);
 			bool LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos = glm::vec3(0.0f));

@@ -785,6 +785,18 @@ namespace engine
 			return pipeline;
 		}
 
+		VulkanPipeline* GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
+			std::vector<VkVertexInputBindingDescription> vertexInputBindings, std::vector<VkVertexInputAttributeDescription> vertexInputAttributes,
+			std::string vertexFile, std::string fragmentFile,
+			VkRenderPass renderPass, VkPipelineCache cache,
+			PipelineProperties properties)
+		{
+			VulkanPipeline* pipeline = new VulkanPipeline;
+			pipeline->Create(logicalDevice, descriptorSetLayout, vertexInputBindings, vertexInputAttributes, vertexFile, fragmentFile, renderPass, cache, properties);
+			m_pipelines.push_back(pipeline);
+			return pipeline;
+		}
+
 		VulkanPipeline* GetComputePipeline(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache)
 		{
 			VulkanPipeline* pipeline = new VulkanPipeline;
