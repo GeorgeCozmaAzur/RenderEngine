@@ -14,6 +14,9 @@ layout (location = 0) out vec4 outFragColor;
 void main() 
 {
 	vec4 tex_color = texture(samplerColor, inUV);
+	// if (tex_color.a < 0.5) {
+		// discard;
+	// }
 	
 	vec3 lightDir = normalize(inLightPos - inPosition);  
 	float diff = max(dot(inNormal, lightDir), 0.0);
@@ -24,6 +27,7 @@ void main()
 	//vec3 specular = specularStrength * spec * lightColor;  
 
 	//outFragColor = vec4(inCamPosition, 1.0);
-	//vec4 own_color = vec4(frag_ubo.diffuse, frag_ubo.transparency);
-	outFragColor = ( diff) * tex_color;
+	vec4 own_color = (tex_color) + vec4(0.0,0.2,0.5,0.0);
+	outFragColor = own_color;
+	//outFragColor = vec4(inUV.x, inUV.y, 0.0,1.0);
 }

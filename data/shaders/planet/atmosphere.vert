@@ -30,9 +30,9 @@ out gl_PerVertex {
 
 void main() 
 {
-	outNormal = mat3(oubo.model) * inNormal;
+	outNormal =  inNormal;
 	outUV = inUV;
-	outPos = vec3(oubo.model * vec4(inPos.xyz, 1.0));
+	outPos = vec3( vec4(inPos.xyz, 1.0));//era inmultit cu model
 	outLightPos = ubo.light_pos.xyz;
 	outCamPos = ubo.camera_pos;
 	
