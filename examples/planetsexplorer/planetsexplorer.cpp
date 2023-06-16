@@ -112,7 +112,7 @@ public:
 
 	float planetrotation = 0.0f;
 
-	float h0 = 7.994;
+	float h0 = 0.25;//7.994;
 
 	VulkanExample() : VulkanExampleBase(true)
 	{

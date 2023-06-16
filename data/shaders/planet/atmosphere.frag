@@ -83,7 +83,7 @@ vec3 computeSkyColor(vec3 ray, vec3 origin)
     for (int i = 0; i < viewSamples; ++i)
     {
         vec3 vSample = origin + ray * (tCurrent + segmentLen * 0.5);
-        float height = length(vSample) - PlanetRadius;
+        float height = (length(vSample) - PlanetRadius)/(AtmosphereRadius - PlanetRadius);
 
         float h_R = exp(-height / rayleighHeight) * segmentLen;
         optDepth_R += h_R;
@@ -96,7 +96,7 @@ vec3 computeSkyColor(vec3 ray, vec3 origin)
         for (int j = 0; j < lightSamples; ++j)
         {
             vec3 lSample = vSample + sunDir * (tCurrentLight + segmentLenLight * 0.5);
-            float heightLight = length(lSample) - PlanetRadius;           
+            float heightLight = (length(lSample) - PlanetRadius)/(AtmosphereRadius - PlanetRadius);          
             optDepthLight_R += exp(-heightLight / rayleighHeight) * segmentLenLight;
             tCurrentLight += segmentLenLight;
         }
