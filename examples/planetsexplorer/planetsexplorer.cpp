@@ -86,7 +86,7 @@ public:
 		//float beta_M;   // Mie scattering coefficient
 		//float H_R;      // Rayleigh scale height
 		//float H_M;      // Mie scale height
-		//float g;        // Mie scattering direction - 
+		float g;        // Mie scattering direction 
 	} modelUniformAtmosphereFS;
 	render::VulkanBuffer* modelAtmosphereFragmentUniformBuffer;
 
@@ -113,6 +113,7 @@ public:
 	float planetrotation = 0.0f;
 
 	float h0 = 0.25;//7.994;
+	float mh0 = 0.25;//7.994;
 
 	VulkanExample() : VulkanExampleBase(true)
 	{
@@ -437,9 +438,9 @@ public:
 			modelUniformAtmosphereFS.sun = glm::vec4( glm::vec3(glm::inverse(modelmatrix) * glm::vec4(0.0,0.0,0.0, 1.0f)), 20.0f);//modelmatrix[3];
 			modelUniformAtmosphereFS.cameraPosition = glm::vec4(camera.position, 1.0f);//modelmatrix * glm::vec4(0.0, 0.0, 0.0, 1.0f);
 			modelUniformAtmosphereFS.viewDirection = glm::vec4(camera.camWorldFront, 1.0f);//modelmatrix * glm::vec4(0.0, 0.0, 0.0, 1.0f);
-			modelUniformAtmosphereFS.dimensions = glm::vec4(myplanet.GetRadius(), atmosphere.GetRadius(), h0, 1.200);
+			modelUniformAtmosphereFS.dimensions = glm::vec4(myplanet.GetRadius(), atmosphere.GetRadius(), h0, mh0);
 			modelUniformAtmosphereFS.scatteringCoefficients = glm::vec4(5.8e-3f, 13.5e-3f, 33.1e-3f, 21e-3f);
-			//modelUniformAtmosphereFS.g = 0.888;
+			modelUniformAtmosphereFS.g = 0.888;
 			atmosphere.GetFSUniformBuffer()->copyTo(&modelUniformAtmosphereFS, sizeof(modelUniformAtmosphereFS));
 		}
 
@@ -506,6 +507,9 @@ public:
 	{
 		if (overlay->header("Settings")) {
 			if (ImGui::SliderFloat("Rayleigh scale height", &h0, 0.0f, 20.0f))
+			{
+			}
+			if (ImGui::SliderFloat("Mie scale height", &mh0, 0.0f, 10.0f))
 			{
 			}
 		}

@@ -18,7 +18,7 @@ layout (binding = 2) uniform UboView
 	vec4	viewDirection;
 	vec4	dimensions;//radius of the planet, radius of the atmosphere, Rayleigh scale height, Mie scale height
 	vec4	scatteringCoefficients;//Rayleigh and Mie scattering coefficiants
-	//float g;        // Mie scattering direction wip
+	float g;        // Mie scattering direction wip
 	
 } ubo;
 
@@ -58,7 +58,7 @@ vec3 computeSkyColor(vec3 ray, vec3 origin)
 	float PlanetRadius = ubo.dimensions.x;
 	float AtmosphereRadius = ubo.dimensions.y;
 	float rayleighHeight = ubo.dimensions.z;
-	//float mieHeight = ubo.dimensions.w;
+	float mieHeight = ubo.dimensions.w;
 	
     vec2 t = raySphereIntersection(vec3(0,0,0), origin, ray, AtmosphereRadius);
     // Intersects behind
@@ -72,13 +72,20 @@ vec3 computeSkyColor(vec3 ray, vec3 origin)
     float tCurrent = 0.0f; 
 
     vec3 sum_R = vec3(0.0);
+    vec3 sum_M = vec3(0.0);
 
     float optDepth_R = 0.0;
+    float optDepth_M = 0.0;
 
     float mu = dot(ray, sunDir);
     float mu_2 = mu * mu;
     
     float phase_R = 3.0 / (16.0 * M_PI) * (1.0 + mu_2);
+	
+    float g_2 = ubo.g * ubo.g;
+    float phase_M = 3.0 / (8.0 * M_PI) * 
+                          ((1.0 - g_2) * (1.0 + mu_2)) / 
+                          ((2.0 + g_2) * pow(1.0 + g_2 - 2.0 * ubo.g * mu, 1.5));
 
     for (int i = 0; i < viewSamples; ++i)
     {
@@ -86,33 +93,40 @@ vec3 computeSkyColor(vec3 ray, vec3 origin)
         float height = (length(vSample) - PlanetRadius)/(AtmosphereRadius - PlanetRadius);
 
         float h_R = exp(-height / rayleighHeight) * segmentLen;
-        optDepth_R += h_R;
+		float h_M = exp(-height / mieHeight) * segmentLen;
+		optDepth_R += h_R;
+		optDepth_M += h_M;
 
         float segmentLenLight = raySphereIntersection(vec3(0,0,0), vSample, sunDir, AtmosphereRadius).y / float(lightSamples);
         float tCurrentLight = 0.0;
 
-        float optDepthLight_R = 0.0;
+		float optDepthLight_R = 0.0;
+		float optDepthLight_M = 0.0;
 
         for (int j = 0; j < lightSamples; ++j)
         {
             vec3 lSample = vSample + sunDir * (tCurrentLight + segmentLenLight * 0.5);
             float heightLight = (length(lSample) - PlanetRadius)/(AtmosphereRadius - PlanetRadius);          
             optDepthLight_R += exp(-heightLight / rayleighHeight) * segmentLenLight;
-            tCurrentLight += segmentLenLight;
+			optDepthLight_M += exp(-heightLight / mieHeight) * segmentLenLight;
+			tCurrentLight += segmentLenLight;
         }
 
-        vec3 att = exp(-(ubo.scatteringCoefficients.xyz * (optDepth_R + optDepthLight_R)));
-        sum_R += h_R * att;
+        vec3 att = exp(-(ubo.scatteringCoefficients.xyz * (optDepth_R + optDepthLight_R) + 
+						ubo.scatteringCoefficients.w * 1.1f * (optDepth_M + optDepthLight_M)));
+		sum_R += h_R * att;
+		sum_M += h_M * att;
 
         tCurrent += segmentLen;
     }
 	
-    return I_sun * (sum_R * ubo.scatteringCoefficients.xyz * phase_R);
+    return I_sun * (sum_R * ubo.scatteringCoefficients.xyz * phase_R + sum_M * ubo.scatteringCoefficients.w * phase_M);
 }
 
 void main() 
 {
 	vec3 rayOrigin = ubo.cameraPosition.xyz;
 	vec3 acolor = computeSkyColor(normalize(inPosition - rayOrigin), rayOrigin);
-    outFragColor = vec4(acolor, 0.5);
+	acolor = mix(acolor, (1.0 - exp(-1.0 * acolor)), 1.0);
+	outFragColor = vec4(acolor, 0.8);
 }
