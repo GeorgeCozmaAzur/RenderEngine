@@ -330,7 +330,7 @@ public:
 			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,0,nullptr,0,nullptr,false,false);
 
 		pipelines.simpletexture = vulkanDevice->GetPipeline(layouts.simpletexture->m_descriptorSetLayout, {}, {},
-			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/posteffects/simpletexture.frag.spv",
+			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/posteffects/doubletexture.frag.spv",
 			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	}
 
