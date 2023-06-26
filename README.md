@@ -45,6 +45,9 @@ Normal mapping and parallax mapping in one shader.
 ### pbr pbribl pbribltextured
 PBR techniques.
 
+### planetsexplorer
+Reads a heightmap and maps it on sphere to simulate the planet's topography. Camera moves on it surface while the planet is spining around another one. It also contains atmospheric scattering.
+
 ### reflections
 Basic reflections.
 
