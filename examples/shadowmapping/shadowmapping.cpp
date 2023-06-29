@@ -98,6 +98,7 @@ public:
 		VulkanDescriptorSetLayout *offscreen_layout;
 		VertexLayout *scene_vlayout;
 		VulkanDescriptorSetLayout *scene_layout;
+		VulkanDescriptorSetLayout *filter_layout;
 	} layouts;
 
 	struct {
@@ -105,18 +106,32 @@ public:
 		VulkanPipeline *offscreen;
 		VulkanPipeline *sceneShadow;
 		VulkanPipeline *sceneShadowPCF;
+		//VulkanPipeline* filterSM;
 	} pipelines;
 
 	struct {
 		VulkanDescriptorSet *offscreen;
 		VulkanDescriptorSet *scene;
 		VulkanDescriptorSet *tree;
+		//VulkanDescriptorSet *filterSM;
 	} descriptorSets;
 
 	VulkanTexture* trunktex;
 
 	VulkanTexture* shadowtex = nullptr;
+	VulkanTexture* shadowmapColor = nullptr;
+	//VulkanTexture* shadowmapColorFiltered = nullptr;
+
 	VulkanRenderPass *offscreenPass;
+	//VulkanRenderPass *filterPass;
+
+	struct {
+		int32_t techniqueIndex = 0;
+	} uboFS;
+	render::VulkanBuffer* uniformBufferFS = nullptr;
+
+	std::vector<std::string> techniquesNames;
+	//int32_t techniqueIndex = 0;
 
 	VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
 	{
@@ -145,9 +160,15 @@ public:
 	void prepareOffscreenRenderpass()
 	{
 		shadowtex = vulkanDevice->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true);
-		offscreenPass = vulkanDevice->GetRenderPass({{ shadowtex->m_format, shadowtex->m_descriptor.imageLayout }});
-		VulkanFrameBuffer *fb = vulkanDevice->GetFrameBuffer(offscreenPass->GetRenderPass(), SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowtex->m_descriptor.imageView });
+		shadowmapColor = vulkanDevice->GetColorRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, FB_COLOR_HDR_FORMAT);
+		/*shadowmapColorFiltered = vulkanDevice->GetColorRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, FB_COLOR_HDR_FORMAT);*/
+		offscreenPass = vulkanDevice->GetRenderPass({ { shadowmapColor->m_format, shadowmapColor->m_descriptor.imageLayout}, { shadowtex->m_format, shadowtex->m_descriptor.imageLayout }});
+		VulkanFrameBuffer *fb = vulkanDevice->GetFrameBuffer(offscreenPass->GetRenderPass(), SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor->m_descriptor.imageView, shadowtex->m_descriptor.imageView });
 		offscreenPass->AddFrameBuffer(fb);
+
+		/*filterPass = vulkanDevice->GetRenderPass({ shadowmapColorFiltered }, 0);
+		fb = vulkanDevice->GetFrameBuffer(filterPass->GetRenderPass(), SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColorFiltered->m_descriptor.imageView }, { { 30.8f, 100.95f, 300.f, 1.0f } });
+		filterPass->AddFrameBuffer(fb);*/
 	}
 
 	// Setup the offscreen framebuffer for rendering the scene from light's point-of-view to
@@ -157,66 +178,7 @@ public:
 		prepareOffscreenRenderpass();
 	}
 
-	void buildCommandBuffers()
-	{
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
-
-		VkClearValue clearValues[2];
-		VkViewport viewport;
-		VkRect2D scissor;
-		VkDeviceSize offsets[1] = { 0 };
-
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
-		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
-
-			/*
-				First render pass: Generate shadow map by rendering the scene from light's POV
-			*/
-			{
-				
-				offscreenPass->Begin(drawCmdBuffers[i],0);
-
-				// Set depth bias (aka "Polygon offset")
-				// Required to avoid shadow mapping artefacts
-				vkCmdSetDepthBias(
-					drawCmdBuffers[i],
-					depthBiasConstant,
-					0.0f,
-					depthBiasSlope);
-
-				offscreen_scenes[sceneIndex]->Draw(drawCmdBuffers[i]);
-
-				offscreenPass->End(drawCmdBuffers[i]);
-			}
-
-			/*
-				Note: Explicit synchronization is not required between the render pass, as this is done implicit via sub pass dependencies
-			*/
-
-			/*
-				Second pass: Scene rendering with applied shadow map
-			*/
-
-			{
-				mainRenderPass->Begin(drawCmdBuffers[i],i);
-
-				// Visualize shadow map
-				if (displayShadowMap) {
-
-				}
-
-				// 3D scene							
-				scenes[sceneIndex]->Draw(drawCmdBuffers[i]);
-
-				drawUI(drawCmdBuffers[i]);
-
-				mainRenderPass->End(drawCmdBuffers[i]);
-			}
-
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
-		}
-	}
+	
 
 	void loadAssets()
 	{
@@ -234,12 +196,18 @@ public:
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 		{
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> offscreenbindings
 		{
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
+		};
+
+		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> filterbindings
+		{
+			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
 
 		scenes.resize(2);
@@ -261,6 +229,7 @@ public:
 
 		layouts.offscreen_layout = vulkanDevice->GetDescriptorSetLayout(offscreenbindings);
 		layouts.scene_layout = vulkanDevice->GetDescriptorSetLayout(bindings);
+		//layouts.filter_layout = vulkanDevice->GetDescriptorSetLayout(filterbindings);
 		for (auto off : offscreen_scenes)
 			off->SetDescriptorSetLayout(layouts.offscreen_layout);
 		for (auto scene : scenes)
@@ -284,6 +253,8 @@ public:
 				offscreen_scenes[i]->m_geometries.push_back(mygeo);
 			}
 		}
+
+		techniquesNames = { "Simple", "PCF", "Variance" };
 	}
 
 	void setupDescriptorPool()
@@ -302,7 +273,7 @@ public:
 		descriptorSets.offscreen = vulkanDevice->GetDescriptorSet({&uniformBuffers.offscreen->m_descriptor }, {},
 			layouts.offscreen_layout->m_descriptorSetLayout, layouts.offscreen_layout->m_setLayoutBindings);
 
-		descriptorSets.scene = vulkanDevice->GetDescriptorSet({ &uniformBuffers.scene->m_descriptor }, { &shadowtex->m_descriptor },
+		descriptorSets.scene = vulkanDevice->GetDescriptorSet({ &uniformBuffers.scene->m_descriptor, &uniformBufferFS->m_descriptor }, { &shadowmapColor->m_descriptor },
 			layouts.scene_layout->m_descriptorSetLayout, layouts.scene_layout->m_setLayoutBindings);
 
 		for(auto scene:scenes)
@@ -310,6 +281,8 @@ public:
 
 		for(auto off:offscreen_scenes)
 		off->AddDescriptor(descriptorSets.offscreen);
+
+		//descriptorSets.filterSM = vulkanDevice->GetDescriptorSet({}, { &shadowmapColor->m_descriptor }, layouts.filter_layout->m_descriptorSetLayout, layouts.filter_layout->m_setLayoutBindings);
 	}
 
 	void preparePipelines()
@@ -318,11 +291,15 @@ public:
 		vertexInputAttributes.push_back(engine::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0));
 
 		pipelines.offscreen = vulkanDevice->GetPipeline(layouts.offscreen_layout->m_descriptorSetLayout, layouts.scene_vlayout->m_vertexInputBindings, vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache//);
+			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/offscreenvariancecolor.frag.spv", offscreenPass->GetRenderPass(), pipelineCache//);
 			,false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true);
 
 		pipelines.sceneShadow = vulkanDevice->GetPipeline(layouts.scene_layout->m_descriptorSetLayout, layouts.scene_vlayout->m_vertexInputBindings, layouts.scene_vlayout->m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/shadowmapping/scene.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/scene.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache);
+
+		/*pipelines.filterSM = vulkanDevice->GetPipeline(layouts.filter_layout->m_descriptorSetLayout, {}, {},
+			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/gaussfilter.frag.spv",
+			filterPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);*/
 		
 
 		for (auto off : offscreen_scenes)
@@ -337,8 +314,7 @@ public:
 	{
 		// Debug quad vertex shader uniform buffer block		
 		uniform_manager.SetDevice(device);
-		uniform_manager.SetEngineDevice(vulkanDevice);
-		
+		uniform_manager.SetEngineDevice(vulkanDevice);	
 
 		//uniformBuffers.tree = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW });
 		uniformBuffers.offscreen = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -352,6 +328,9 @@ public:
 	
 		VK_CHECK_RESULT(uniformBuffers.scene->map());
 
+		uniformBufferFS = vulkanDevice->GetUniformBuffer(sizeof(uboFS), true, queue);
+		uniformBufferFS->map();
+
 		updateLight();
 		updateUniformBufferOffscreen();
 		updateUniformBuffers();
@@ -361,8 +340,8 @@ public:
 	{
 		// Animate the light source
 		lightPos.x = cos(glm::radians(timer * 360.0f)) * 40.0f;
-		lightPos.y = -50.0f + sin(glm::radians(timer * 360.0f)) * 20.0f;
-		lightPos.z = 25.0f + sin(glm::radians(timer * 360.0f)) * 5.0f;
+		lightPos.y = -10.0f;// +sin(glm::radians(timer * 360.0f)) * 20.0f;
+		lightPos.z = sin(glm::radians(timer * 360.0f)) * 20.0f;
 	}
 
 	void updateUniformBuffers()
@@ -383,6 +362,8 @@ public:
 
 		memcpy(uniformBuffers.scene->m_mapped, &uboVSscene, sizeof(uboVSscene));
 
+		uniformBufferFS->copyTo(&uboFS, sizeof(uboFS));
+
 		/*uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &uboVSscene.projection, 0, sizeof(camera.matrices.perspective));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &uboVSscene.view, 0, sizeof(camera.matrices.view));
 		uniform_manager.Update();*/
@@ -400,6 +381,75 @@ public:
 
 		memcpy(uniformBuffers.offscreen->m_mapped, &uboOffscreenVS, sizeof(uboOffscreenVS));
 
+	}
+
+	void buildCommandBuffers()
+	{
+		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+
+		VkClearValue clearValues[2];
+		VkViewport viewport;
+		VkRect2D scissor;
+		VkDeviceSize offsets[1] = { 0 };
+
+		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		{
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+
+			/*
+				First render pass: Generate shadow map by rendering the scene from light's POV
+			*/
+			{
+
+				offscreenPass->Begin(drawCmdBuffers[i], 0);
+
+				// Set depth bias (aka "Polygon offset")
+				// Required to avoid shadow mapping artefacts
+				vkCmdSetDepthBias(
+					drawCmdBuffers[i],
+					depthBiasConstant,
+					0.0f,
+					depthBiasSlope);
+
+				offscreen_scenes[sceneIndex]->Draw(drawCmdBuffers[i]);
+
+				offscreenPass->End(drawCmdBuffers[i]);
+			}
+
+		/*	filterPass->Begin(drawCmdBuffers[i], 0);
+
+			pipelines.filterSM->Draw(drawCmdBuffers[i]);
+			descriptorSets.filterSM->Draw(drawCmdBuffers[i], pipelines.filterSM->getPipelineLayout(),0);
+			vkCmdDraw(drawCmdBuffers[i], 3, 1, 0, 0);
+
+			filterPass->End(drawCmdBuffers[i]);*/
+
+			/*
+				Note: Explicit synchronization is not required between the render pass, as this is done implicit via sub pass dependencies
+			*/
+
+			/*
+				Second pass: Scene rendering with applied shadow map
+			*/
+
+			{
+				mainRenderPass->Begin(drawCmdBuffers[i], i);
+
+				// Visualize shadow map
+				if (displayShadowMap) {
+
+				}
+
+				// 3D scene							
+				scenes[sceneIndex]->Draw(drawCmdBuffers[i]);
+
+				drawUI(drawCmdBuffers[i]);
+
+				mainRenderPass->End(drawCmdBuffers[i]);
+			}
+
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+		}
 	}
 
 	void draw()
@@ -457,8 +507,9 @@ public:
 			if (overlay->checkBox("Display shadow render target", &displayShadowMap)) {
 				buildCommandBuffers();
 			}
-			if (overlay->checkBox("PCF filtering", &filterPCF)) {
-				buildCommandBuffers();
+			if (overlay->comboBox("Technique", &uboFS.techniqueIndex, techniquesNames)) {
+				//buildCommandBuffers();
+				//uniformBufferFS->copyTo(&uboFS, sizeof(uboFS));
 			}
 		}
 	}
