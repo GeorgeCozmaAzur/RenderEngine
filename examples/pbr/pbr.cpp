@@ -28,7 +28,8 @@ public:
 		
 		}, {});
 
-	engine::scene::SimpleModel plane;
+	engine::scene::SimpleModel basicModel;
+	engine::scene::SimpleModel basicModelTextured;
 	
 	render::VulkanTexture* colorMap;
 	render::VulkanTexture* roughnessMap;
@@ -36,17 +37,28 @@ public:
 	render::VulkanTexture* aoMap;
 	
 	struct {
-		glm::vec3 albedo = glm::vec3(1.0,0.0,0.0);
-		float roughness = 0.9f;
-		float metallic = 0.1f;
-		float ao = 1.0;
+		glm::vec4 albedo = glm::vec4(1.0,0.0,0.0,1.0);
+		glm::vec4 lightPosition;
+		glm::vec4 cameraPosition;
+		float roughness = 0.5f;
+		float metallic = 0.5f;
+		float ao = 0.0;
 	} modelUniformFS;
+
+	struct {
+		glm::vec4 lightPosition;
+		glm::vec4 cameraPosition;
+	} modelUniformTexturedFS;
+
 	render::VulkanBuffer* modelFragmentUniformBuffer;
+	render::VulkanBuffer* modelFragmentTexturedUniformBuffer;
 
 	render::VulkanBuffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 
 	glm::vec4 light_pos = glm::vec4(0.0f, -5.0f, 0.0f, 1.0f);
+
+	bool textured = false;
 
 	VulkanExample() : VulkanExampleBase(true)
 	{
@@ -59,7 +71,7 @@ public:
 		camera.movementSpeed = 20.5f;
 		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, 5.0f, 0.0f));
+		camera.setTranslation(glm::vec3(0.0f, 0.0f, -5.0f));
 	}
 
 	~VulkanExample()
@@ -72,8 +84,14 @@ public:
 	void setupGeometry()
 	{
 		//Geometry
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.1f, 1);
-		for (auto geo : plane.m_geometries)
+		basicModel.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.1f, 1);
+		for (auto geo : basicModel.m_geometries)
+		{
+			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+		}
+		basicModelTextured.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.1f, 1);
+		for (auto geo : basicModelTextured.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
@@ -111,6 +129,8 @@ public:
 
 		modelFragmentUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformFS), true, queue);
 		modelFragmentUniformBuffer->map();
+		modelFragmentTexturedUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformTexturedFS), true, queue);
+		modelFragmentTexturedUniformBuffer->map();
 		
 
 		updateUniformBuffers();
@@ -120,10 +140,10 @@ public:
 	void setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6)
+			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6),
+			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8)
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
 	}
 
 	void SetupDescriptors()
@@ -132,24 +152,38 @@ public:
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
 		{
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
+			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
+		};
+		//descriptors
+		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindingstextured
+		{
+			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
-		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
+		basicModel.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
+		basicModelTextured.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindingstextured));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor }, 
+		basicModel.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor }, 
+			{  },
+			basicModel._descriptorLayout->m_descriptorSetLayout, basicModel._descriptorLayout->m_setLayoutBindings));
+
+		basicModelTextured.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelFragmentTexturedUniformBuffer->m_descriptor },
 			{ &colorMap->m_descriptor, &roughnessMap->m_descriptor, &metallicMap->m_descriptor, &aoMap->m_descriptor },
-			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
+			basicModelTextured._descriptorLayout->m_descriptorSetLayout, basicModelTextured._descriptorLayout->m_setLayoutBindings));
 	}
 
 	void setupPipelines()
 	{
 
-		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+		basicModel.AddPipeline(vulkanDevice->GetPipeline(basicModel._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbr.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+
+		basicModelTextured.AddPipeline(vulkanDevice->GetPipeline(basicModelTextured._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbrtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
 	}
 
 	void init()
@@ -175,7 +209,7 @@ public:
 			mainRenderPass->Begin(drawCmdBuffers[i], i);
 
 			//draw here
-			plane.Draw(drawCmdBuffers[i]);
+			textured ? basicModelTextured.Draw(drawCmdBuffers[i]) : basicModel.Draw(drawCmdBuffers[i]);
 
 			drawUI(drawCmdBuffers[i]);
 
@@ -190,13 +224,19 @@ public:
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &camera.matrices.perspective, 0, sizeof(camera.matrices.perspective));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &camera.matrices.view, 0, sizeof(camera.matrices.view));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
-		glm::vec3 cucu = camera.position;
-		cucu.y = -cucu.y;
+		glm::vec3 cucu = -camera.position;
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.position));
 
 		uniform_manager.Update();
 
+		modelUniformFS.cameraPosition = glm::vec4(cucu, 1.0f);
+		modelUniformFS.lightPosition = light_pos;
+		modelUniformTexturedFS.cameraPosition = glm::vec4(cucu, 1.0f);
+		modelUniformTexturedFS.lightPosition = light_pos;
+
 		modelFragmentUniformBuffer->copyTo(&modelUniformFS, sizeof(modelUniformFS));
+		modelFragmentTexturedUniformBuffer->copyTo(&modelUniformTexturedFS, sizeof(modelUniformTexturedFS));
+
 	}
 
 	void draw()
@@ -240,7 +280,17 @@ public:
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
 		if (overlay->header("Settings")) {
-
+			if (ImGui::SliderFloat("Roughness", &modelUniformFS.roughness, 0.05f, 1.0f))
+			{
+				updateUniformBuffers();
+			}
+			if (ImGui::SliderFloat("Metallic", &modelUniformFS.metallic, 0.1f, 1.0f))
+			{
+				updateUniformBuffers();
+			}
+			if (overlay->checkBox("Textured", &textured)) {
+				buildCommandBuffers();
+			}
 		}
 	}
 
