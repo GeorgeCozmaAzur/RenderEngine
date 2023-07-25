@@ -30,9 +30,6 @@ void main()
 	vec3 viewDir = normalize(frag_ubo.cameraPosition.xyz - inPosition);
 	vec3 N = normalize(inNormal);
 	
-	vec3 F0 = vec3(0.04); 
-    F0 = mix(F0, albedo, metallic);
-	
 	vec3 Lo = vec3(0.0);
 	
 	//for each light

@@ -34,11 +34,6 @@ public:
 		}, {});
 
 	engine::scene::SimpleModel plane;
-	
-	render::VulkanTexture* colorMap;
-	render::VulkanTexture* roughnessMap;
-	render::VulkanTexture* metallicMap;
-	render::VulkanTexture* aoMap;
 
 	render::VulkanTexture* envMap;
 	render::VulkanTexture* BRDFLUTMap;
@@ -119,10 +114,6 @@ public:
 
 	void SetupTextures()
 	{
-		colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/albedo.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
-		roughnessMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/roughness.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
-		metallicMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/metallic.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
-		aoMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/ao.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		envMap = vulkanDevice->GetTextureCubeMap(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, queue);
 	}
 
@@ -218,8 +209,10 @@ public:
 		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/pbr/pbribl.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbribl.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
 
+		render::PipelineProperties props;
+		props.cullMode = VK_CULL_MODE_FRONT_BIT;
 		skybox.AddPipeline(vulkanDevice->GetPipeline(skybox._descriptorLayout->m_descriptorSetLayout, simpleVertexLayout.m_vertexInputBindings, simpleVertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/skybox.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/skybox.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/pbr/skybox.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/skybox.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	}
 
 	void generateBRDFLUTTexture()
@@ -291,8 +284,11 @@ public:
 
 		obj.SetVertexLayout(&simpleVertexLayout);
 
+		render::PipelineProperties props;
+		props.cullMode = VK_CULL_MODE_FRONT_BIT;
+		props.vertexConstantBlockSize = sizeof(pushBlock);
 		obj.AddPipeline(vulkanDevice->GetPipeline(obj._descriptorLayout->m_descriptorSetLayout, obj._vertexLayout->m_vertexInputBindings, obj._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/irradiancecube.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache,false,VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,sizeof(pushBlock)));
+			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/irradiancecube.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props));
 
 		std::vector<glm::mat4> matrices = {
 			// POSITIVE_X
@@ -429,8 +425,11 @@ public:
 
 		obj.SetVertexLayout(&simpleVertexLayout);
 
+		render::PipelineProperties props;
+		props.cullMode = VK_CULL_MODE_FRONT_BIT;
+		props.vertexConstantBlockSize = sizeof(pushBlock);
 		obj.AddPipeline(vulkanDevice->GetPipeline(obj._descriptorLayout->m_descriptorSetLayout, obj._vertexLayout->m_vertexInputBindings, obj._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/prefilterenvmap.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, sizeof(pushBlock)));
+			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/prefilterenvmap.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props));
 
 		std::vector<glm::mat4> matrices = {
 			// POSITIVE_X
