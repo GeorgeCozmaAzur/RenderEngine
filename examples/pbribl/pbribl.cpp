@@ -69,7 +69,7 @@ public:
 
 	render::VulkanRenderPass* offscreenRenderPass;
 
-	scene::DrawDebugTexture dbgtex;
+	//scene::DrawDebugTexture dbgtex;
 
 	VulkanExample() : VulkanExampleBase(true)
 	{
@@ -160,7 +160,7 @@ public:
 
 		modelSBFragmentUniformBuffer->copyTo(&modelSBUniformFS, sizeof(modelSBUniformFS));
 
-		dbgtex.UpdateUniformBuffers(camera.matrices.perspective, camera.matrices.view, 1.0);
+		//dbgtex.UpdateUniformBuffers(camera.matrices.perspective, camera.matrices.view, 1.0);
 	}
 
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
@@ -248,7 +248,7 @@ public:
 		vulkanDevice->flushCommandBuffer(cmdBuf, queue);
 		vkQueueWaitIdle(queue);
 
-		dbgtex.Init(vulkanDevice, BRDFLUTMap, queue, mainRenderPass->GetRenderPass(), pipelineCache);
+		//dbgtex.Init(vulkanDevice, BRDFLUTMap, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 	}
 
 	void generateIrradianceCube()
@@ -563,7 +563,7 @@ public:
 			//draw here
 			skybox.Draw(drawCmdBuffers[i]);
 			plane.Draw(drawCmdBuffers[i]);
-			dbgtex.Draw(drawCmdBuffers[i]);
+			//dbgtex.Draw(drawCmdBuffers[i]);
 
 			drawUI(drawCmdBuffers[i]);
 
@@ -614,7 +614,14 @@ public:
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
 		if (overlay->header("Settings")) {
-
+			if (ImGui::SliderFloat("Roughness", &modelUniformFS.roughness, 0.05f, 1.0f))
+			{
+				updateUniformBuffers();
+			}
+			if (ImGui::SliderFloat("Metallic", &modelUniformFS.metallic, 0.1f, 1.0f))
+			{
+				updateUniformBuffers();
+			}
 		}
 	}
 

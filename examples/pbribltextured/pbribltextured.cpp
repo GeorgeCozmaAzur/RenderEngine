@@ -77,7 +77,7 @@ public:
 
 	render::VulkanRenderPass* offscreenRenderPass;
 
-	scene::DrawDebugTexture dbgtex;
+	//scene::DrawDebugTexture dbgtex;
 
 	VulkanExample() : VulkanExampleBase(true)
 	{
@@ -87,7 +87,7 @@ public:
 		title = "Render Engine Empty Scene";
 		settings.overlay = true;
 		camera.type = scene::Camera::CameraType::firstperson;
-		camera.movementSpeed = 20.5f;
+		camera.movementSpeed = 5.0f;
 		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		/*camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		camera.setTranslation(glm::vec3(0.0f, 5.0f, 0.0f));*/
@@ -173,7 +173,7 @@ public:
 
 		modelSBFragmentUniformBuffer->copyTo(&modelSBUniformFS, sizeof(modelSBUniformFS));
 
-		dbgtex.UpdateUniformBuffers(camera.matrices.perspective, camera.matrices.view, 1.0);
+		//dbgtex.UpdateUniformBuffers(camera.matrices.perspective, camera.matrices.view, 1.0);
 	}
 
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
@@ -266,7 +266,7 @@ public:
 		vulkanDevice->flushCommandBuffer(cmdBuf, queue);
 		vkQueueWaitIdle(queue);
 
-		dbgtex.Init(vulkanDevice, BRDFLUTMap, queue, mainRenderPass->GetRenderPass(), pipelineCache);
+		//dbgtex.Init(vulkanDevice, BRDFLUTMap, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 	}
 
 	void generateIrradianceCube()
@@ -582,7 +582,7 @@ public:
 			//draw here
 			skybox.Draw(drawCmdBuffers[i]);
 			plane.Draw(drawCmdBuffers[i]);
-			dbgtex.Draw(drawCmdBuffers[i]);
+			//dbgtex.Draw(drawCmdBuffers[i]);
 
 			drawUI(drawCmdBuffers[i]);
 
