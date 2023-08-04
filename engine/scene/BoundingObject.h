@@ -55,6 +55,9 @@ namespace engine
 				CreateVertices();
 			}
 
+			const glm::vec3 GetPoint1() { return m_point1; }
+			const glm::vec3 GetPoint2() { return m_point2; }
+
 			bool isInsideSpace(glm::vec3 point1, glm::vec3 point2)
 			{
 				for (int i = 0; i < m_vertices.size();i++)
@@ -154,7 +157,7 @@ namespace engine
 				m_center += p;
 			}
 
-			bool FrustumIntersect(glm::vec4* planes) { return true; }
+			bool FrustumIntersect(glm::vec4* planes);
 
 			bool isInsideSpace(glm::vec3 point1, glm::vec3 point2)
 			{

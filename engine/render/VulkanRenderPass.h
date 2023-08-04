@@ -49,7 +49,7 @@ namespace engine
 			void AddFrameBuffer(VulkanFrameBuffer* fb);
 			void ResetFrameBuffers() { m_frameBuffers.clear(); }
 			VkRenderPass GetRenderPass() { return m_vkRenderPass; }
-			void Begin(VkCommandBuffer command_buffer, int fb_index);
+			void Begin(VkCommandBuffer command_buffer, int fb_index, VkSubpassContents pass_constants = VK_SUBPASS_CONTENTS_INLINE);
 			void End(VkCommandBuffer command_buffer);
 			void SetClearColor(VkClearColorValue value, int attachment);
 			void Destroy();

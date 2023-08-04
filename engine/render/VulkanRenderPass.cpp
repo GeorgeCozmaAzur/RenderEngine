@@ -226,7 +226,7 @@ namespace engine
 			}
 		}
 
-		void VulkanRenderPass::Begin(VkCommandBuffer commandBuffer, int fbIndex)
+		void VulkanRenderPass::Begin(VkCommandBuffer commandBuffer, int fbIndex, VkSubpassContents pass_constants)
 		{
 			if (m_currentFrameBuffer != m_frameBuffers[fbIndex])
 			{
@@ -236,13 +236,16 @@ namespace engine
 				m_currentFrameBuffer = m_frameBuffers[fbIndex];
 			}
 
-			vkCmdBeginRenderPass(commandBuffer, &m_renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(commandBuffer, &m_renderPassBeginInfo, pass_constants);
 
-			VkViewport viewport = engine::initializers::viewport((float)m_frameBuffers[fbIndex]->m_width, (float)m_frameBuffers[fbIndex]->m_height, 0.0f, 1.0f);
-			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			if (pass_constants == VK_SUBPASS_CONTENTS_INLINE)//vulkan doesn't allow setting viewport and scrissors here when using secondary buffers. They must be set per secondary command buffers
+			{
+				VkViewport viewport = engine::initializers::viewport((float)m_frameBuffers[fbIndex]->m_width, (float)m_frameBuffers[fbIndex]->m_height, 0.0f, 1.0f);
+				vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-			VkRect2D scissor = engine::initializers::rect2D(m_frameBuffers[fbIndex]->m_width, m_frameBuffers[fbIndex]->m_height, 0, 0);
-			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+				VkRect2D scissor = engine::initializers::rect2D(m_frameBuffers[fbIndex]->m_width, m_frameBuffers[fbIndex]->m_height, 0, 0);
+				vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+			}
 		}
 
 		void VulkanRenderPass::End(VkCommandBuffer commandBuffer)

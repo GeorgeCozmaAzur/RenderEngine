@@ -47,6 +47,7 @@ set(EXAMPLES
 	deferred
 	deferredlights
 	emptyproject
+	multithreaded
 	normalparallax
 	pbr
 	pbribl

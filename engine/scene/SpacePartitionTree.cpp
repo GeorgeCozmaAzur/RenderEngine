@@ -276,6 +276,9 @@ namespace engine
 
 		void SpacePartitionTree::DivideGeometry3D(Geometry* geo, std::vector<Geometry*>& out_geometries, std::vector<glm::vec3>& boundries)
 		{
+			if (!geo)
+				return;
+
 			//hardcoding the vertex layout
 			std::vector<glm::vec3> current_vertices;
 			for (int i = 0; i < geo->m_verticesSize; i += 6)
@@ -510,6 +513,12 @@ namespace engine
 
 		void SpacePartitionTree::DestroyChildren()
 		{
+			if (m_debug_geometry)
+			{
+				delete m_debug_geometry;
+				m_debug_geometry = nullptr;
+			}
+
 			m_hasActiveChildren = false;
 			for (int i = 0; i < m_children.size(); i++)
 			{

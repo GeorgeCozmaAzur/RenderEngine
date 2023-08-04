@@ -54,5 +54,22 @@ namespace engine
 
 			return ret;
 		}
+
+		bool BoundingSphere::FrustumIntersect(glm::vec4* planes)
+		{
+			bool ret = true;
+			for (int i = 0; i < 6; ++i)
+			{
+				glm::vec3 normal = glm::vec3(planes[i].x, planes[i].y, planes[i].z);
+				float dist = glm::dot(normal, m_center) + planes[i].w;
+
+				if (dist < -m_radius)
+					return false;//we are outside
+
+				if (abs(dist) < m_radius)
+					return true;//we intersect
+			}
+			return ret;
+		}
 	}
 }
