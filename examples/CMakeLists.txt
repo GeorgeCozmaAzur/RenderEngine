@@ -46,6 +46,7 @@ endfunction(buildExamples)
 set(EXAMPLES
 	deferred
 	deferredlights
+	clothsimulation
 	emptyproject
 	multithreaded
 	normalparallax
