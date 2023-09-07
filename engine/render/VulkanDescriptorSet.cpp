@@ -37,7 +37,7 @@ namespace engine
 
 				writeDescriptorSets[binding.binding].descriptorType = binding.descriptorType;
 
-				if (binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+				if (binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 				{
 					writeDescriptorSets[binding.binding].pBufferInfo = _BuffersDescriptors[buffers_iterator++];
 				}

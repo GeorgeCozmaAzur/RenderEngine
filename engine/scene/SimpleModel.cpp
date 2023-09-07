@@ -13,7 +13,7 @@ namespace engine
 {
 	namespace scene
 	{
-		bool SimpleModel::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec2 uvCoefficient)
+		bool SimpleModel::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec3 normalsCoefficient, glm::vec2 uvCoefficient)
 		{
 			//m_device = device->logicalDevice;
 
@@ -98,9 +98,9 @@ namespace engine
 								geometry->m_vertices[vertex_index++] = atPos.z + pPos->z * scale;
 								break;
 							case render::VERTEX_COMPONENT_NORMAL:
-								geometry->m_vertices[vertex_index++] = pNormal->x;
-								geometry->m_vertices[vertex_index++] = -pNormal->y;
-								geometry->m_vertices[vertex_index++] = pNormal->z;
+								geometry->m_vertices[vertex_index++] = pNormal->x * normalsCoefficient.x;
+								geometry->m_vertices[vertex_index++] = -pNormal->y * normalsCoefficient.y;
+								geometry->m_vertices[vertex_index++] = pNormal->z * normalsCoefficient.z;
 								break;
 							case render::VERTEX_COMPONENT_UV:
 								geometry->m_vertices[vertex_index++] = pTexCoord->x * uvCoefficient.s;

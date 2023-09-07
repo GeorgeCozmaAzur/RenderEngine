@@ -19,14 +19,11 @@ void main()
 	}
 	
 	vec3 lightDir = normalize(inLightPos - inPosition);  
-	float diff = max(dot(inNormal, lightDir), 0.0);
-	
+	vec3 N = normalize(inNormal);
+	float diff = max(dot(N, lightDir), 0.0);
 	vec3 viewDir = normalize(inCamPosition - inPosition);
-	vec3 reflectDir = reflect(-lightDir, inNormal); 
+	vec3 reflectDir = reflect(-lightDir, N); 
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-	//vec3 specular = specularStrength * spec * lightColor;  
 
-	//outFragColor = vec4(inCamPosition, 1.0);
-	//vec4 own_color = vec4(frag_ubo.diffuse, frag_ubo.transparency);
-	outFragColor = (spec + diff) * tex_color;
+	outFragColor = ( diff + spec ) * tex_color;
 }

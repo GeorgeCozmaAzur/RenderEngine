@@ -193,7 +193,7 @@ namespace engine
 
 			std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
-			VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI = engine::initializers::pipelineInputAssemblyStateCreateInfo(properties.topology, 0, VK_FALSE);
+			VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI = engine::initializers::pipelineInputAssemblyStateCreateInfo(properties.topology, 0, properties.primitiveRestart);
 			VkPipelineRasterizationStateCreateInfo rasterizationStateCI = m_blendEnable ? engine::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE, 0) :
 				engine::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, properties.cullMode, VK_FRONT_FACE_CLOCKWISE, 0);
 			VkPipelineColorBlendAttachmentState blendAttachmentState = engine::initializers::pipelineColorBlendAttachmentState(0xf, VkBool32(m_blendEnable));
@@ -286,7 +286,7 @@ namespace engine
 			vkCmdBindPipeline(command_buffer, bindpoint, m_vkPipeline);
 		}
 
-		void VulkanPipeline::CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache)
+		void VulkanPipeline::CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, PipelineProperties properties)
 		{
 			if (m_vkPipeline != VK_NULL_HANDLE)
 				return;
@@ -296,6 +296,14 @@ namespace engine
 
 			VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
 				initializers::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
+
+			if (properties.vertexConstantBlockSize > 0)
+			{
+				VkPushConstantRange pushConstantRange =
+					engine::initializers::pushConstantRange(VK_SHADER_STAGE_COMPUTE_BIT, properties.vertexConstantBlockSize, 0);
+				pPipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+				pPipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
+			}
 
 			VK_CHECK_RESULT(vkCreatePipelineLayout(_device, &pPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout));
 

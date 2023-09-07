@@ -797,10 +797,12 @@ namespace engine
 			return pipeline;
 		}
 
-		VulkanPipeline* GetComputePipeline(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache)
+		VulkanPipeline* GetComputePipeline(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, uint32_t constanBlockSize = 0)
 		{
 			VulkanPipeline* pipeline = new VulkanPipeline;
-			pipeline->CreateCompute(file, device, descriptorSetLayout, cache);
+			PipelineProperties props;
+			props.vertexConstantBlockSize = constanBlockSize;
+			pipeline->CreateCompute(file, device, descriptorSetLayout, cache, props);
 			m_pipelines.push_back(pipeline);
 			return pipeline;
 		}

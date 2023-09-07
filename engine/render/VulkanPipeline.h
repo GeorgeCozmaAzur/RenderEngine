@@ -16,6 +16,7 @@ namespace engine
 			bool depthTestEnable = true;
 			bool depthWriteEnable = true;
 			VkCullModeFlagBits cullMode = VK_CULL_MODE_BACK_BIT;
+			VkBool32 primitiveRestart = VK_FALSE;
 			uint32_t attachmentCount = 0;
 			const VkPipelineColorBlendAttachmentState* pAttachments = nullptr;
 			uint32_t subpass = 0;
@@ -75,7 +76,7 @@ namespace engine
 
 			void Draw(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindpoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-			void CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache);
+			void CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, PipelineProperties properties);
 		};
 	}
 }
