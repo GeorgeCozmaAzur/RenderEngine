@@ -159,7 +159,7 @@ public:
 
 		models.plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 10.0f, 1, glm::vec3(0.0,1.5,0.0));
 		//models.example.LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0));
-		models.example.LoadGeometry(engine::tools::getAssetPath() + "models/armor/armor.dae", &vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0), glm::vec2(1.0,-1.0));
+		models.example.LoadGeometry(engine::tools::getAssetPath() + "models/armor/armor.dae", &vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 1.0, 1.0), glm::vec2(1.0,-1.0));
 		//models.example.LoadGeometry(engine::tools::getAssetPath() + "models/medieval/Medieval_House.obj", &vertexLayoutInstanced, 0.01f, MODELS_NO, glm::vec3(0.0, 2.0, 0.0));
 
 		// Textures
