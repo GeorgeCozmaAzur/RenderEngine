@@ -42,7 +42,7 @@ namespace engine
 			struct UBO {
 				float deltaT = 0.0f;
 				float particleMass = 0.1f;
-				float springStiffness = 9000.0f;
+				float springStiffness = 2000.0f;
 				float damping = 0.95f;
 				float restDistH;
 				float restDistV;

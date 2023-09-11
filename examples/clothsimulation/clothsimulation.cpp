@@ -84,7 +84,7 @@ public:
 
 	void setupGeometry()
 	{
-		models.LoadGeometry(engine::tools::getAssetPath() + "models/human.obj", &vertexLayout, 0.3f, 1, glm::vec3(0.0f), glm::vec3(-1.0f, -1.0f, -1.0f));
+		models.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", &vertexLayout, 0.15f, 1, glm::vec3(0.0f));
 		models.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 0.5f, 1);
 		for (auto geo : models.m_geometries)
 		{
@@ -170,7 +170,7 @@ public:
 
 			if (true) {
 				std::default_random_engine rndEngine( 0 );
-				std::uniform_real_distribution<float> rd(1.0f, 6.0f);
+				std::uniform_real_distribution<float> rd(1.0f, 60.0f);
 				clothcompute.ubo.externalForce.x = cos(glm::radians(-timer * 360.0f)) * (rd(rndEngine) - rd(rndEngine));
 				clothcompute.ubo.externalForce.z = sin(glm::radians(timer * 360.0f)) * (rd(rndEngine) - rd(rndEngine));
 			}
