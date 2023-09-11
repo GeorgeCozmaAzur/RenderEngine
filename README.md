@@ -33,6 +33,9 @@ The basic environment that contains a camera and basic ui.
 ### simplemodel
 Loads a model with all the necessary render elements to render it on the screen.
 
+### clothsimulation
+Basic cloth simulation using mass-spring system and euler integration
+
 ### deferred
 Deferred lighting technique that iterates through all lights in the fragment shader to calculate light values.
 
