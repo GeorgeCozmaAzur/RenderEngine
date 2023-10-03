@@ -154,6 +154,13 @@ namespace engine
 				memAlloc.allocationSize = memReqs.size;
 				// Find a memory type index that fits the properties of the buffer
 				memAlloc.memoryTypeIndex = tools::getMemoryType(memReqs.memoryTypeBits, memoryPropertyFlags, memoryProperties);
+				// If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
+				VkMemoryAllocateFlagsInfoKHR allocFlagsInfo{};
+				if (usageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+					allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
+					allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+					memAlloc.pNext = &allocFlagsInfo;
+				}
 				VK_CHECK_RESULT(vkAllocateMemory(device, &memAlloc, nullptr, &m_memory));
 
 				m_alignment = memReqs.alignment;

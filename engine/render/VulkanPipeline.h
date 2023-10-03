@@ -37,7 +37,7 @@ namespace engine
 
 			VkPipelineShaderStageCreateInfo LoadShader(std::string fileName, VkShaderStageFlagBits stage);
 
-			bool m_blendEnable = false;
+			//bool m_blendEnable = false;
 
 		public:
 			VulkanPipeline() {};
@@ -46,25 +46,10 @@ namespace engine
 			void SetRenderPass(VkRenderPass value) { _renderPass = value; };
 			void SetCache(VkPipelineCache value) { _pipelineCache = value; };
 
-			void SetBlending(bool value) { m_blendEnable = value; }
+			//void SetBlending(bool value) { m_blendEnable = value; }
 
 			VkPipeline			getPipeline() { return m_vkPipeline; }
 			VkPipelineLayout	getPipelineLayout() { return m_pipelineLayout; }
-
-			void Create(VkDevice device, VkDescriptorSetLayout descriptorSetLayout,
-				std::vector<VkVertexInputBindingDescription> vertexInputBindings,
-				std::vector<VkVertexInputAttributeDescription> vertexInputAttributes,
-				std::string vertexFile, std::string fragmentFile,
-				VkRenderPass renderPass, VkPipelineCache cache, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-				uint32_t vertexConstantBlockSize = 0,
-				uint32_t* fragmentConstants = nullptr,
-				uint32_t attachmentCount = 0,
-				const VkPipelineColorBlendAttachmentState* pAttachments = nullptr,
-				bool depthBias = false,
-				bool depthTestEnable = true,
-				bool depthWriteEnable = true,
-				uint32_t subpass = 0
-			);
 
 			void Create(VkDevice device, VkDescriptorSetLayout descriptorSetLayout,
 				std::vector<VkVertexInputBindingDescription> vertexInputBindings,

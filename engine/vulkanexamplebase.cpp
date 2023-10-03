@@ -206,10 +206,10 @@ void VulkanExampleBase::renderFrame()
 	{
 		lastFPS = static_cast<uint32_t>((float)frameCounter * (1000.0f / fpsTimer));
 #if defined(_WIN32)
-		if (!settings.overlay)	{
+		/*if (!settings.overlay)	{
 			std::string windowTitle = getWindowTitle();
 			SetWindowText(window, windowTitle.c_str());
-		}
+		}*/
 #endif
 		frameCounter = 0;
 		lastTimestamp = tEnd;

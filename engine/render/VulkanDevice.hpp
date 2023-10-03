@@ -296,7 +296,7 @@ namespace engine
 			}
 			else
 			{
-				queueFamilyIndices.graphics = VK_NULL_HANDLE;
+				queueFamilyIndices.graphics = 0;
 			}
 
 			// Dedicated compute queue
@@ -778,9 +778,20 @@ namespace engine
 			bool depthWriteEnable = true,
 			uint32_t subpass = 0)
 		{
+			PipelineProperties properties;
+			properties.depthBias = depthBias;
+			properties.depthTestEnable = depthTestEnable;
+			properties.depthWriteEnable = depthWriteEnable;
+			properties.subpass = subpass;
+			properties.topology = topology;
+			properties.vertexConstantBlockSize = vertexConstantBlockSize;
+			properties.fragmentConstants = fConstants;
+			properties.attachmentCount = attachmentCount;
+			properties.pAttachments = pAttachments;
+			properties.blendEnable = blendEnable;
+
 			VulkanPipeline *pipeline = new VulkanPipeline;
-			pipeline->SetBlending(blendEnable);
-			pipeline->Create(logicalDevice, descriptorSetLayout, vertexInputBindings, vertexInputAttributes, vertexFile, fragmentFile, renderPass, cache, topology, vertexConstantBlockSize, fConstants, attachmentCount, pAttachments, depthBias, depthTestEnable, depthWriteEnable, subpass);
+			pipeline->Create(logicalDevice, descriptorSetLayout, vertexInputBindings, vertexInputAttributes, vertexFile, fragmentFile, renderPass, cache, properties);
 			m_pipelines.push_back(pipeline);
 			return pipeline;
 		}
