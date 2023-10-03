@@ -54,6 +54,7 @@ set(EXAMPLES
 	pbribl
 	pbribltextured
 	planetsexplorer
+	raytracingscene
 	reflections
 	shadowmapping
 	simplemodel

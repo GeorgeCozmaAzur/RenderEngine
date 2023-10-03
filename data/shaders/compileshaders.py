@@ -12,13 +12,13 @@ if not os.path.exists(sys.argv[1]):
 path = sys.argv[1]
 
 shaderfiles = []
-for exts in ('*.vert', '*.frag', '*.comp', '*.geom', '*.tesc', '*.tese'):
+for exts in ('*.vert', '*.frag', '*.comp', '*.geom', '*.tesc', '*.tese', '*.rmiss', '*.raygen', '*.rchit'):
 	shaderfiles.extend(glob.glob(os.path.join(path, exts)))
 
 failedshaders = []
 for shaderfile in shaderfiles:
 		print("\n-------- %s --------\n" % shaderfile)
-		if subprocess.call("glslangValidator -V %s -o %s.spv" % (shaderfile, shaderfile), shell=True) != 0:
+		if subprocess.call("glslangValidator -V %s -o %s.spv --target-env vulkan1.2" % (shaderfile, shaderfile), shell=True) != 0:
 			failedshaders.append(shaderfile)
 
 print("\n-------- Compilation result --------\n")
