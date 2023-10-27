@@ -127,7 +127,8 @@ public:
 		camera.movementSpeed = 300.0f;
 		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 20048.0f);
 		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, 3.2f, 0.0f));
+		//camera.setTranslation(glm::vec3(0.0f, 3.2f, 0.0f));
+		
 	}
 
 	~VulkanExample()
@@ -307,7 +308,8 @@ public:
 
 		peffdesc = vulkanDevice->GetDescriptorSet({}, { &scenecolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
 
-		camera.setTranslation(glm::vec3(0.0f, myplanet.GetRadius() + 8.0f, 0.0f));
+		//camera.setTranslation(glm::vec3(0.0f, myplanet.GetRadius() + 8.0f, 0.0f));
+		camera.setTranslationOnSphere(2.0, 0.5, myplanet.GetRadius() + 8.0f);
 		/*int stride = terrain._vertexLayout->GetVertexSize(0) / sizeof(float);
 		for (auto geo : terrain.m_geometries)
 		{

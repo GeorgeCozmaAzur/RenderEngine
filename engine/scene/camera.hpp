@@ -184,6 +184,14 @@ namespace engine
 				ToSphere(translation);
 				updateViewMatrix();
 			};
+			void setTranslationOnSphere(float theta, float phi, float radius)
+			{
+				m_theta = theta;
+				m_phi = phi;
+				m_SphereRadius = radius;
+				this->position = ToCartesian();
+				updateViewMatrix();
+			};
 
 			void translate(glm::vec3 delta)
 			{
@@ -208,10 +216,10 @@ namespace engine
 					if (moving())
 					{
 						//glm::vec3 camFront;
-						camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
+						/*camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
 						camFront.y = sin(glm::radians(rotation.x));
 						camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
-						camFront = glm::normalize(camFront);
+						camFront = glm::normalize(camFront);*/
 
 						float moveSpeed = deltaTime * movementSpeed;
 
