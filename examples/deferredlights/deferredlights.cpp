@@ -119,7 +119,9 @@ public:
 		camera.movementSpeed = 20.5f;
 		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, 00.0f, -5.0f));
+		camera.setTranslation(glm::vec3(0.0f, 100.0f,-5.0f));
+		rotation.x = -20.0;
+		rotation.y = -10.0;
 	}
 
 	~VulkanExample()
@@ -410,6 +412,7 @@ public:
 			deferredLights.m_pointLights[i].x = light_positions[j].x + cos(glm::radians(timer * 360.0f)) * 1.0f;
 			deferredLights.m_pointLights[i].z = light_positions[j].z + sin(glm::radians(timer * 360.0f)) * 1.0f;
 			deferredLights.m_pointLights[i].y = -1.0f;
+			deferredLights.m_pointLights[i].w = 7.0f;
 
 			deferredLights.m_pointLights[++i].x = light_colors[j].x;
 			deferredLights.m_pointLights[i].y = light_colors[j].y;

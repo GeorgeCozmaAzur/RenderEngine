@@ -26,7 +26,7 @@ namespace engine
 			m_pointLights.resize(lightsNumber * 2);
 			for (int i=0;i< m_pointLights.size();i++)
 			{
-				m_pointLights[i] = glm::vec4(0, 0.0f, 0, 2.0f);;
+				m_pointLights[i] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);;
 				m_pointLights[++i] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 			}
 
