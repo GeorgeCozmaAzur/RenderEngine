@@ -113,7 +113,7 @@ public:
 	float planetrotation = 0.0f;
 
 	float h0 = 0.25;//7.994;
-	float mh0 = 0.25;//7.994;
+	float mh0 = 0.1;//7.994;
 
 	VulkanExample() : VulkanExampleBase(true)
 	{
@@ -125,7 +125,7 @@ public:
 		camera.type = scene::Camera::CameraType::firstperson;
 		camera.subtype = scene::Camera::CameraSubType::surface;
 		camera.movementSpeed = 300.0f;
-		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 20048.0f);
+		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 200000.0f);
 		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		//camera.setTranslation(glm::vec3(0.0f, 3.2f, 0.0f));
 		
@@ -149,13 +149,13 @@ public:
 	void setupGeometry()
 	{
 		//Geometry
-		saturn.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 30.0f, 1);
+		saturn.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 300.0f, 1);
 		for (auto geo : saturn.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices),true);
 		}
-		sun.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 10.0f, 1, glm::vec3(0.0,0,0.0));
+		sun.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 100.0f, 1, glm::vec3(0.0,0,0.0));
 		for (auto geo : sun.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
@@ -269,8 +269,8 @@ public:
 	{
 		render::PipelineProperties sphereprops;
 		sphereprops.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		myplanet.Init(engine::tools::getAssetPath() + "textures/planets/mars_1k_topo.jpg", 600, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), 0, { &colorMap->m_descriptor }, "planet/planet", "planet/planet", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue);
-		rings.Init(670.0, 670.0+800.0, 300, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, { &ringsMap->m_descriptor, &shadowtex->m_descriptor }, "planet/shadowedplanet", "planet/shadowedplanet", scenepass->GetRenderPass(), pipelineCache, queue);
+		myplanet.Init(engine::tools::getAssetPath() + "textures/planets/mars_1k_topo.jpg", 6000, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), 0, { &colorMap->m_descriptor }, "planet/planet", "planet/planet", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue);
+		rings.Init(6700.0, 6700.0+8000.0, 300, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, { &ringsMap->m_descriptor, &shadowtex->m_descriptor }, "planet/shadowedplanet", "planet/shadowedplanet", scenepass->GetRenderPass(), pipelineCache, queue);
 		
 		shadowobjects.SetVertexLayout(&vertexLayout);
 		scene::Geometry* mygeo = new scene::Geometry;
@@ -294,7 +294,7 @@ public:
 			, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true));
 
 		sphereprops.blendEnable = true;
-		atmosphere.Init("", 630, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), sizeof(modelUniformAtmosphereFS), { &colorMap->m_descriptor }, "planet/atmosphere", "planet/atmosphere", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue,
+		atmosphere.Init("", 6100, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), sizeof(modelUniformAtmosphereFS), { &colorMap->m_descriptor }, "planet/atmosphere", "planet/atmosphere", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue,
 		128, 128);
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> blurbindings
@@ -309,7 +309,7 @@ public:
 		peffdesc = vulkanDevice->GetDescriptorSet({}, { &scenecolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
 
 		//camera.setTranslation(glm::vec3(0.0f, myplanet.GetRadius() + 8.0f, 0.0f));
-		camera.setTranslationOnSphere(2.0, 0.5, myplanet.GetRadius() + 8.0f);
+		camera.setTranslationOnSphere(2.0, 0.5, myplanet.GetRadius() + 50.0f);
 		/*int stride = terrain._vertexLayout->GetVertexSize(0) / sizeof(float);
 		for (auto geo : terrain.m_geometries)
 		{
@@ -396,7 +396,7 @@ public:
 	void updateUniformBufferOffscreen()
 	{
 		// Matrix from light's point of view
-		depthProjectionMatrix = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 20048.0f);
+		depthProjectionMatrix = glm::perspective(glm::radians(45.0f), 1.0f, 10.0f, 200000.0f);
 		glm::vec3 translation = mainplanetmatrix[3];
 		depthViewMatrix = glm::lookAt(glm::vec3(0.0f), translation, glm::vec3(0, 1, 0));
 				
@@ -416,7 +416,7 @@ public:
 		mainplanetmatrix = glm::mat4(1.0f);
 		
 		mainplanetmatrix = glm::rotate(mainplanetmatrix, glm::radians(planetrotation), glm::vec3(0.0f, 1.0f, 0.0f));
-		mainplanetmatrix = glm::translate(mainplanetmatrix, glm::vec3(-10000.0f, 0.0f, 0.0f));
+		mainplanetmatrix = glm::translate(mainplanetmatrix, glm::vec3(-100000.0f, 0.0f, 0.0f));
 		mainplanetmatrix = glm::rotate(mainplanetmatrix, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		mainplanetmatrix = glm::rotate(mainplanetmatrix, glm::radians(planetrotation), glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -426,7 +426,7 @@ public:
 		
 		glm::mat4 modelmatrix = glm::rotate(mainplanetmatrix, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		modelmatrix = glm::rotate(modelmatrix, glm::radians(planetrotation), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelmatrix = glm::translate(modelmatrix, glm::vec3(-3000.0f, 0.0f, 0.0f));
+		modelmatrix = glm::translate(modelmatrix, glm::vec3(-30000.0f, 0.0f, 0.0f));
 		modelmatrix = glm::rotate(modelmatrix, glm::radians(planetrotation), glm::vec3(0.0f, 1.0f, 0.0f));
 		
 		//sphere.UpdateUniforms(modelmatrix);
@@ -437,11 +437,11 @@ public:
 			atmosphere.GetVSUniformBuffer()->copyTo(&uboVS, sizeof(uboVS));
 		if (atmosphere.GetFSUniformBuffer())
 		{		
-			modelUniformAtmosphereFS.sun = glm::vec4( glm::vec3(glm::inverse(modelmatrix) * glm::vec4(0.0,0.0,0.0, 1.0f)), 20.0f);//modelmatrix[3];
+			modelUniformAtmosphereFS.sun = glm::vec4( glm::vec3(glm::inverse(modelmatrix) * glm::vec4(0.0,0.0,0.0, 1.0f)), 40.0f);//modelmatrix[3];
 			modelUniformAtmosphereFS.cameraPosition = glm::vec4(camera.position, 1.0f);//modelmatrix * glm::vec4(0.0, 0.0, 0.0, 1.0f);
 			modelUniformAtmosphereFS.viewDirection = glm::vec4(camera.camWorldFront, 1.0f);//modelmatrix * glm::vec4(0.0, 0.0, 0.0, 1.0f);
 			modelUniformAtmosphereFS.dimensions = glm::vec4(myplanet.GetRadius(), atmosphere.GetRadius(), h0, mh0);
-			modelUniformAtmosphereFS.scatteringCoefficients = glm::vec4(5.8e-3f, 13.5e-3f, 33.1e-3f, 21e-3f);
+			modelUniformAtmosphereFS.scatteringCoefficients = glm::vec4(0.0058, 0.0135, 0.0331, 0.021);
 			modelUniformAtmosphereFS.g = 0.888;
 			atmosphere.GetFSUniformBuffer()->copyTo(&modelUniformAtmosphereFS, sizeof(modelUniformAtmosphereFS));
 		}
@@ -508,10 +508,10 @@ public:
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
 		if (overlay->header("Settings")) {
-			if (ImGui::SliderFloat("Rayleigh scale height", &h0, 0.0f, 20.0f))
+			if (ImGui::SliderFloat("Rayleigh scale height", &h0, 0.0f, 2.0f))
 			{
 			}
-			if (ImGui::SliderFloat("Mie scale height", &mh0, 0.0f, 10.0f))
+			if (ImGui::SliderFloat("Mie scale height", &mh0, 0.0f, 2.0f))
 			{
 			}
 		}
