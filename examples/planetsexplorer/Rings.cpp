@@ -49,7 +49,7 @@ namespace engine
 			return indices;
 		}
 
-		void Rings::Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, VkQueue queue)
+		void Rings::Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue)
 		{
 			_vertexLayout = vertex_layout;
 
@@ -161,12 +161,8 @@ namespace engine
 			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &globalUniformBufferVS->m_descriptor, &uniformBufferVS->m_descriptor }, texturesDescriptors,
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
-			/*_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/" + vertexShaderFilename +".vert.spv", engine::tools::getAssetPath() + "shaders/" + fragmentShaderFilename + ".frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);*/
-			render::PipelineProperties pproperties;
-			pproperties.blendEnable = true;
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/" + vertexShaderFilename + ".vert.spv", engine::tools::getAssetPath() + "shaders/" + fragmentShaderFilename + ".frag.spv", renderPass, pipelineCache, pproperties);
+				engine::tools::getAssetPath() + "shaders/" + vertexShaderFilename + ".vert.spv", engine::tools::getAssetPath() + "shaders/" + fragmentShaderFilename + ".frag.spv", renderPass, pipelineCache, pipelineProperties);
 
 		}
 

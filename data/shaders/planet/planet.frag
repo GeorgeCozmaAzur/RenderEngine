@@ -5,11 +5,13 @@ layout (binding = 2) uniform sampler2D samplerColor;
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec2 inUV;
 layout (location = 2) in vec3 inPosition;
-layout (location = 3) in vec3 inLightPos;
-layout (location = 4) in vec3 inCamPosition;
+layout (location = 3) in vec3 inPositionObject;
+layout (location = 4) in vec3 inPositionInverse;
+layout (location = 5) in vec3 inLightPos;
+layout (location = 6) in vec3 inCamPosition;
 
 layout (location = 0) out vec4 outFragColor;
-
+layout (location = 1) out vec4 outFragPositions;
 
 void main() 
 {
@@ -26,4 +28,5 @@ void main()
 	//outFragColor = vec4(inCamPosition, 1.0);
 	//vec4 own_color = vec4(frag_ubo.diffuse, frag_ubo.transparency);
 	outFragColor = ( diff) * tex_color;
+	outFragPositions  = vec4(inPositionObject, 1.0);
 }

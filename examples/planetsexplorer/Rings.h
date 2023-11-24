@@ -20,6 +20,7 @@ namespace engine
 				, std::string fragmentShaderFilename
 				, VkRenderPass renderPass
 				, VkPipelineCache pipelineCache
+				, render::PipelineProperties pipelineProperties
 				, VkQueue queue);
 			uint32_t* BuildIndices(int offsetX, int offsetY, int width, int height, int& size);
 			void UpdateUniforms(glm::mat4 &model);

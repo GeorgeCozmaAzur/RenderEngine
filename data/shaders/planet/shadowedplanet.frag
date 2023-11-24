@@ -6,11 +6,13 @@ layout (binding = 3) uniform sampler2D shadowMap;
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec2 inUV;
 layout (location = 2) in vec3 inPosition;
-layout (location = 3) in vec3 inLightPos;
-layout (location = 4) in vec3 inCamPosition;
-layout (location = 5) in vec4 inShadowCoord;
+layout (location = 3) in vec3 inPositionInverse;
+layout (location = 4) in vec3 inLightPos;
+layout (location = 5) in vec3 inCamPosition;
+layout (location = 6) in vec4 inShadowCoord;
 
 layout (location = 0) out vec4 outFragColor;
+layout (location = 1) out vec4 outFragPositions;
 
 #define ambient 0.25
 
@@ -50,4 +52,5 @@ void main()
 	vec4 own_color = (( diff * shadow) * tex_color);// + vec4(0.0,0.2,0.5,0.0);
 	outFragColor = own_color;
 	//outFragColor = vec4(inUV.x, own_colorinUV.y, 0.0,1.0);
+	outFragPositions  = vec4(inPositionInverse, 1.0);
 }

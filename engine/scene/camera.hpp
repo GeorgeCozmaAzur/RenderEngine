@@ -68,6 +68,7 @@ namespace engine
 					matrices.view = glm::lookAt(position, lookatpoint, Up);
 				}
 				
+				matrices.viewold = matrices.view;
 				matrices.view = matrices.view * externalmat;
 
 				updated = true;
@@ -118,6 +119,7 @@ namespace engine
 			{
 				glm::mat4 perspective;
 				glm::mat4 view;
+				glm::mat4 viewold;
 			} matrices;
 
 			struct
@@ -144,6 +146,11 @@ namespace engine
 
 			float getFarClip() {
 				return m_zfar;
+			}
+
+			float getFOV()
+			{
+				return m_fov;
 			}
 
 			void setPerspective(float fov, float aspect, float znear, float zfar)

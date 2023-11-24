@@ -9,6 +9,7 @@ layout (location = 3) in vec3 inLightPos;
 layout (location = 4) in vec3 inCamPosition;
 
 layout (location = 0) out vec4 outFragColor;
+layout (location = 1) out vec4 outFragPositions;
 
 layout (binding = 2) uniform UboView 
 {
@@ -129,4 +130,5 @@ void main()
 	vec3 acolor = computeSkyColor(normalize(inPosition - rayOrigin), rayOrigin);
 	acolor = mix(acolor, (1.0 - exp(-1.0 * acolor)), 1.0);
 	outFragColor = vec4(acolor, 0.8);
+	outFragPositions  = vec4(inPosition, 1.0);
 }
