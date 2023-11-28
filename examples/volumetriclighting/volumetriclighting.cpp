@@ -83,7 +83,7 @@ public:
 	float m_ct_ping_pong = false;
 	int m_currentNoiseIndex = 0;
 
-	float lightAngle = glm::radians(-58.0f);
+	float lightAngle = glm::radians(-45.0f);
 
 	std::vector<VkCommandBuffer> drawShadowCmdBuffers;
 	std::vector<VkCommandBuffer> drawComputeCmdBuffers;
@@ -99,7 +99,7 @@ public:
 		camera.movementSpeed = 20.0f;
 		camera.setPerspective(60.0f, (float)width / (float)height, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
 		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera.setTranslation(glm::vec3(0.0f, -5.0f, 0.0f));
 		//camera.setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
 
 		previous_view_proj = camera.matrices.perspective * camera.matrices.view;
@@ -174,7 +174,7 @@ public:
 		scene.light_pos = glm::vec4(34.0f, -90.0f, 40.0f, 1.0f);*/
 		scene::ModelCreateInfo2 modelCreateInfo(1.0, 1.0f, glm::vec3(0.0,0,0.0));
 		scene_render_objects = scene.LoadFromFile2(engine::tools::getAssetPath() + "models/sibenik/", "sibenik.dae", &modelCreateInfo, vulkanDevice, queue, mainRenderPass->GetRenderPass(), pipelineCache);
-		scene.light_pos = glm::vec4(0.0f, -80.0f, 80.0f, 1.0f);
+		scene.light_pos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 		scene.CreateShadowObjects(pipelineCache);
 
@@ -367,7 +367,7 @@ public:
 			m_currentNoiseIndex = 0;
 
 		//scene.light_pos = glm::vec4(0.0f, sin(lightAngle) * 150, cos(lightAngle) * 150, 1.0f);
-		scene.light_pos = glm::vec4(sin(lightAngle) * 80, 0.0f, cos(lightAngle) * 80, 1.0f);
+		scene.light_pos = glm::vec4(sin(lightAngle) * 80, -20.0f, cos(lightAngle) * 80, 1.0f);
 
 		uboCompute.view = camera.matrices.view;
 		uboCompute.projection = camera.matrices.perspective;

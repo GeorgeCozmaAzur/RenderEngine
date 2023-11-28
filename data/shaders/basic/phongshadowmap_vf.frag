@@ -28,6 +28,15 @@ layout (location = 5) in vec4 inShadowCoord;
 
 layout (location = 0) out vec4 outFragColor;
 
+vec3 add_inscattered_light(vec3 color, vec3 world_pos)
+{
+    vec3 uv = world_to_uv(world_pos, ubo.bias_near_far_pow.y, ubo.bias_near_far_pow.z, ubo.bias_near_far_pow.w, ubo.view_proj);
+
+    vec4  scattered_light = texture(s_VoxelGrid, uv);
+    float transmittance   = scattered_light.a;
+
+    return color * transmittance * 1.0 + scattered_light.rgb;
+}
 
 vec3 textureProj(vec4 shadowCoord, vec2 off)
 {
@@ -59,8 +68,9 @@ void main()
 	vec3 shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
 
 	vec4 own_color = vec4(frag_ubo.diffuse, frag_ubo.transparency);
-	//own_color *= (spec + diff) * shadow;
-	//own_color.rgb = add_inscattered_light(own_color.rgb, inPosition);
+	own_color.rgb *= shadow;
+	own_color.rgb = add_inscattered_light(own_color.rgb, inPosition);
+	//own_color.b=1.0;
 	
 	outFragColor = own_color;
 }

@@ -94,6 +94,7 @@ namespace engine
 			render::VulkanBuffer* sceneFragmentUniformBuffer = nullptr;
 
 			std::vector<render::VulkanBuffer*> individualFragmentUniformBuffers;
+			std::vector<bool> areTransparents;//TODO store all uniform data in an array because maybe we want to modify it at runtime
 
 			float lightFOV = 45.0f;
 			glm::vec4 light_pos = glm::vec4(0.0f, 10.0f, 0.0f, 1.0f);

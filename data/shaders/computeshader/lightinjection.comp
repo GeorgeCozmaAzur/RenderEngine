@@ -62,7 +62,7 @@ vec3 textureProjColor(vec4 shadowCoord, vec2 off)
 	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 ) 
 	{
 		float dist = texture( sampleShadow, shadowCoord.st + off ).r;
-		shadowColor = texture( sampleShadowColor, shadowCoord.st + off ).rgb;
+		shadowColor = texture( sampleShadowColor, shadowCoord.st + off ).rgb * 2.0;
 		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
 		{
 			shadow = ambient;

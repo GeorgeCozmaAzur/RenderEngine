@@ -6,14 +6,11 @@ layout(set = 0, binding = 1) uniform FragUniformBufferObject {
 	float transparency;
 } frag_ubo;
 
-layout(location = 0) out vec4 color;
-//layout(location = 0) out float fragmentdepth;
+layout(location = 0) out vec4 outputColor;
 
 void main() 
-{	
-//	fragmentdepth = gl_FragCoord.z;
-	vec4 own_color = vec4(frag_ubo.diffuse, frag_ubo.transparency);
-	//if(frag_ubo.transparency < 1)
-	//discard;
-	color = own_color;
+{
+	vec3 whitecolor = vec3(1.0);
+	vec3 ownColor = mix(whitecolor, frag_ubo.diffuse, frag_ubo.transparency);
+	outputColor = vec4(ownColor, frag_ubo.transparency);
 }

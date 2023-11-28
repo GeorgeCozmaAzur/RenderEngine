@@ -68,7 +68,7 @@ void main()
 	
 	vec3 shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
 
-	vec4 outColor = (spec + diff) * tex_color;
+	vec4 outColor = tex_color;
 	outColor.rgb *= shadow;
 	outColor.rgb = add_inscattered_light(outColor.rgb, inPosition);
 	outFragColor = outColor;

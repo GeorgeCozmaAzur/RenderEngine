@@ -35,6 +35,11 @@ namespace engine
 				glm::mat4 rotM = glm::mat4(1.0f);
 				glm::mat4 transM;
 
+
+				camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
+				camFront.y = sin(glm::radians(rotation.x));
+				camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
+
 				if (subtype == Camera::normal)
 				{
 					rotM = glm::rotate(rotM, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -55,9 +60,6 @@ namespace engine
 					rotM = glm::rotate(rotM, float(-m_phi), glm::vec3(0.0f, 1.0f, 0.0f));
 					rotM = glm::rotate(rotM, float(-m_theta), glm::vec3(0.0f, 0.0f, 1.0f));
 
-					camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
-					camFront.y = sin(glm::radians(rotation.x));
-					camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
 
 					camWorldFront = rotM * glm::vec4(glm::normalize(camFront), 0.0);
 

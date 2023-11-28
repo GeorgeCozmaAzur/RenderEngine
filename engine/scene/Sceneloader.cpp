@@ -186,6 +186,7 @@ namespace engine
 
 				individualFragmentUniformBuffers.resize(pScene->mNumMaterials);
 				std::fill(individualFragmentUniformBuffers.begin(), individualFragmentUniformBuffers.end(), nullptr);
+				areTransparents.resize(pScene->mNumMaterials);
 
 				//TODO see exactly how many descriptors are needed
 				std::vector<VkDescriptorPoolSize> poolSizes =
@@ -343,12 +344,14 @@ namespace engine
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
 									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache, true,
 									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStatestrans.size(), blendAttachmentStatestrans.data());
+							areTransparents[i] = true;
 						}
 						else
 						{
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
 									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache,
 									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
+							areTransparents[i] = false;
 						}
 					}
 
@@ -546,6 +549,7 @@ namespace engine
 			shadowPass = _device->GetRenderPass({ { shadowmapColor->m_format, shadowmapColor->m_descriptor.imageLayout}, { shadowmap->m_format, shadowmap->m_descriptor.imageLayout} });
 			render::VulkanFrameBuffer* fb = _device->GetFrameBuffer(shadowPass->GetRenderPass(), SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor->m_descriptor.imageView, shadowmap->m_descriptor.imageView });
 			shadowPass->AddFrameBuffer(fb);
+			shadowPass->SetClearColor({ 1.0f,1.0f,1.0f }, 0);
 		}
 
 		void SceneLoader::CreateShadowObjects(VkPipelineCache pipelineCache)
@@ -609,14 +613,27 @@ namespace engine
 					std::string sm_vertex_file(engine::tools::getAssetPath() + std::string("shaders/shadowmapping/offscreen.vert.spv"));
 					std::string sm_fragment_file(engine::tools::getAssetPath() + ((individualFragmentUniformBuffers[ro_index] == nullptr) ? std::string("shaders/shadowmapping/offscreen.frag.spv") : std::string("shaders/shadowmapping/offscreencolor.frag.spv")) );
 
-					bool blendenable = individualFragmentUniformBuffers[ro_index];
+					bool blendenable = areTransparents[ro_index];
 
-					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatestrans;
-					blendAttachmentStatestrans.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+					//This one doesn't write to color. Carefull here if we want to use variance shadowmapping or other techniques that require aditional data from the color buffer
+					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
+					blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0x0, VK_FALSE));
+					render::PipelineProperties props;
+					props.attachmentCount = blendAttachmentStates.size();
+					props.pAttachments = blendAttachmentStates.data();
+					props.depthBias = true;
+					props.cullMode = VK_CULL_MODE_NONE;
+					props.depthTestEnable = true;
+					
+
+					if (blendenable)
+					{
+						props.depthWriteEnable = false;
+						blendAttachmentStates[0].colorWriteMask = 0xf;//We want to write to color only for transparents;
+					}
 
 					render::VulkanPipeline* p = _device->GetPipeline(currentdescayout->m_descriptorSetLayout, l->m_vertexInputBindings, l->m_vertexInputAttributes,
-						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache,
-						blendenable, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStatestrans.size(), blendAttachmentStatestrans.data(), true);
+						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache, props);
 					sro->AddPipeline(p);			
 
 					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(buffersDescriptors, {},
@@ -683,7 +700,7 @@ namespace engine
 			//light_pos.y = -165.0f + sin(glm::radians(timer * 360.0f)) * 20.0f;
 			//light_pos.z = 25.0f + sin(glm::radians(timer * 360.0f)) * 5.0f;//george change it back
 
-			float zNear = 1.0f;
+			float zNear = 10.0f;
 			float zFar = 906.0f;
 			// Matrix from light's point of view
 			glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
