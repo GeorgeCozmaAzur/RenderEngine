@@ -30,9 +30,9 @@
 
 // Shadowmap properties
 #if defined(__ANDROID__)
-#define SHADOWMAP_DIM 1024
+#define SHADOWMAP_DIM 256
 #else
-#define SHADOWMAP_DIM 2048
+#define SHADOWMAP_DIM 512
 #endif
 #define SHADOWMAP_FILTER VK_FILTER_LINEAR
 
@@ -385,7 +385,8 @@ public:
 
 	void buildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		VkClearValue clearValues[2];
 		VkViewport viewport;

@@ -49,7 +49,11 @@ namespace engine
 
 			if (properties.vertexConstantBlockSize > 0)
 			{
-				VkPushConstantRange pushConstantRange = engine::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, properties.vertexConstantBlockSize, 0);
+				VkPushConstantRange pushConstantRange{};
+				pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+				pushConstantRange.offset = 0;
+				pushConstantRange.size = properties.vertexConstantBlockSize;						
+
 				pipelineLayoutCI.pushConstantRangeCount = 1;
 				pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
 			}
@@ -61,29 +65,69 @@ namespace engine
 
 			std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
-			VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI = engine::initializers::pipelineInputAssemblyStateCreateInfo(properties.topology, 0, properties.primitiveRestart);
-			VkPipelineRasterizationStateCreateInfo rasterizationStateCI = properties.blendEnable ? engine::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE, 0) :
-				engine::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, properties.cullMode, VK_FRONT_FACE_CLOCKWISE, 0);
+			VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI{};
+			inputAssemblyStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+			inputAssemblyStateCI.topology = properties.topology;
+			inputAssemblyStateCI.flags = 0;
+			inputAssemblyStateCI.primitiveRestartEnable = properties.primitiveRestart;
+
+			VkPipelineRasterizationStateCreateInfo rasterizationStateCI{};
+			rasterizationStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+			rasterizationStateCI.polygonMode = VK_POLYGON_MODE_FILL;
+			rasterizationStateCI.cullMode = properties.blendEnable ? VK_CULL_MODE_NONE : properties.cullMode;
+			rasterizationStateCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
+			rasterizationStateCI.flags = 0;
+			rasterizationStateCI.depthClampEnable = VK_FALSE;
+			rasterizationStateCI.lineWidth = 1.0f;
+
 			VkPipelineColorBlendAttachmentState blendAttachmentState = engine::initializers::pipelineColorBlendAttachmentState(0xf, VkBool32(properties.blendEnable));
 
-			VkPipelineColorBlendStateCreateInfo colorBlendStateCI = (properties.attachmentCount && properties.pAttachments) ?
-				engine::initializers::pipelineColorBlendStateCreateInfo(properties.attachmentCount, properties.pAttachments) :
-				engine::initializers::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
+			VkPipelineColorBlendStateCreateInfo colorBlendStateCI{};
+			colorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+			colorBlendStateCI.attachmentCount = properties.attachmentCount > 0 ? properties.attachmentCount : 1;
+			colorBlendStateCI.pAttachments = properties.pAttachments ? properties.pAttachments : &blendAttachmentState;
 
 			VkBool32 enableDepthWrite = VkBool32(properties.depthWriteEnable && !properties.blendEnable);
 			//TODO there will be times when we want to write to depth when there is blend enabled
-			VkPipelineDepthStencilStateCreateInfo depthStencilStateCI = engine::initializers::pipelineDepthStencilStateCreateInfo(properties.depthTestEnable, enableDepthWrite, VK_COMPARE_OP_LESS_OR_EQUAL);
-			VkPipelineViewportStateCreateInfo viewportStateCI = engine::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
-			VkPipelineMultisampleStateCreateInfo multisampleStateCI = engine::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
-			VkPipelineDynamicStateCreateInfo dynamicStateCI = engine::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables.data(), static_cast<uint32_t>(dynamicStateEnables.size()), 0);
+			VkPipelineDepthStencilStateCreateInfo depthStencilStateCI{};
+			depthStencilStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+			depthStencilStateCI.depthTestEnable = properties.depthTestEnable;
+			depthStencilStateCI.depthWriteEnable = enableDepthWrite;
+			depthStencilStateCI.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			depthStencilStateCI.front = depthStencilStateCI.back;
+			depthStencilStateCI.back.compareOp = VK_COMPARE_OP_ALWAYS;
 
-			VkPipelineVertexInputStateCreateInfo vertexInputState = engine::initializers::pipelineVertexInputStateCreateInfo();
+			VkPipelineViewportStateCreateInfo viewportStateCI{};
+			viewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+			viewportStateCI.viewportCount = 1;
+			viewportStateCI.scissorCount = 1;
+			viewportStateCI.flags = 0;
+
+			VkPipelineMultisampleStateCreateInfo multisampleStateCI{};
+			multisampleStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+			multisampleStateCI.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			multisampleStateCI.flags = 0;
+
+			VkPipelineDynamicStateCreateInfo dynamicStateCI{};
+			dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+			dynamicStateCI.pDynamicStates = dynamicStateEnables.data();
+			dynamicStateCI.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+			dynamicStateCI.flags = 0;
+
+			VkPipelineVertexInputStateCreateInfo vertexInputState{};
+			vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 			vertexInputState.vertexBindingDescriptionCount = static_cast<uint32_t>(vertexInputBindings.size());
 			vertexInputState.pVertexBindingDescriptions = vertexInputBindings.data();
 			vertexInputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributes.size());
 			vertexInputState.pVertexAttributeDescriptions = vertexInputAttributes.data();
 
-			VkGraphicsPipelineCreateInfo pipelineCreateInfoCI = engine::initializers::pipelineCreateInfo(m_pipelineLayout, _renderPass, 0);
+			VkGraphicsPipelineCreateInfo pipelineCreateInfoCI{};
+			pipelineCreateInfoCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+			pipelineCreateInfoCI.layout = m_pipelineLayout;
+			pipelineCreateInfoCI.renderPass = _renderPass;
+			pipelineCreateInfoCI.flags = 0;
+			pipelineCreateInfoCI.basePipelineIndex = -1;
+			pipelineCreateInfoCI.basePipelineHandle = VK_NULL_HANDLE;
 			pipelineCreateInfoCI.pVertexInputState = &vertexInputState;
 			pipelineCreateInfoCI.pInputAssemblyState = &inputAssemblyStateCI;
 			pipelineCreateInfoCI.pRasterizationState = &rasterizationStateCI;
@@ -97,11 +141,6 @@ namespace engine
 			std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 			shaderStages.push_back(LoadShader(vertexFile, VK_SHADER_STAGE_VERTEX_BIT));
 
-			/*const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
-				LoadShader(vertex_file, VK_SHADER_STAGE_VERTEX_BIT),
-				LoadShader(fragment_file, VK_SHADER_STAGE_FRAGMENT_BIT)
-			};*/
-
 			if (properties.depthBias)
 			{
 				// Cull front faces
@@ -110,11 +149,8 @@ namespace engine
 				rasterizationStateCI.depthBiasEnable = VK_TRUE;
 				// Add depth bias to dynamic state, so we can change it at runtime
 				dynamicStateEnables.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
-				dynamicStateCI =
-					engine::initializers::pipelineDynamicStateCreateInfo(
-						dynamicStateEnables.data(),
-						dynamicStateEnables.size(),
-						0);
+				dynamicStateCI.pDynamicStates = dynamicStateEnables.data();
+				dynamicStateCI.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
 			}
 
 			//TODO remove hardcode
@@ -131,8 +167,16 @@ namespace engine
 
 				if (properties.fragmentConstants)
 				{
-					VkSpecializationMapEntry specializationMapEntry = engine::initializers::specializationMapEntry(0, 0, sizeof(uint32_t));
-					VkSpecializationInfo specializationInfo = engine::initializers::specializationInfo(1, &specializationMapEntry, sizeof(uint32_t), properties.fragmentConstants);
+					VkSpecializationMapEntry specializationMapEntry{};
+					specializationMapEntry.constantID = 0;
+					specializationMapEntry.offset = 0;
+					specializationMapEntry.size = sizeof(uint32_t);
+
+					VkSpecializationInfo specializationInfo{};
+					specializationInfo.mapEntryCount = 1;
+					specializationInfo.pMapEntries = &specializationMapEntry;
+					specializationInfo.dataSize = sizeof(uint32_t);
+					specializationInfo.pData = properties.fragmentConstants;
 					shaderStages[1].pSpecializationInfo = &specializationInfo;
 				}
 			}
@@ -167,16 +211,21 @@ namespace engine
 
 			if (properties.vertexConstantBlockSize > 0)
 			{
-				VkPushConstantRange pushConstantRange =
-					engine::initializers::pushConstantRange(VK_SHADER_STAGE_COMPUTE_BIT, properties.vertexConstantBlockSize, 0);
+				VkPushConstantRange pushConstantRange{};
+				pushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+				pushConstantRange.offset = 0;
+				pushConstantRange.size = properties.vertexConstantBlockSize;				
+				
 				pPipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 				pPipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 			}
 
 			VK_CHECK_RESULT(vkCreatePipelineLayout(_device, &pPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout));
 
-			VkComputePipelineCreateInfo computePipelineCreateInfo =
-				initializers::computePipelineCreateInfo(m_pipelineLayout, 0);
+			VkComputePipelineCreateInfo computePipelineCreateInfo{};
+			computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+			computePipelineCreateInfo.layout = m_pipelineLayout;
+			computePipelineCreateInfo.flags = 0;
 
 			computePipelineCreateInfo.stage = LoadShader(file, VK_SHADER_STAGE_COMPUTE_BIT);
 

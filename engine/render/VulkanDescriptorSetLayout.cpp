@@ -4,9 +4,23 @@ namespace engine
 {
 	namespace render
 	{
+		VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(
+			VkDescriptorType type,
+			VkShaderStageFlags stageFlags,
+			uint32_t binding,
+			uint32_t descriptorCount = 1)
+		{
+			VkDescriptorSetLayoutBinding setLayoutBinding{};
+			setLayoutBinding.descriptorType = type;
+			setLayoutBinding.stageFlags = stageFlags;
+			setLayoutBinding.binding = binding;
+			setLayoutBinding.descriptorCount = descriptorCount;
+			return setLayoutBinding;
+		}
+
 		void VulkanDescriptorSetLayout::AddDescriptorSetLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags)
 		{
-			m_setLayoutBindings.push_back(engine::initializers::descriptorSetLayoutBinding(
+			m_setLayoutBindings.push_back(descriptorSetLayoutBinding(
 				type,
 				stageFlags,
 				(uint32_t)m_setLayoutBindings.size()));

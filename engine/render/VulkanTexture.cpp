@@ -232,10 +232,12 @@ namespace engine
 
 		void TextureData::CreateStagingBuffer(VkDevice _device, VkPhysicalDeviceMemoryProperties* memoryProperties)
 		{
-			VkMemoryAllocateInfo memAllocInfo = engine::initializers::memoryAllocateInfo();
+			VkMemoryAllocateInfo memAllocInfo{};
+			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			VkMemoryRequirements memReqs;
 
-			VkBufferCreateInfo bufferCreateInfo = engine::initializers::bufferCreateInfo();
+			VkBufferCreateInfo bufferCreateInfo{};
+			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			bufferCreateInfo.size = m_imageSize;
 			// This buffer is used as a transfer source for the buffer copy
 			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -292,11 +294,13 @@ namespace engine
 			m_layerCount = layersCount;
 			m_descriptor.imageLayout = imageLayout;
 
-			VkMemoryAllocateInfo memAllocInfo = engine::initializers::memoryAllocateInfo();
+			VkMemoryAllocateInfo memAllocInfo{};
+			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			VkMemoryRequirements memReqs;
 
 			// Create optimal tiled target image
-			VkImageCreateInfo imageCreateInfo = engine::initializers::imageCreateInfo();
+			VkImageCreateInfo imageCreateInfo{};
+			imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 
 			extent.depth > 1 ? imageCreateInfo.imageType = VK_IMAGE_TYPE_3D : imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;	
 			imageCreateInfo.format = m_format;
@@ -385,7 +389,8 @@ namespace engine
 		void VulkanTexture::CreateDescriptor(VkSamplerAddressMode adressMode, VkImageViewType viewType, VkImageAspectFlags aspect, float maxAnisoropy)
 		{
 			//TODO if not used in shaders no point in creating a sampler
-			VkSamplerCreateInfo samplerCreateInfo = engine::initializers::samplerCreateInfo();
+			VkSamplerCreateInfo samplerCreateInfo{};
+			samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 			samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
 			samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
 			samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
@@ -403,7 +408,8 @@ namespace engine
 			VK_CHECK_RESULT(vkCreateSampler(_device, &samplerCreateInfo, nullptr, &m_descriptor.sampler));
 
 			// Create image view
-			VkImageViewCreateInfo viewCreateInfo = engine::initializers::imageViewCreateInfo();
+			VkImageViewCreateInfo viewCreateInfo{};
+			viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			viewCreateInfo.viewType = viewType;
 			viewCreateInfo.format = m_format;
 			viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };

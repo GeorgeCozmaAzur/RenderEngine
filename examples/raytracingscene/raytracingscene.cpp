@@ -545,6 +545,40 @@ public:
 		memcpy(shaderBindingTables.hit.vbuffer->m_mapped, shaderHandleStorage.data() + handleSizeAligned * 3, handleSize);
 	}
 
+	inline VkWriteDescriptorSet writeDescriptorSet(
+		VkDescriptorSet dstSet,
+		VkDescriptorType type,
+		uint32_t binding,
+		VkDescriptorBufferInfo* bufferInfo,
+		uint32_t descriptorCount = 1)
+	{
+		VkWriteDescriptorSet writeDescriptorSet{};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.dstSet = dstSet;
+		writeDescriptorSet.descriptorType = type;
+		writeDescriptorSet.dstBinding = binding;
+		writeDescriptorSet.pBufferInfo = bufferInfo;
+		writeDescriptorSet.descriptorCount = descriptorCount;
+		return writeDescriptorSet;
+	}
+
+	inline VkWriteDescriptorSet writeDescriptorSet(
+		VkDescriptorSet dstSet,
+		VkDescriptorType type,
+		uint32_t binding,
+		VkDescriptorImageInfo* imageInfo,
+		uint32_t descriptorCount = 1)
+	{
+		VkWriteDescriptorSet writeDescriptorSet{};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.dstSet = dstSet;
+		writeDescriptorSet.descriptorType = type;
+		writeDescriptorSet.dstBinding = binding;
+		writeDescriptorSet.pImageInfo = imageInfo;
+		writeDescriptorSet.descriptorCount = descriptorCount;
+		return writeDescriptorSet;
+	}
+
 	/*
 		Create the descriptor sets used for the ray tracing dispatch
 	*/
@@ -590,19 +624,42 @@ public:
 			// Binding 0: Top level acceleration structure
 			accelerationStructureWrite,
 			// Binding 1: Ray tracing result image
-			engine::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor),
+			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor),
 			// Binding 2: Uniform data
-			engine::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &ubo->m_descriptor),
+			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &ubo->m_descriptor),
 			// Binding 3: Scene vertex buffer
-			engine::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3, &vertexBufferDescriptor),
+			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3, &vertexBufferDescriptor),
 			// Binding 4: Scene index buffer
-			engine::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor),
+			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor),
 			// Binding 5: All textures
-			engine::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, diit.data(), diit.size()),
+			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, diit.data(), diit.size()),
 			// Binding 6: Reference to all objects
-			engine::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 6, &objdescBufferDescriptor)
+			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 6, &objdescBufferDescriptor)
 		};
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
+	}
+
+	VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(
+		VkDescriptorType type,
+		VkShaderStageFlags stageFlags,
+		uint32_t binding,
+		uint32_t descriptorCount = 1)
+	{
+		VkDescriptorSetLayoutBinding setLayoutBinding{};
+		setLayoutBinding.descriptorType = type;
+		setLayoutBinding.stageFlags = stageFlags;
+		setLayoutBinding.binding = binding;
+		setLayoutBinding.descriptorCount = descriptorCount;
+		return setLayoutBinding;
+	}
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(
+		const std::vector<VkDescriptorSetLayoutBinding>& bindings)
+	{
+		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+		descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptorSetLayoutCreateInfo.pBindings = bindings.data();
+		descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		return descriptorSetLayoutCreateInfo;
 	}
 
 	/*
@@ -612,22 +669,22 @@ public:
 	{
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
 			// Binding 0: Acceleration structure
-			engine::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0),
+			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0),
 			// Binding 1: Storage image
-			engine::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 1),
+			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 1),
 			// Binding 2: Uniform buffer
-			engine::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 2),
+			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 2),
 			// Binding 3: Vertex buffer 
-			engine::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 3),
+			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 3),
 			// Binding 4: Index buffer
-			engine::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 4),
+			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 4),
 			// Binding 5: All textures
-			engine::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 5, alltextures.size()),
+			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 5, alltextures.size()),
 			// Binding 6: Reference to all objects
-			engine::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 6)
+			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 6)
 		};
 
-		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = engine::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
+		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = descriptorSetLayoutCreateInfo(setLayoutBindings);
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayout));
 
 		VkPipelineLayoutCreateInfo pPipelineLayoutCI = engine::initializers::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
@@ -713,7 +770,7 @@ public:
 		createStorageImage(swapChain.colorFormat, { width, height, 1 });
 		// Update descriptor
 		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, storageImage->m_descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL };
-		VkWriteDescriptorSet resultImageWrite = engine::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);
+		VkWriteDescriptorSet resultImageWrite = writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);
 		vkUpdateDescriptorSets(device, 1, &resultImageWrite, 0, VK_NULL_HANDLE);
 	}
 
@@ -722,7 +779,8 @@ public:
 	*/
 	void buildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 

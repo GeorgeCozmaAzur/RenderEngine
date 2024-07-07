@@ -97,7 +97,8 @@ public:
 
 	void buildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
 		{

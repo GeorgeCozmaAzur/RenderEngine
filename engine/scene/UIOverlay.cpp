@@ -147,13 +147,12 @@ namespace engine
 			_descriptorLayout = _device->GetDescriptorSetLayout(setLayoutBindings);
 
 			// Descriptor set
-			VkDescriptorImageInfo fontDescriptor = engine::initializers::descriptorImageInfo(
-				m_fontTexture->m_descriptor.sampler,
-				m_fontTexture->m_descriptor.imageView,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-			);
+			VkDescriptorImageInfo fontDescriptorImageInfo{};
+			fontDescriptorImageInfo.sampler = m_fontTexture->m_descriptor.sampler;
+			fontDescriptorImageInfo.imageView = m_fontTexture->m_descriptor.imageView;
+			fontDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-			render::VulkanDescriptorSet* set = _device->GetDescriptorSet({}, { &fontDescriptor }, _descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings);
+			render::VulkanDescriptorSet* set = _device->GetDescriptorSet({}, { &fontDescriptorImageInfo }, _descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings);
 			m_descriptorSets.push_back(set);
 
 			m_geometries.push_back(new Geometry);

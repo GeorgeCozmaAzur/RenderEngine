@@ -283,25 +283,28 @@ public:
 
 	void addComputeToGraphicsBarriers(VkCommandBuffer commandBuffer)
 	{
-			VkBufferMemoryBarrier bufferBarrier = engine::initializers::bufferMemoryBarrier();
-			bufferBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-			bufferBarrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-			bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			bufferBarrier.size = VK_WHOLE_SIZE;
-			std::vector<VkBufferMemoryBarrier> bufferBarriers;
-			bufferBarrier.buffer = clothcompute.storageBuffers.inbuffer->m_buffer;
-			bufferBarriers.push_back(bufferBarrier);
-			bufferBarrier.buffer = clothcompute.storageBuffers.outbuffer->m_buffer;
-			bufferBarriers.push_back(bufferBarrier);
-			vkCmdPipelineBarrier(
-				commandBuffer,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-				VK_FLAGS_NONE,
-				0, nullptr,
-				static_cast<uint32_t>(bufferBarriers.size()), bufferBarriers.data(),
-				0, nullptr);
+		VkBufferMemoryBarrier bufferBarrier{};
+		bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+		bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		bufferBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+		bufferBarrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+		bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		bufferBarrier.size = VK_WHOLE_SIZE;
+		std::vector<VkBufferMemoryBarrier> bufferBarriers;
+		bufferBarrier.buffer = clothcompute.storageBuffers.inbuffer->m_buffer;
+		bufferBarriers.push_back(bufferBarrier);
+		bufferBarrier.buffer = clothcompute.storageBuffers.outbuffer->m_buffer;
+		bufferBarriers.push_back(bufferBarrier);
+		vkCmdPipelineBarrier(
+			commandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+			VK_FLAGS_NONE,
+			0, nullptr,
+			static_cast<uint32_t>(bufferBarriers.size()), bufferBarriers.data(),
+			0, nullptr);
 	}
 
 	void buildShadowCommandBuffers()
@@ -310,7 +313,8 @@ public:
 		{
 			drawShadowCmdBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);//george carefull
 		}
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		for (int32_t i = 0; i < drawShadowCmdBuffers.size(); ++i)
 		{
 
@@ -339,7 +343,8 @@ public:
 			clothcompute.commandBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
 		}
 
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		for (int32_t i = 0; i < clothcompute.commandBuffers.size(); ++i)
 		{
@@ -363,7 +368,8 @@ public:
 
 	void buildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
 		{

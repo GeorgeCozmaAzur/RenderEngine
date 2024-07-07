@@ -352,7 +352,8 @@ public:
 	//just a testing function
 	void buildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
 		{
@@ -393,16 +394,17 @@ public:
 			ThreadData* thread = &threadData[i];
 
 			// Create one command pool for each thread
-			VkCommandPoolCreateInfo cmdPoolInfo = engine::initializers::commandPoolCreateInfo();
-			cmdPoolInfo.queueFamilyIndex = swapChain.queueNodeIndex;
-			cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolInfo, nullptr, &thread->commandPool));
+			VkCommandPoolCreateInfo cmdPoolCreateInfo{};
+			cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			cmdPoolCreateInfo.queueFamilyIndex = swapChain.queueNodeIndex;
+			cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &thread->commandPool));
 
 			// One secondary command buffer per object that is updated by this thread
 			thread->commandBuffer.resize(numObjectsPerThread);
 			// Generate secondary command buffers for each thread
 			VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo =
-				engine::initializers::commandBufferAllocateInfo(
+				engine::render::VulkanDevice::commandBufferAllocateInfo(
 					thread->commandPool,
 					VK_COMMAND_BUFFER_LEVEL_SECONDARY,
 					thread->commandBuffer.size());
@@ -410,16 +412,17 @@ public:
 
 			thread->objects.reserve(objectsNo / numDrawThreads);
 		}
-		VkCommandPoolCreateInfo cmdPoolInfo = engine::initializers::commandPoolCreateInfo();
-		cmdPoolInfo.queueFamilyIndex = swapChain.queueNodeIndex;
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolInfo, nullptr, &threadUIData.commandPool));
+		VkCommandPoolCreateInfo cmdPoolCreateInfo{};
+		cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		cmdPoolCreateInfo.queueFamilyIndex = swapChain.queueNodeIndex;
+		cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &threadUIData.commandPool));
 
 		// One secondary command buffer per object that is updated by this thread
 		threadUIData.commandBuffer.resize(numObjectsPerThread);
 		// Generate secondary command buffers for each thread
 		VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo =
-			engine::initializers::commandBufferAllocateInfo(
+			engine::render::VulkanDevice::commandBufferAllocateInfo(
 				threadUIData.commandPool,
 				VK_COMMAND_BUFFER_LEVEL_SECONDARY,
 				threadUIData.commandBuffer.size());
@@ -431,7 +434,8 @@ public:
 	{
 		ThreadData* thread = &threadData[threadIndex];
 
-		VkCommandBufferBeginInfo commandBufferBeginInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo commandBufferBeginInfo{};
+		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		commandBufferBeginInfo.pInheritanceInfo = &inheritanceInfo;
 		VkCommandBuffer cmdBuffer = thread->commandBuffer[cmdBufferIndex];
@@ -457,7 +461,9 @@ public:
 	{
 		ThreadData* thread = &threadUIData;
 
-		VkCommandBufferBeginInfo commandBufferBeginInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo commandBufferBeginInfo{};
+		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
 		commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		commandBufferBeginInfo.pInheritanceInfo = &inheritanceInfo;
 		VkCommandBuffer cmdBuffer = thread->commandBuffer[0];
@@ -471,9 +477,10 @@ public:
 
 	void updateCommandBuffers(int i)
 	{
-		VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+		VkCommandBufferBeginInfo commandBufferBeginInfo{};
+		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[0], &cmdBufInfo));
+		VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[0], &commandBufferBeginInfo));
 
 		mainRenderPass->Begin(drawCmdBuffers[0], i, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
@@ -481,10 +488,11 @@ public:
 		std::vector<VkCommandBuffer> commandBuffers;
 
 		// Inheritance info for the secondary command buffers
-		VkCommandBufferInheritanceInfo inheritanceInfo = engine::initializers::commandBufferInheritanceInfo();
-		inheritanceInfo.renderPass = mainRenderPass->GetRenderPass();
+		VkCommandBufferInheritanceInfo cmdBufferInheritanceInfo{};
+		cmdBufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		cmdBufferInheritanceInfo.renderPass = mainRenderPass->GetRenderPass();
 		// Secondary command buffer also use the currently active framebuffer
-		inheritanceInfo.framebuffer = mainRenderPass->m_frameBuffers[i]->m_vkFrameBuffer;
+		cmdBufferInheritanceInfo.framebuffer = mainRenderPass->m_frameBuffers[i]->m_vkFrameBuffer;
 
 		numObjectsPerThread = visible_objects / numDrawThreads;
 		int restofjobs = visible_objects % numDrawThreads;
@@ -527,12 +535,12 @@ public:
 		{
 			if(threadData[t].objects.size() != 0)
 			{
-				threadPool.threads[t]->addJob([=] { threadRenderCode(t, 0, inheritanceInfo); });
+				threadPool.threads[t]->addJob([=] { threadRenderCode(t, 0, cmdBufferInheritanceInfo); });
 			}
 		}
 
 		int lastpos = threadPool.threads.size() - 1;
-		threadPool.threads[lastpos-1]->addJob([=] { threadRenderUICode(inheritanceInfo); });
+		threadPool.threads[lastpos-1]->addJob([=] { threadRenderUICode(cmdBufferInheritanceInfo); });
 		threadPool.threads[lastpos]->addJob([=] { updateUniformBuffers(); });
 
 		threadPool.wait();

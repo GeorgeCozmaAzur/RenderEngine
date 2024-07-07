@@ -14,15 +14,16 @@ namespace engine
 
 			m_attachments = imageViews;
 
-			VkFramebufferCreateInfo fbufCreateInfo = engine::initializers::framebufferCreateInfo();
-			fbufCreateInfo.renderPass = renderPass;
-			fbufCreateInfo.attachmentCount = (uint32_t)m_attachments.size();
-			fbufCreateInfo.pAttachments = m_attachments.data();
-			fbufCreateInfo.width = width;
-			fbufCreateInfo.height = height;
-			fbufCreateInfo.layers = 1;
+			VkFramebufferCreateInfo framebufferCreateInfo{};
+			framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferCreateInfo.renderPass = renderPass;
+			framebufferCreateInfo.attachmentCount = (uint32_t)m_attachments.size();
+			framebufferCreateInfo.pAttachments = m_attachments.data();
+			framebufferCreateInfo.width = width;
+			framebufferCreateInfo.height = height;
+			framebufferCreateInfo.layers = 1;
 
-			VK_CHECK_RESULT(vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &m_vkFrameBuffer));
+			VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &m_vkFrameBuffer));
 
 		}
 
@@ -181,7 +182,8 @@ namespace engine
 			dependencies[passIndex].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 			dependencies[passIndex].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-			VkRenderPassCreateInfo renderPassCreateInfo = engine::initializers::renderPassCreateInfo();
+			VkRenderPassCreateInfo renderPassCreateInfo{};
+			renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 			renderPassCreateInfo.attachmentCount = (uint32_t)attchmentDescriptions.size();
 			renderPassCreateInfo.pAttachments = attchmentDescriptions.data();
 			renderPassCreateInfo.subpassCount = (uint32_t)subpassDescriptions.size();
@@ -191,7 +193,8 @@ namespace engine
 
 			VK_CHECK_RESULT(vkCreateRenderPass(_device, &renderPassCreateInfo, nullptr, &m_vkRenderPass));
 
-			m_renderPassBeginInfo = engine::initializers::renderPassBeginInfo();
+			m_renderPassBeginInfo = VkRenderPassBeginInfo{};
+			m_renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			m_renderPassBeginInfo.renderPass = m_vkRenderPass;
 			m_renderPassBeginInfo.framebuffer = VK_NULL_HANDLE;
 			m_renderPassBeginInfo.renderArea.extent.width = 0;

@@ -539,11 +539,11 @@ namespace engine
 
 		void CreateDescriptorSetsPool(std::vector<VkDescriptorPoolSize> poolSizes, uint32_t maxSets)
 		{
-			VkDescriptorPoolCreateInfo descriptorPoolInfo =
-				engine::initializers::descriptorPoolCreateInfo(
-					static_cast<uint32_t>(poolSizes.size()),
-					poolSizes.data(),
-					maxSets);
+			VkDescriptorPoolCreateInfo descriptorPoolInfo{};
+			descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			descriptorPoolInfo.poolSizeCount = poolSizes.size();
+			descriptorPoolInfo.pPoolSizes = poolSizes.data();
+			descriptorPoolInfo.maxSets = maxSets;
 
 			VK_CHECK_RESULT(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, nullptr, &m_descriptorPool));
 		}
@@ -940,6 +940,19 @@ namespace engine
 			}			
 		}
 
+		static VkCommandBufferAllocateInfo commandBufferAllocateInfo(
+			VkCommandPool commandPool,
+			VkCommandBufferLevel level,
+			uint32_t bufferCount)
+		{
+			VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+			commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			commandBufferAllocateInfo.commandPool = commandPool;
+			commandBufferAllocateInfo.level = level;
+			commandBufferAllocateInfo.commandBufferCount = bufferCount;
+			return commandBufferAllocateInfo;
+		}
+
 		/**
 		* Allocate a command buffer from the command pool
 		*
@@ -952,7 +965,7 @@ namespace engine
 		{
 			VkCommandPool commandPool = getCommandPool(queueFamilyIndices.graphics);
 
-			VkCommandBufferAllocateInfo cmdBufAllocateInfo = engine::initializers::commandBufferAllocateInfo(commandPool, level, 1);
+			VkCommandBufferAllocateInfo cmdBufAllocateInfo = commandBufferAllocateInfo(commandPool, level, 1);
 
 			VkCommandBuffer cmdBuffer;
 			VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &cmdBuffer));
@@ -960,7 +973,8 @@ namespace engine
 			// If requested, also start recording for the new command buffer
 			if (begin)
 			{
-				VkCommandBufferBeginInfo cmdBufInfo = engine::initializers::commandBufferBeginInfo();
+				VkCommandBufferBeginInfo cmdBufInfo{};
+				cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 				VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo));
 			}
 
@@ -975,7 +989,7 @@ namespace engine
 
 			drawCommandBuffers.resize(size);
 
-			VkCommandBufferAllocateInfo cmdBufAllocateInfo = engine::initializers::commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, drawCommandBuffers.size());
+			VkCommandBufferAllocateInfo cmdBufAllocateInfo = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, drawCommandBuffers.size());
 
 			VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, drawCommandBuffers.data()));
 
@@ -995,7 +1009,7 @@ namespace engine
 		{
 			VkCommandPool commandPool = getCommandPool(queueFamilyIndex);
 
-			VkCommandBufferAllocateInfo cmdBufAllocateInfo = engine::initializers::commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+			VkCommandBufferAllocateInfo cmdBufAllocateInfo = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 
 			VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &computeCommandBuffer));
 
@@ -1033,14 +1047,17 @@ namespace engine
 
 			VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 
-			VkSubmitInfo submitInfo = engine::initializers::submitInfo();
+			VkSubmitInfo submitInfo{};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 			submitInfo.commandBufferCount = 1;
 			submitInfo.pCommandBuffers = &commandBuffer;
 
 			// Create fence to ensure that the command buffer has finished executing
-			VkFenceCreateInfo fenceInfo = engine::initializers::fenceCreateInfo(VK_FLAGS_NONE);
+			VkFenceCreateInfo fenceCreateInfo{};
+			fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			fenceCreateInfo.flags = VK_FLAGS_NONE;
 			VkFence fence;
-			VK_CHECK_RESULT(vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence));
+			VK_CHECK_RESULT(vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &fence));
 			
 			// Submit to the queue
 			VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, fence));
@@ -1058,7 +1075,8 @@ namespace engine
 		VkSemaphore GetSemaphore()
 		{
 			VkSemaphore outSemaphore = VK_NULL_HANDLE;
-			VkSemaphoreCreateInfo semaphoreCreateInfo = engine::initializers::semaphoreCreateInfo();
+			VkSemaphoreCreateInfo semaphoreCreateInfo{};
+			semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 			VK_CHECK_RESULT(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, nullptr, &outSemaphore));
 			m_semaphores.push_back(outSemaphore);
 			return outSemaphore;

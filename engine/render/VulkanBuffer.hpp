@@ -144,24 +144,28 @@ namespace engine
 				_device = device;
 
 				// Create the buffer handle
-				VkBufferCreateInfo bufferCreateInfo = initializers::bufferCreateInfo(usageFlags, size);
+				VkBufferCreateInfo bufferCreateInfo{};
+				bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+				bufferCreateInfo.usage = usageFlags;
+				bufferCreateInfo.size = size;
 				VK_CHECK_RESULT(vkCreateBuffer(device, &bufferCreateInfo, nullptr, &m_buffer));
 
 				// Create the memory backing up the buffer handle
 				VkMemoryRequirements memReqs;
-				VkMemoryAllocateInfo memAlloc = initializers::memoryAllocateInfo();
+				VkMemoryAllocateInfo memAllocInfo{};
+				memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 				vkGetBufferMemoryRequirements(device, m_buffer, &memReqs);
-				memAlloc.allocationSize = memReqs.size;
+				memAllocInfo.allocationSize = memReqs.size;
 				// Find a memory type index that fits the properties of the buffer
-				memAlloc.memoryTypeIndex = tools::getMemoryType(memReqs.memoryTypeBits, memoryPropertyFlags, memoryProperties);
+				memAllocInfo.memoryTypeIndex = tools::getMemoryType(memReqs.memoryTypeBits, memoryPropertyFlags, memoryProperties);
 				// If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
 				VkMemoryAllocateFlagsInfoKHR allocFlagsInfo{};
 				if (usageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
 					allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
 					allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-					memAlloc.pNext = &allocFlagsInfo;
+					memAllocInfo.pNext = &allocFlagsInfo;
 				}
-				VK_CHECK_RESULT(vkAllocateMemory(device, &memAlloc, nullptr, &m_memory));
+				VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &m_memory));
 
 				m_alignment = memReqs.alignment;
 				m_size = size;//memAlloc.allocationSize;
