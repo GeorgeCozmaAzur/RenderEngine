@@ -593,7 +593,7 @@ public:
 		};
 		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 1);
 
-		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = engine::initializers::descriptorSetAllocateInfo(vulkanDevice->m_descriptorPool, &descriptorSetLayout, 1);
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO , nullptr, vulkanDevice->m_descriptorPool, 1, &descriptorSetLayout };
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
 
 		VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = engine::initializers::writeDescriptorSetAccelerationStructureKHR();
@@ -687,8 +687,11 @@ public:
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = descriptorSetLayoutCreateInfo(setLayoutBindings);
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayout));
 
-		VkPipelineLayoutCreateInfo pPipelineLayoutCI = engine::initializers::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
-		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCI, nullptr, &pipelineLayout));
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutCreateInfo.setLayoutCount = 1;
+		pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 	
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 

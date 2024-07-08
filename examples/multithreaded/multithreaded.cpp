@@ -303,8 +303,8 @@ public:
 	void setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 * objectsNo),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * objectsNo)
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 * static_cast<uint32_t>(objectsNo)},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * static_cast<uint32_t>(objectsNo)}
 		};
 		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2 * objectsNo);
 	}
@@ -442,10 +442,10 @@ public:
 
 		VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo));
 
-		VkViewport viewport = engine::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
+		VkViewport viewport = { 0, 0, (float)width, (float)height, 0.0f, 1.0f };
 		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 
-		VkRect2D scissor = engine::initializers::rect2D(width, height, 0, 0);
+		VkRect2D scissor = { VkOffset2D{0,0}, VkExtent2D{width, height} };
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
 		for (auto object : thread->objects)

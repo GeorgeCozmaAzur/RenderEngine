@@ -119,6 +119,10 @@ namespace engine
 			VkPipelineStageFlags dstStageMask,
 			VkImageSubresourceRange subresourceRange);
 
+		VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState(
+			VkColorComponentFlags colorWriteMask,
+			VkBool32 blendEnable);
+
 		// Display error message and exit on fatal error
 		void exitFatal(std::string message, int32_t exitCode);
 		void exitFatal(std::string message, VkResult resultCode);

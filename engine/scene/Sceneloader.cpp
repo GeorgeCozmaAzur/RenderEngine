@@ -68,15 +68,18 @@ namespace engine
 
 			std::string shaderfolder = engine::tools::getAssetPath() + "shaders/" + (deferred ? deferredShadersFolder : forwardShadersFolder) + "/";
 
+			VkPipelineColorBlendAttachmentState opaqueState{};
+			opaqueState.blendEnable = VK_FALSE;
+			opaqueState.colorWriteMask = 0xf;
 			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-			blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
+			blendAttachmentStates.push_back(opaqueState);
 			if (deferred)
-				blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
+				blendAttachmentStates.push_back(opaqueState);
 
 			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatestrans;
-			blendAttachmentStatestrans.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+			blendAttachmentStatestrans.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
 			if (deferred)
-				blendAttachmentStatestrans.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+				blendAttachmentStatestrans.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
 
 			Assimp::Importer Importer;
 			const aiScene* pScene;
@@ -191,9 +194,9 @@ namespace engine
 				//TODO see exactly how many descriptors are needed
 				std::vector<VkDescriptorPoolSize> poolSizes =
 				{
-					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size())),
-					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size())+globalTextures.size()),
-					engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2)
+					VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size())},
+					VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size())},
+					VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 				};
 
 				device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);
@@ -617,7 +620,7 @@ namespace engine
 
 					//This one doesn't write to color. Carefull here if we want to use variance shadowmapping or other techniques that require aditional data from the color buffer
 					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-					blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0x0, VK_FALSE));
+					blendAttachmentStates.push_back(engine::tools::pipelineColorBlendAttachmentState(0x0, VK_FALSE));
 					render::PipelineProperties props;
 					props.attachmentCount = blendAttachmentStates.size();
 					props.pAttachments = blendAttachmentStates.data();

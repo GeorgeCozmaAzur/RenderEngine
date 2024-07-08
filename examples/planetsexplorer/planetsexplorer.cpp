@@ -228,8 +228,8 @@ public:
 	void setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 17),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10)
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 17},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10}
 		};
 		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 10);
 	}
@@ -267,9 +267,11 @@ public:
 
 	void setupPipelines()
 	{
-		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-		blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
-		blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
+		VkPipelineColorBlendAttachmentState opaqueState{};
+		opaqueState.blendEnable = VK_FALSE;
+		opaqueState.colorWriteMask = 0xf;
+		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };
+
 		render::PipelineProperties props;
 		props.attachmentCount = blendAttachmentStates.size();
 		props.pAttachments = blendAttachmentStates.data();
@@ -289,9 +291,10 @@ public:
 
 	void setupSphere()
 	{
-		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-		blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
-		blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
+		VkPipelineColorBlendAttachmentState opaqueState{};
+		opaqueState.blendEnable = VK_FALSE;
+		opaqueState.colorWriteMask = 0xf;
+		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };
 
 		render::PipelineProperties sphereprops;
 		sphereprops.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -299,8 +302,8 @@ public:
 		sphereprops.pAttachments = blendAttachmentStates.data();
 
 		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatesTransparent;
-		blendAttachmentStatesTransparent.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
-		blendAttachmentStatesTransparent.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+		blendAttachmentStatesTransparent.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+		blendAttachmentStatesTransparent.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
 
 		render::PipelineProperties transprops;
 		transprops.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -327,7 +330,7 @@ public:
 			shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._descriptorLayout->m_setLayoutBindings));
 		
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-		vertexInputAttributes.push_back(engine::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0));
+		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
 		shadowobjects.AddPipeline(vulkanDevice->GetPipeline(shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._vertexLayout->m_vertexInputBindings, shadowobjects._vertexLayout->m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache
 			, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true));

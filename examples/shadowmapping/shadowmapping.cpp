@@ -261,8 +261,8 @@ public:
 	{
 		// Example uses three ubos and two image samplers
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 12),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6)
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 12},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}
 		};
 
 		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
@@ -288,7 +288,7 @@ public:
 	void preparePipelines()
 	{
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-		vertexInputAttributes.push_back(engine::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0));
+		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
 
 		pipelines.offscreen = vulkanDevice->GetPipeline(layouts.offscreen_layout->m_descriptorSetLayout, layouts.scene_vlayout->m_vertexInputBindings, vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/offscreenvariancecolor.frag.spv", offscreenPass->GetRenderPass(), pipelineCache//);

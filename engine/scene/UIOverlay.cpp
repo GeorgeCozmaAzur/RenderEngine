@@ -169,12 +169,12 @@ namespace engine
 				}, {});
 
 			std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-			   engine::initializers::vertexInputBindingDescription(0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX),
+			   	VkVertexInputBindingDescription{0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX}
 			};
 			std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-				engine::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)),	// Location 0: Position
-				engine::initializers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)),	// Location 1: UV
-				engine::initializers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)),	// Location 0: Color
+				VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)},	// Location 0: Position
+				VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},	// Location 1: UV
+				VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},	// Location 0: Color
 			};
 			_pipeline = _device->GetPipeline(_descriptorLayout->m_descriptorSetLayout, vertexInputBindings, vertexInputAttributes,
 				engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", renderPass, pipelineCache, true, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, sizeof(pushConstBlock));

@@ -5,7 +5,7 @@ namespace engine
 {
 	namespace render
 	{
-		void VulkanFrameBuffer::Create(VkDevice device, VkRenderPass renderPass, int32_t width, int32_t height, std::vector<VkImageView> imageViews, VkClearColorValue  clearColor)
+		void VulkanFrameBuffer::Create(VkDevice device, VkRenderPass renderPass, uint32_t width, uint32_t height, std::vector<VkImageView> imageViews, VkClearColorValue  clearColor)
 		{
 			_device = device;
 			m_width = width;
@@ -243,10 +243,10 @@ namespace engine
 
 			if (pass_constants == VK_SUBPASS_CONTENTS_INLINE)//vulkan doesn't allow setting viewport and scrissors here when using secondary buffers. They must be set per secondary command buffers
 			{
-				VkViewport viewport = engine::initializers::viewport((float)m_frameBuffers[fbIndex]->m_width, (float)m_frameBuffers[fbIndex]->m_height, 0.0f, 1.0f);
+				VkViewport viewport = { 0, 0, (float)m_frameBuffers[fbIndex]->m_width, (float)m_frameBuffers[fbIndex]->m_height, 0.0f, 1.0f };
 				vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-				VkRect2D scissor = engine::initializers::rect2D(m_frameBuffers[fbIndex]->m_width, m_frameBuffers[fbIndex]->m_height, 0, 0);
+				VkRect2D scissor = { VkOffset2D{0,0}, VkExtent2D{m_frameBuffers[fbIndex]->m_width, m_frameBuffers[fbIndex]->m_height} };
 				vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 			}
 		}

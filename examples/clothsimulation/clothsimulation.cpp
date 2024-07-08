@@ -188,9 +188,9 @@ public:
 	void setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6)
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}
 		};
 		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 7);
 	}
@@ -223,7 +223,7 @@ public:
 	void setupPipelines()
 	{
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-		vertexInputAttributes.push_back(engine::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0));
+		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
 		shadowobjects.AddPipeline(vulkanDevice->GetPipeline(shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._vertexLayout->m_vertexInputBindings, shadowobjects._vertexLayout->m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache//);
 			, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true));
@@ -232,13 +232,13 @@ public:
 			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
 
 		std::vector<VkVertexInputBindingDescription> inputBindings = {
-			engine::initializers::vertexInputBindingDescription(0, sizeof(scene::ClothComputeObject::ClothVertex), VK_VERTEX_INPUT_RATE_VERTEX)
+			VkVertexInputBindingDescription{0, sizeof(scene::ClothComputeObject::ClothVertex), VK_VERTEX_INPUT_RATE_VERTEX}
 		};
 
 		std::vector<VkVertexInputAttributeDescription> inputAttributes = {
-			engine::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(scene::ClothComputeObject::ClothVertex, position)),
-			engine::initializers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(scene::ClothComputeObject::ClothVertex, normal)),
-			engine::initializers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(scene::ClothComputeObject::ClothVertex, uv))
+			VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(scene::ClothComputeObject::ClothVertex, position)},
+			VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(scene::ClothComputeObject::ClothVertex, normal)},
+			VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(scene::ClothComputeObject::ClothVertex, uv)}
 			
 		};
 		render::PipelineProperties props;

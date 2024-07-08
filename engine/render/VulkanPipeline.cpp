@@ -80,7 +80,7 @@ namespace engine
 			rasterizationStateCI.depthClampEnable = VK_FALSE;
 			rasterizationStateCI.lineWidth = 1.0f;
 
-			VkPipelineColorBlendAttachmentState blendAttachmentState = engine::initializers::pipelineColorBlendAttachmentState(0xf, VkBool32(properties.blendEnable));
+			VkPipelineColorBlendAttachmentState blendAttachmentState = engine::tools::pipelineColorBlendAttachmentState(0xf, VkBool32(properties.blendEnable));
 
 			VkPipelineColorBlendStateCreateInfo colorBlendStateCI{};
 			colorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -206,8 +206,10 @@ namespace engine
 			_device = device;
 			_pipelineCache = cache;
 
-			VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
-				initializers::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
+			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+			pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			pipelineLayoutCreateInfo.setLayoutCount = 1;
+			pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
 
 			if (properties.vertexConstantBlockSize > 0)
 			{
@@ -216,11 +218,11 @@ namespace engine
 				pushConstantRange.offset = 0;
 				pushConstantRange.size = properties.vertexConstantBlockSize;				
 				
-				pPipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-				pPipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
+				pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+				pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 			}
 
-			VK_CHECK_RESULT(vkCreatePipelineLayout(_device, &pPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout));
+			VK_CHECK_RESULT(vkCreatePipelineLayout(_device, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout));
 
 			VkComputePipelineCreateInfo computePipelineCreateInfo{};
 			computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;

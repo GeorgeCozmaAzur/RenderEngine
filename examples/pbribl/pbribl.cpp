@@ -167,8 +167,8 @@ public:
 	void setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8)
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
+			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8}
 		};
 		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
 	}
@@ -320,7 +320,7 @@ public:
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			subresourceRange);
 
-		VkViewport viewport = engine::initializers::viewport((float)dim, (float)dim, 0.0f, 1.0f);
+		VkViewport viewport = { 0, 0, (float)dim, (float)dim, 0.0f, 1.0f };
 		for (uint32_t m = 0; m < irradianceMap->m_mipLevelsCount; m++) {
 			for (uint32_t f = 0; f < 6; f++) {
 				viewport.width = static_cast<float>(dim * std::pow(0.5f, m));
@@ -448,7 +448,7 @@ public:
 
 		VkCommandBuffer cmdBuf = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
-		VkViewport viewport = engine::initializers::viewport((float)dim, (float)dim, 0.0f, 1.0f);
+		VkViewport viewport = { 0, 0, (float)dim, (float)dim, 0.0f, 1.0f };
 
 		VkImageSubresourceRange subresourceRange = {};
 		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

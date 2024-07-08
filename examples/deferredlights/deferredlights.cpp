@@ -246,9 +246,9 @@ public:
 	{
 		// Example uses three ubos and two image samplers
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10),
-			engine::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4)
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4}
 		};
 		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
 	}
@@ -312,11 +312,10 @@ public:
 
 	void setupPipelines()
 	{
-
-		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-		blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
-		blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
-		blendAttachmentStates.push_back(engine::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
+		VkPipelineColorBlendAttachmentState opaqueState{};
+		opaqueState.blendEnable = VK_FALSE;
+		opaqueState.colorWriteMask = 0xf;
+		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState ,opaqueState, opaqueState };
 
 		pipelines.plane = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.frag.spv", 

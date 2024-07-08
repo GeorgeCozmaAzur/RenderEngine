@@ -11,11 +11,11 @@ namespace engine
 		struct VulkanFrameBuffer
 		{
 			VkDevice _device = VK_NULL_HANDLE;
-			int32_t m_width, m_height;
+			uint32_t m_width, m_height;
 			std::vector<VkImageView> m_attachments;
 			VkClearColorValue m_clearColor;
 			VkFramebuffer m_vkFrameBuffer;
-			void Create(VkDevice device, VkRenderPass renderPass, int32_t width, int32_t height, std::vector<VkImageView> imageViews, VkClearColorValue  clearColor = { { 0.0f, 0.0f, 0.0f, 0.0f } });
+			void Create(VkDevice device, VkRenderPass renderPass, uint32_t width, uint32_t height, std::vector<VkImageView> imageViews, VkClearColorValue  clearColor = { { 0.0f, 0.0f, 0.0f, 0.0f } });
 			~VulkanFrameBuffer();
 		};
 

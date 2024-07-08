@@ -560,8 +560,8 @@ void VulkanExampleBase::updateOverlay()
 void VulkanExampleBase::drawUI(const VkCommandBuffer commandBuffer)
 {
 	if (settings.overlay) {
-		const VkViewport viewport = engine::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
-		const VkRect2D scissor = engine::initializers::rect2D(width, height, 0, 0);
+		const VkViewport viewport = { 0, 0, (float)width, (float)height, 0.0f, 1.0f };
+		const VkRect2D scissor = { VkOffset2D{0,0}, VkExtent2D{width, height} };
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
