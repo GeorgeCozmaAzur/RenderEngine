@@ -345,7 +345,9 @@ public:
 			uint32_t maxVertex = geo->m_vertexCount;
 
 			// Build
-			VkAccelerationStructureGeometryKHR accelerationStructureGeometry = engine::initializers::accelerationStructureGeometryKHR();
+			//VkAccelerationStructureGeometryKHR accelerationStructureGeometry = engine::initializers::accelerationStructureGeometryKHR();
+			VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
+			accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
 			accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
 			accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
 			accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
@@ -359,13 +361,17 @@ public:
 			accelerationStructureGeometry.geometry.triangles.transformData.hostAddress = nullptr;
 
 			// Get size info
-			VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = engine::initializers::accelerationStructureBuildGeometryInfoKHR();
+			//VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = engine::initializers::accelerationStructureBuildGeometryInfoKHR();
+			VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
+			accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 			accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 			accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
 			accelerationStructureBuildGeometryInfo.geometryCount = 1;
 			accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
-			VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = engine::initializers::accelerationStructureBuildSizesInfoKHR();
+			//VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = engine::initializers::accelerationStructureBuildSizesInfoKHR();
+			VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
+			accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 			vkGetAccelerationStructureBuildSizesKHR(
 				device,
 				VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
@@ -379,7 +385,9 @@ public:
 			// Create a small scratch buffer used during build of the bottom level acceleration structure
 			ScratchBuffer scratchBuffer = createScratchBuffer(accelerationStructureBuildSizesInfo.buildScratchSize);
 
-			VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = engine::initializers::accelerationStructureBuildGeometryInfoKHR();
+			//VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = engine::initializers::accelerationStructureBuildGeometryInfoKHR();
+			VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
+			accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 			accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 			accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
 			accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
@@ -459,7 +467,9 @@ public:
 		VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress{};
 		instanceDataDeviceAddress.deviceAddress = getBufferDeviceAddress(instancesBuffer->m_buffer);
 
-		VkAccelerationStructureGeometryKHR accelerationStructureGeometry = engine::initializers::accelerationStructureGeometryKHR();
+		//VkAccelerationStructureGeometryKHR accelerationStructureGeometry = engine::initializers::accelerationStructureGeometryKHR();
+		VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
+		accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
 		accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
 		accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
 		accelerationStructureGeometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
@@ -467,7 +477,9 @@ public:
 		accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddress;
 
 		// Get size info
-		VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = engine::initializers::accelerationStructureBuildGeometryInfoKHR();
+		//VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = engine::initializers::accelerationStructureBuildGeometryInfoKHR();
+		VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
+		accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 		accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
 		accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
 		accelerationStructureBuildGeometryInfo.geometryCount = 1;
@@ -475,7 +487,9 @@ public:
 
 		uint32_t primitive_count = bottomLevelASs.size();
 
-		VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = engine::initializers::accelerationStructureBuildSizesInfoKHR();
+		//VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = engine::initializers::accelerationStructureBuildSizesInfoKHR();
+		VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
+		accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 		vkGetAccelerationStructureBuildSizesKHR(
 			device,
 			VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
@@ -489,7 +503,9 @@ public:
 		// Create a small scratch buffer used during build of the top level acceleration structure
 		ScratchBuffer scratchBuffer = createScratchBuffer(accelerationStructureBuildSizesInfo.buildScratchSize);
 
-		VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = engine::initializers::accelerationStructureBuildGeometryInfoKHR();
+		//VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = engine::initializers::accelerationStructureBuildGeometryInfoKHR();
+		VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
+		accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 		accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
 		accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
 		accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
@@ -596,7 +612,9 @@ public:
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO , nullptr, vulkanDevice->m_descriptorPool, 1, &descriptorSetLayout };
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
 
-		VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = engine::initializers::writeDescriptorSetAccelerationStructureKHR();
+		//VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = engine::initializers::writeDescriptorSetAccelerationStructureKHR();
+		VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo{};
+		descriptorAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
 		descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
 		descriptorAccelerationStructureInfo.pAccelerationStructures = &topLevelAS.handle;
 
@@ -738,7 +756,9 @@ public:
 			shaderGroups.push_back(shaderGroup);
 		}
 
-		VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI = engine::initializers::rayTracingPipelineCreateInfoKHR();
+		//VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI = engine::initializers::rayTracingPipelineCreateInfoKHR();
+		VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI{};
+		rayTracingPipelineCI.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
 		rayTracingPipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
 		rayTracingPipelineCI.pStages = shaderStages.data();
 		rayTracingPipelineCI.groupCount = static_cast<uint32_t>(shaderGroups.size());
