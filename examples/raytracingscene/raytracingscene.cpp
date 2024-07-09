@@ -234,10 +234,9 @@ public:
 		storageImage = vulkanDevice->GetRenderTarget(extent.width, extent.height, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 
 		VkCommandBuffer cmdBuffer = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-		engine::tools::setImageLayout(cmdBuffer, storageImage->m_vkImage,
+		storageImage->ChangeLayout(cmdBuffer,
 			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_GENERAL,
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+			VK_IMAGE_LAYOUT_GENERAL);
 		vulkanDevice->flushCommandBuffer(cmdBuffer, queue);
 	}
 
@@ -805,8 +804,6 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
 		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
 		{
 			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
@@ -833,20 +830,14 @@ public:
 			*/
 
 			// Prepare current swap chain image as transfer destination
-			engine::tools::setImageLayout(
-				drawCmdBuffers[i],
-				swapChain.images[i],
+			swapChain.buffers[i].ChangeLayout(drawCmdBuffers[i],
 				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				subresourceRange);
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 			// Prepare ray tracing output image as transfer source
-			engine::tools::setImageLayout(
-				drawCmdBuffers[i],
-				storageImage->m_vkImage,
+			storageImage->ChangeLayout(drawCmdBuffers[i], 
 				VK_IMAGE_LAYOUT_GENERAL,
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				subresourceRange);
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 			VkImageCopy copyRegion{};
 			copyRegion.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
@@ -857,20 +848,14 @@ public:
 			vkCmdCopyImage(drawCmdBuffers[i], storageImage->m_vkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapChain.images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 			// Transition swap chain image back for presentation
-			engine::tools::setImageLayout(
-				drawCmdBuffers[i],
-				swapChain.images[i],
+			swapChain.buffers[i].ChangeLayout(drawCmdBuffers[i],
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-				subresourceRange);
+				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 			// Transition ray tracing output image back to general layout
-			engine::tools::setImageLayout(
-				drawCmdBuffers[i],
-				storageImage->m_vkImage,
+			storageImage->ChangeLayout(drawCmdBuffers[i],
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				VK_IMAGE_LAYOUT_GENERAL,
-				subresourceRange);
+				VK_IMAGE_LAYOUT_GENERAL);
 
 			//drawUI(drawCmdBuffers[i], frameBuffers[i]);//george
 

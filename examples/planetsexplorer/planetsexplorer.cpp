@@ -301,10 +301,16 @@ public:
 		sphereprops.attachmentCount = blendAttachmentStates.size();
 		sphereprops.pAttachments = blendAttachmentStates.data();
 
-		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatesTransparent;
-		blendAttachmentStatesTransparent.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
-		blendAttachmentStatesTransparent.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
-
+		VkPipelineColorBlendAttachmentState transparentState{
+			VK_TRUE,
+			VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+			VK_BLEND_OP_ADD,
+			VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ZERO,
+			VK_BLEND_OP_ADD,
+			0xf
+		};
+		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatesTransparent{ transparentState, transparentState };
+		
 		render::PipelineProperties transprops;
 		transprops.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		transprops.blendEnable = true;

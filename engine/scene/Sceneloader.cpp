@@ -76,10 +76,18 @@ namespace engine
 			if (deferred)
 				blendAttachmentStates.push_back(opaqueState);
 
+			VkPipelineColorBlendAttachmentState transparentState{
+				VK_TRUE,
+				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+				VK_BLEND_OP_ADD,
+				VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ZERO,
+				VK_BLEND_OP_ADD,
+				0xf
+			};
 			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatestrans;
-			blendAttachmentStatestrans.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+			blendAttachmentStatestrans.push_back(transparentState);
 			if (deferred)
-				blendAttachmentStatestrans.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+				blendAttachmentStatestrans.push_back(transparentState);
 
 			Assimp::Importer Importer;
 			const aiScene* pScene;
@@ -548,7 +556,6 @@ namespace engine
 			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true, VK_IMAGE_ASPECT_DEPTH_BIT, false);
 			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true);
 			shadowmapColor = _device->GetColorRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, FB_COLOR_FORMAT);
-			//_device->UpdateTexturelayout(shadowmap, copyQueue);
 			shadowPass = _device->GetRenderPass({ { shadowmapColor->m_format, shadowmapColor->m_descriptor.imageLayout}, { shadowmap->m_format, shadowmap->m_descriptor.imageLayout} });
 			render::VulkanFrameBuffer* fb = _device->GetFrameBuffer(shadowPass->GetRenderPass(), SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor->m_descriptor.imageView, shadowmap->m_descriptor.imageView });
 			shadowPass->AddFrameBuffer(fb);
@@ -619,8 +626,11 @@ namespace engine
 					bool blendenable = areTransparents[ro_index];
 
 					//This one doesn't write to color. Carefull here if we want to use variance shadowmapping or other techniques that require aditional data from the color buffer
-					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-					blendAttachmentStates.push_back(engine::tools::pipelineColorBlendAttachmentState(0x0, VK_FALSE));
+					VkPipelineColorBlendAttachmentState opaqueState{};
+					opaqueState.blendEnable = VK_FALSE;
+					opaqueState.colorWriteMask = 0xf;
+					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState };
+
 					render::PipelineProperties props;
 					props.attachmentCount = blendAttachmentStates.size();
 					props.pAttachments = blendAttachmentStates.data();

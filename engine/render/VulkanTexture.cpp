@@ -282,6 +282,7 @@ namespace engine
 		void VulkanTexture::Create(VkDevice device, VkPhysicalDeviceMemoryProperties* memoryProperties, VkExtent3D extent, VkFormat format,
 			VkImageUsageFlags imageUsageFlags,
 			VkImageLayout imageLayout,
+			VkImageAspectFlags aspect,
 			uint32_t mipLevelsCount, uint32_t layersCount,
 			VkImageCreateFlags flags)
 		{
@@ -293,6 +294,7 @@ namespace engine
 			m_mipLevelsCount = mipLevelsCount;
 			m_layerCount = layersCount;
 			m_descriptor.imageLayout = imageLayout;
+			m_aspect = aspect;
 
 			VkMemoryAllocateInfo memAllocInfo{};
 			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -326,6 +328,156 @@ namespace engine
 
 		}
 
+		void VulkanTexture::ChangeLayout(
+			VkCommandBuffer cmdbuffer,
+			VkImageLayout oldImageLayout,
+			VkImageLayout newImageLayout,
+			VkPipelineStageFlags srcStageMask,
+			VkPipelineStageFlags dstStageMask)
+		{
+			VkImageSubresourceRange subresourceRange = { m_aspect, 0, m_mipLevelsCount, 0, m_layerCount };
+
+			// Create an image barrier object
+			VkImageMemoryBarrier imageMemoryBarrier{};
+			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier.oldLayout = oldImageLayout;
+			imageMemoryBarrier.newLayout = newImageLayout;
+			imageMemoryBarrier.image = m_vkImage;
+			imageMemoryBarrier.subresourceRange = subresourceRange;
+
+			// Source layouts (old)
+			// Source access mask controls actions that have to be finished on the old layout
+			// before it will be transitioned to the new layout
+			switch (oldImageLayout)
+			{
+			case VK_IMAGE_LAYOUT_UNDEFINED:
+				// Image layout is undefined (or does not matter)
+				// Only valid as initial layout
+				// No flags required, listed only for completeness
+				imageMemoryBarrier.srcAccessMask = 0;
+				break;
+
+			case VK_IMAGE_LAYOUT_PREINITIALIZED:
+				// Image is preinitialized
+				// Only valid as initial layout for linear images, preserves memory contents
+				// Make sure host writes have been finished
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+				// Image is a color attachment
+				// Make sure any writes to the color buffer have been finished
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+				// Image is a depth/stencil attachment
+				// Make sure any writes to the depth/stencil buffer have been finished
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+				// Image is a transfer source 
+				// Make sure any reads from the image have been finished
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+				// Image is a transfer destination
+				// Make sure any writes to the image have been finished
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+				// Image is read by a shader
+				// Make sure any shader reads from the image have been finished
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				break;
+			default:
+				// Other source layouts aren't handled (yet)
+				break;
+			}
+
+			// Target layouts (new)
+			// Destination access mask controls the dependency for the new image layout
+			switch (newImageLayout)
+			{
+			case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+				// Image will be used as a transfer destination
+				// Make sure any writes to the image have been finished
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+				// Image will be used as a transfer source
+				// Make sure any reads from the image have been finished
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+				// Image will be used as a color attachment
+				// Make sure any writes to the color buffer have been finished
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+				// Image layout will be used as a depth/stencil attachment
+				// Make sure any writes to depth/stencil buffer have been finished
+				imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+				// Image will be read in a shader (sampler, input attachment)
+				// Make sure any writes to the image have been finished
+				if (imageMemoryBarrier.srcAccessMask == 0)
+				{
+					imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+				}
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				break;
+			default:
+				// Other source layouts aren't handled (yet)
+				break;
+			}
+
+			// Put barrier inside setup command buffer
+			vkCmdPipelineBarrier(
+				cmdbuffer,
+				srcStageMask,
+				dstStageMask,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &imageMemoryBarrier);
+		}
+		void VulkanTexture::PipelineBarrier(
+			VkCommandBuffer cmdbuffer,
+			VkAccessFlags srcAccessMask,
+			VkAccessFlags dstAccessMask,
+			VkPipelineStageFlags srcStageMask,
+			VkPipelineStageFlags dstStageMask
+			)
+		{
+			VkImageMemoryBarrier imageMemoryBarrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, nullptr, 
+				srcAccessMask, dstAccessMask,
+				m_descriptor.imageLayout, m_descriptor.imageLayout,
+				VK_QUEUE_FAMILY_IGNORED,VK_QUEUE_FAMILY_IGNORED,
+				m_vkImage,
+				{ m_aspect, 0, m_mipLevelsCount, 0, m_layerCount }
+			};
+
+			vkCmdPipelineBarrier(
+				cmdbuffer,
+				srcStageMask,
+				dstStageMask,
+				VK_FLAGS_NONE,
+				0, nullptr,
+				0, nullptr,
+				1, &imageMemoryBarrier);
+		}
+
 		void VulkanTexture::Update(TextureData* textureData, VkCommandBuffer copyCmd, VkQueue copyQueue)
 		{
 			std::vector<VkBufferImageCopy> bufferCopyRegions;
@@ -336,7 +488,7 @@ namespace engine
 				for (uint32_t level = 0; level < m_mipLevelsCount; level++)
 				{
 					VkBufferImageCopy bufferCopyRegion = {};
-					bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+					bufferCopyRegion.imageSubresource.aspectMask = m_aspect;
 					bufferCopyRegion.imageSubresource.mipLevel = level;
 					bufferCopyRegion.imageSubresource.baseArrayLayer = face;
 					bufferCopyRegion.imageSubresource.layerCount = 1;
@@ -353,21 +505,9 @@ namespace engine
 			}
 
 			// Image barrier for optimal image (target)
-			// Set initial layout for all array layers (faces) of the optimal (target) tiled texture
-			VkImageSubresourceRange subresourceRange = {};
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.baseMipLevel = 0;
-			subresourceRange.levelCount = m_mipLevelsCount;
-			subresourceRange.layerCount = m_layerCount;
+			ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-			engine::tools::setImageLayout(
-				copyCmd,
-				m_vkImage,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				subresourceRange);
-
-			// Copy the cube map faces from the staging buffer to the optimal tiled image
+			// Copy the faces from the staging buffer to the optimal tiled image
 			vkCmdCopyBufferToImage(
 				copyCmd,
 				textureData->m_stagingBuffer,
@@ -377,16 +517,10 @@ namespace engine
 				bufferCopyRegions.data());
 
 			// Change texture image layout to shader read after all faces have been copied
-			//this->descriptor.imageLayout = imageLayout;
-			engine::tools::setImageLayout(
-				copyCmd,
-				m_vkImage,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				m_descriptor.imageLayout,
-				subresourceRange);
+			ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_descriptor.imageLayout, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 		}
 
-		void VulkanTexture::CreateDescriptor(VkSamplerAddressMode adressMode, VkImageViewType viewType, VkImageAspectFlags aspect, float maxAnisoropy)
+		void VulkanTexture::CreateDescriptor(VkSamplerAddressMode adressMode, VkImageViewType viewType, float maxAnisoropy)
 		{
 			//TODO if not used in shaders no point in creating a sampler
 			VkSamplerCreateInfo samplerCreateInfo{};
@@ -413,22 +547,24 @@ namespace engine
 			viewCreateInfo.viewType = viewType;
 			viewCreateInfo.format = m_format;
 			viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-			viewCreateInfo.subresourceRange = { aspect, 0, 1, 0, 1 };
-			viewCreateInfo.subresourceRange.layerCount = m_layerCount;
-			viewCreateInfo.subresourceRange.levelCount = m_mipLevelsCount;
+			viewCreateInfo.subresourceRange = { m_aspect, 0, m_mipLevelsCount, 0, m_layerCount };
 			viewCreateInfo.image = m_vkImage;
 			VK_CHECK_RESULT(vkCreateImageView(_device, &viewCreateInfo, nullptr, &m_descriptor.imageView));
 		}
 
 		void VulkanTexture::Destroy()
 		{
-			vkDestroyImageView(_device, m_descriptor.imageView, nullptr);
-			vkDestroyImage(_device, m_vkImage, nullptr);
+			if(m_descriptor.imageView)
+				vkDestroyImageView(_device, m_descriptor.imageView, nullptr);
+
+			if(m_vkImage)
+				vkDestroyImage(_device, m_vkImage, nullptr);
+
 			if (m_descriptor.sampler)
-			{
 				vkDestroySampler(_device, m_descriptor.sampler, nullptr);
-			}
-			vkFreeMemory(_device, m_deviceMemory, nullptr);
+
+			if(m_deviceMemory)
+				vkFreeMemory(_device, m_deviceMemory, nullptr);
 		}
 	}
 }

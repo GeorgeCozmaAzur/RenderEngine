@@ -270,7 +270,7 @@ namespace engine
 							position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
 							else
 							{
-								m_phi += moveSpeed * 0.001;
+								m_phi += moveSpeed * 0.001f;
 								position = ToCartesian();
 							}
 						}
@@ -280,7 +280,7 @@ namespace engine
 							position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
 							else
 							{
-								m_phi -= moveSpeed * 0.001;
+								m_phi -= moveSpeed * 0.001f;
 								position = ToCartesian();
 							}
 						}

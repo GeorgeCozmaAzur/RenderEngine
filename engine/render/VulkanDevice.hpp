@@ -541,7 +541,7 @@ namespace engine
 		{
 			VkDescriptorPoolCreateInfo descriptorPoolInfo{};
 			descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			descriptorPoolInfo.poolSizeCount = poolSizes.size();
+			descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 			descriptorPoolInfo.pPoolSizes = poolSizes.data();
 			descriptorPoolInfo.maxSets = maxSets;
 
@@ -559,13 +559,14 @@ namespace engine
 			
 			tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
 				imageLayout,
+				VK_IMAGE_ASPECT_COLOR_BIT,
 				data.m_mips_no);
 
 			VkCommandBuffer copyCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			tex->Update(&data, copyCmd, copyQueue);
 			flushCommandBuffer(copyCmd, copyQueue);
 
-			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
 
 			data.Destroy(logicalDevice);
 
@@ -585,13 +586,14 @@ namespace engine
 
 			tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
 				imageLayout,
+				VK_IMAGE_ASPECT_COLOR_BIT,
 				data.m_mips_no,data.m_layers_no);
 
 			VkCommandBuffer copyCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			tex->Update(&data, copyCmd, copyQueue);
 			flushCommandBuffer(copyCmd, copyQueue);
 
-			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_ASPECT_COLOR_BIT, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
 
 			data.Destroy(logicalDevice);
 
@@ -613,13 +615,14 @@ namespace engine
 
 			tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
 				imageLayout,
+				VK_IMAGE_ASPECT_COLOR_BIT,
 				data.m_mips_no, data.m_layers_no, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
 
 			VkCommandBuffer copyCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			tex->Update(&data, copyCmd, copyQueue);
 			flushCommandBuffer(copyCmd, copyQueue);
 
-			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_CUBE, VK_IMAGE_ASPECT_COLOR_BIT, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_CUBE, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
 
 			data.Destroy(logicalDevice);
 
@@ -640,9 +643,10 @@ namespace engine
 
 			tex->Create(logicalDevice, &memoryProperties, { dimension, dimension, 1}, format, imageUsageFlags,
 				imageLayout,
+				VK_IMAGE_ASPECT_COLOR_BIT,
 				numMips, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
 
-			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_CUBE, VK_IMAGE_ASPECT_COLOR_BIT, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_CUBE, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
 
 			m_textures.push_back(tex);
 
@@ -656,19 +660,17 @@ namespace engine
 		{
 			VulkanTexture* tex = new VulkanTexture;
 
-			tex->Create(logicalDevice, &memoryProperties, extent, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, imageLayout, mipLevelsCount, layersCount);
+			tex->Create(logicalDevice, &memoryProperties, extent, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, imageLayout, VK_IMAGE_ASPECT_COLOR_BIT, mipLevelsCount, layersCount);
 
 			VkCommandBuffer layoutCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			tex->m_descriptor.imageLayout = imageLayout;//TODO maybe also shader read only optimal
-			tools::setImageLayout(
-				layoutCmd, tex->m_vkImage,
-				VK_IMAGE_ASPECT_COLOR_BIT,
+			tex->ChangeLayout(layoutCmd, 
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				tex->m_descriptor.imageLayout);
 
 			flushCommandBuffer(layoutCmd, copyQueue, true);
 
-			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, viewType, VK_IMAGE_ASPECT_COLOR_BIT, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, viewType, enabledFeatures.samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f);
 
 			m_textures.push_back(tex);
 
@@ -678,8 +680,8 @@ namespace engine
 		VulkanTexture* GetRenderTarget(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspect, VkImageLayout imageLayout)
 		{
 			VulkanTexture* tex = new VulkanTexture;
-			tex->Create(logicalDevice, &memoryProperties, { width, height, 1 }, format, usage, imageLayout);
-			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_2D, aspect);
+			tex->Create(logicalDevice, &memoryProperties, { width, height, 1 }, format, usage, imageLayout, aspect);
+			tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_2D);
 			m_textures.push_back(tex);
 			return tex;
 		}
@@ -712,28 +714,13 @@ namespace engine
 			if (updateLayout && copyQueue)
 			{
 				VkCommandBuffer layoutCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-				tools::setImageLayout(
-					layoutCmd, texture->m_vkImage,
-					//aspectMask,
-					VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,//TODO why
+				texture->ChangeLayout(layoutCmd,
 					VK_IMAGE_LAYOUT_UNDEFINED,
 					texture->m_descriptor.imageLayout);
 
 				flushCommandBuffer(layoutCmd, copyQueue, true);
 			}
 			return texture;
-		}
-
-		void UpdateTexturelayout(VulkanTexture * texture, VkQueue copyQueue)
-		{
-			VkCommandBuffer layoutCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-			tools::setImageLayout(
-				layoutCmd, texture->m_vkImage,
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				texture->m_descriptor.imageLayout);
-
-			flushCommandBuffer(layoutCmd, copyQueue, true);
 		}
 
 		void DestroyTexture(VulkanTexture *texture)
@@ -989,7 +976,7 @@ namespace engine
 
 			drawCommandBuffers.resize(size);
 
-			VkCommandBufferAllocateInfo cmdBufAllocateInfo = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, drawCommandBuffers.size());
+			VkCommandBufferAllocateInfo cmdBufAllocateInfo = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(drawCommandBuffers.size()));
 
 			VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, drawCommandBuffers.data()));
 

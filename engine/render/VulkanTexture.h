@@ -60,21 +60,39 @@ namespace engine
 			VkFormat m_format;
 			VkDeviceSize m_imageSize;
 
+			VkImageAspectFlags m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+
 			uint32_t m_width, m_height, m_depth;
-			uint32_t m_mipLevelsCount;
-			uint32_t m_layerCount;
+			uint32_t m_mipLevelsCount = 1;
+			uint32_t m_layerCount = 1;
 
 			VulkanTexture::~VulkanTexture() { Destroy(); }
 
 			void Create(VkDevice device, VkPhysicalDeviceMemoryProperties* memoryProperties, VkExtent3D extent, VkFormat format,
 				VkImageUsageFlags imageUsageFlags,
 				VkImageLayout imageLayout,
+				VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT,
 				uint32_t mipLevelsCount = 1, uint32_t layersCount = 1, VkImageCreateFlags flags = 0
 			);
 
+			void ChangeLayout(
+				VkCommandBuffer cmdbuffer,
+				VkImageLayout oldImageLayout,
+				VkImageLayout newImageLayout,
+				VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+
+			void PipelineBarrier(
+				VkCommandBuffer cmdbuffer,
+				VkAccessFlags srcAccessMask,
+				VkAccessFlags dstAccessMask,
+				VkPipelineStageFlags srcStageMask,
+				VkPipelineStageFlags dstStageMask
+				);
+
 			void Update(TextureData* textureData, VkCommandBuffer copyCmd, VkQueue copyQueue);
 
-			void CreateDescriptor(VkSamplerAddressMode adressMode, VkImageViewType viewType, VkImageAspectFlags aspect, float maxAnisoropy = 1);
+			void CreateDescriptor(VkSamplerAddressMode adressMode, VkImageViewType viewType, float maxAnisoropy = 1);
 
 			/** @brief Release all Vulkan resources held by this texture */
 			void Destroy();

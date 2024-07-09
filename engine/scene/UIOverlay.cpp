@@ -98,14 +98,7 @@ namespace engine
 			VkCommandBuffer copyCmd = _device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
 			// Prepare for transfer
-			engine::tools::setImageLayout(
-				copyCmd,
-				m_fontTexture->m_vkImage,
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_PIPELINE_STAGE_HOST_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT);
+			m_fontTexture->ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			// Copy
 			VkBufferImageCopy bufferCopyRegion = {};
@@ -125,20 +118,15 @@ namespace engine
 			);
 
 			// Prepare for shader read
-			engine::tools::setImageLayout(
-				copyCmd,
-				m_fontTexture->m_vkImage,
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+			m_fontTexture->ChangeLayout(copyCmd, 
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 			_device->flushCommandBuffer(copyCmd, _queue, true);
 
 			_device->DestroyStagingBuffer(stagingBuffer);
 
-			m_fontTexture->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT, 0);
+			m_fontTexture->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_2D, 0);
 
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> setLayoutBindings
 			{

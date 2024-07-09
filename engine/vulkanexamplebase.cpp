@@ -1928,7 +1928,7 @@ void VulkanExampleBase::setupFrameBuffer()
 {
 	for (uint32_t i = 0; i < swapChain.imageCount; i++)
 	{
-		render::VulkanFrameBuffer *fb = vulkanDevice->GetFrameBuffer(mainRenderPass->GetRenderPass(), width, height, { swapChain.buffers[i].view, depthStencil->m_descriptor.imageView }, defaultClearColor);
+		render::VulkanFrameBuffer *fb = vulkanDevice->GetFrameBuffer(mainRenderPass->GetRenderPass(), width, height, { swapChain.buffers[i].m_descriptor.imageView, depthStencil->m_descriptor.imageView }, defaultClearColor);
 		mainRenderPass->AddFrameBuffer(fb);
 	}
 }

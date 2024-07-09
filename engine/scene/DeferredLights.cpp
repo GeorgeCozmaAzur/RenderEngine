@@ -52,8 +52,13 @@ namespace engine
 			m_descriptorSets.push_back( vulkanDevice->GetDescriptorSet({ &ub->m_descriptor }, { &positions->m_descriptor, &normals->m_descriptor},
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
-			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-			blendAttachmentStates.push_back(engine::tools::pipelineColorBlendAttachmentState(0xf, VK_TRUE));
+			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ {VK_TRUE, 
+				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+				VK_BLEND_OP_ADD,
+				VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ZERO,
+				VK_BLEND_OP_ADD,
+				0xf
+				} };
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
 				engine::tools::getAssetPath() + "shaders/basicdeferred/deferredlights.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/deferredlights.frag.spv",

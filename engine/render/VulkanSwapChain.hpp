@@ -47,10 +47,6 @@ namespace engine
 {
 	namespace render
 	{
-		typedef struct _SwapChainBuffers {
-			VkImage image;
-			VkImageView view;
-		} SwapChainBuffer;
 
 		class VulkanSwapChain
 		{
@@ -76,7 +72,7 @@ namespace engine
 			VkSwapchainKHR swapChain = VK_NULL_HANDLE;
 			uint32_t imageCount;
 			std::vector<VkImage> images;
-			std::vector<SwapChainBuffer> buffers;
+			std::vector<VulkanTexture> buffers;
 			/** @brief Queue family index of the detected graphics and presenting device queue */
 			uint32_t queueNodeIndex = UINT32_MAX;
 
@@ -413,7 +409,7 @@ namespace engine
 				{
 					for (uint32_t i = 0; i < imageCount; i++)
 					{
-						vkDestroyImageView(device, buffers[i].view, nullptr);
+						vkDestroyImageView(device, buffers[i].m_descriptor.imageView, nullptr);
 					}
 					fpDestroySwapchainKHR(device, oldSwapchain, nullptr);
 				}
@@ -445,11 +441,11 @@ namespace engine
 					colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
 					colorAttachmentView.flags = 0;
 
-					buffers[i].image = images[i];
+					buffers[i].m_vkImage = images[i];
 
-					colorAttachmentView.image = buffers[i].image;
+					colorAttachmentView.image = buffers[i].m_vkImage;
 
-					VK_CHECK_RESULT(vkCreateImageView(device, &colorAttachmentView, nullptr, &buffers[i].view));
+					VK_CHECK_RESULT(vkCreateImageView(device, &colorAttachmentView, nullptr, &buffers[i].m_descriptor.imageView));
 				}
 			}
 
@@ -506,7 +502,9 @@ namespace engine
 				{
 					for (uint32_t i = 0; i < imageCount; i++)
 					{
-						vkDestroyImageView(device, buffers[i].view, nullptr);
+						vkDestroyImageView(device, buffers[i].m_descriptor.imageView, nullptr);
+						buffers[i].m_descriptor.imageView = nullptr;
+						buffers[i].m_vkImage = nullptr;//TODO make it a bit more safe. Now m_vkImage is managed by the swapchain
 					}
 				}
 				if (surface != VK_NULL_HANDLE)

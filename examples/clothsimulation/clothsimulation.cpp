@@ -289,8 +289,6 @@ public:
 		bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		bufferBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
 		bufferBarrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-		bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		bufferBarrier.size = VK_WHOLE_SIZE;
 		std::vector<VkBufferMemoryBarrier> bufferBarriers;
 		bufferBarrier.buffer = clothcompute.storageBuffers.inbuffer->m_buffer;

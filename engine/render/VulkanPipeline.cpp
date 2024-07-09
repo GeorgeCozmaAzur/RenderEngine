@@ -80,7 +80,13 @@ namespace engine
 			rasterizationStateCI.depthClampEnable = VK_FALSE;
 			rasterizationStateCI.lineWidth = 1.0f;
 
-			VkPipelineColorBlendAttachmentState blendAttachmentState = engine::tools::pipelineColorBlendAttachmentState(0xf, VkBool32(properties.blendEnable));
+			VkPipelineColorBlendAttachmentState blendAttachmentState{ VK_TRUE,
+					VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+					VK_BLEND_OP_ADD,
+					VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ZERO,
+					VK_BLEND_OP_ADD,
+					0xf };
+			blendAttachmentState.blendEnable = VkBool32(properties.blendEnable);
 
 			VkPipelineColorBlendStateCreateInfo colorBlendStateCI{};
 			colorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

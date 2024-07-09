@@ -225,48 +225,21 @@ public:
 			VK_CHECK_RESULT(vkBeginCommandBuffer(drawComputeCmdBuffers[i], &cmdBufInfo));
 
 			// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
-			VkImageMemoryBarrier imageMemoryBarrier = {};
-			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			// We won't be changing the layout of the image
-			imageMemoryBarrier.oldLayout = scene.shadowmap->m_descriptor.imageLayout;
-			imageMemoryBarrier.newLayout = scene.shadowmap->m_descriptor.imageLayout;
-			imageMemoryBarrier.image = scene.shadowmap->m_vkImage;
-			imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 };
-			imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			vkCmdPipelineBarrier(
-				drawComputeCmdBuffers[i],
+			scene.shadowmap->PipelineBarrier(drawComputeCmdBuffers[i],
+				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_FLAGS_NONE,
-				0, nullptr,
-				0, nullptr,
-				1, &imageMemoryBarrier);
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+				);
 
 			lightinjectionpipeline->Draw(drawComputeCmdBuffers[i], VK_PIPELINE_BIND_POINT_COMPUTE);
 			lightinjectiondescriptorSet->Draw(drawComputeCmdBuffers[i], lightinjectionpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
 			vkCmdDispatch(drawComputeCmdBuffers[i], TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, TEX_DEPTH / COMPUTE_GROUP_SIZE_Z);
 
-
-			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-			imageMemoryBarrier.image = textureCompute3dTargets[write_idx]->m_vkImage;
-			imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-			imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			vkCmdPipelineBarrier(
-				drawComputeCmdBuffers[i],
+			textureCompute3dTargets[write_idx]->PipelineBarrier(drawComputeCmdBuffers[i],
+				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_FLAGS_NONE,
-				0, nullptr,
-				0, nullptr,
-				1, &imageMemoryBarrier);
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+				);
 
 			raymarchpipeline->Draw(drawComputeCmdBuffers[i], VK_PIPELINE_BIND_POINT_COMPUTE);
 			raymarchdescriptorSet->Draw(drawComputeCmdBuffers[i], raymarchpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
@@ -286,25 +259,10 @@ public:
 			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
 
 			// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
-			VkImageMemoryBarrier imageMemoryBarrier = {};
-			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			// We won't be changing the layout of the image
-			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-			imageMemoryBarrier.image = textureCompute3dTargetRaymarch->m_vkImage;
-			imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-			imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			vkCmdPipelineBarrier(
-				drawCmdBuffers[i],
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VK_FLAGS_NONE,
-				0, nullptr,
-				0, nullptr,
-				1, &imageMemoryBarrier);
+			textureCompute3dTargetRaymarch->PipelineBarrier(drawCmdBuffers[i], 
+				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+				);
 
 			mainRenderPass->Begin(drawCmdBuffers[i], i);
 
@@ -407,6 +365,16 @@ public:
 	virtual void viewChanged()
 	{		
 		//updateUniformBuffers();		
+		
+	}
+
+	virtual void windowResized()
+	{
+		if (swapChain.queueNodeIndex != UINT32_MAX)
+		{
+			drawShadowCmdBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
+			drawComputeCmdBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
+		}
 	}
 
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)

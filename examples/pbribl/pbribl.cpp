@@ -306,19 +306,10 @@ public:
 		};
 
 		VkCommandBuffer cmdBuf = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = irradianceMap->m_mipLevelsCount;
-		subresourceRange.layerCount = 6;
 		// Change image layout for all cubemap faces to transfer destination
-		engine::tools::setImageLayout(
-			cmdBuf,
-			irradianceMap->m_vkImage,
+		irradianceMap->ChangeLayout(cmdBuf, 
 			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			subresourceRange);
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		VkViewport viewport = { 0, 0, (float)dim, (float)dim, 0.0f, 1.0f };
 		for (uint32_t m = 0; m < irradianceMap->m_mipLevelsCount; m++) {
@@ -339,10 +330,7 @@ public:
 				skybox.m_geometries[0]->Draw(&cmdBuf, vip, iip);
 				offscreenRenderPass->End(cmdBuf);
 
-				engine::tools::setImageLayout(
-					cmdBuf,
-					tempTex->m_vkImage,
-					VK_IMAGE_ASPECT_COLOR_BIT,
+				tempTex->ChangeLayout(cmdBuf, 
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
@@ -375,22 +363,14 @@ public:
 					&copyRegion);
 
 				// Transform framebuffer color attachment back
-				engine::tools::setImageLayout(
-					cmdBuf,
-					tempTex->m_vkImage,
-					VK_IMAGE_ASPECT_COLOR_BIT,
+				tempTex->ChangeLayout(cmdBuf,
 					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
 			}
 		}
-
-		engine::tools::setImageLayout(
-			cmdBuf,
-			irradianceMap->m_vkImage,
+		irradianceMap->ChangeLayout(cmdBuf,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			subresourceRange);
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		vulkanDevice->flushCommandBuffer(cmdBuf, queue);
 	}
@@ -449,19 +429,9 @@ public:
 		VkCommandBuffer cmdBuf = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
 		VkViewport viewport = { 0, 0, (float)dim, (float)dim, 0.0f, 1.0f };
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = prefilterMap->m_mipLevelsCount;
-		subresourceRange.layerCount = 6;
-		// Change image layout for all cubemap faces to transfer destination
-		engine::tools::setImageLayout(
-			cmdBuf,
-			prefilterMap->m_vkImage,
+		prefilterMap->ChangeLayout(cmdBuf, 
 			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			subresourceRange);
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		for (uint32_t m = 0; m < prefilterMap->m_mipLevelsCount; m++) {
 			pushBlock.roughness = (float)m / (float)(prefilterMap->m_mipLevelsCount - 1);
@@ -483,10 +453,7 @@ public:
 				skybox.m_geometries[0]->Draw(&cmdBuf, vip, iip);
 				offscreenRenderPass->End(cmdBuf);
 
-				engine::tools::setImageLayout(
-					cmdBuf,
-					tempTex->m_vkImage,
-					VK_IMAGE_ASPECT_COLOR_BIT,
+				tempTex->ChangeLayout(cmdBuf,
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
@@ -519,20 +486,14 @@ public:
 					&copyRegion);
 
 				// Transform framebuffer color attachment back
-				engine::tools::setImageLayout(
-					cmdBuf,
-					tempTex->m_vkImage,
-					VK_IMAGE_ASPECT_COLOR_BIT,
+				tempTex->ChangeLayout(cmdBuf,
 					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			}
 		}
-		engine::tools::setImageLayout(
-			cmdBuf,
-			prefilterMap->m_vkImage,
+		prefilterMap->ChangeLayout(cmdBuf,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			subresourceRange);
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		vulkanDevice->flushCommandBuffer(cmdBuf, queue);
 	}
