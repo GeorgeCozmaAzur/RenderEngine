@@ -103,8 +103,8 @@ public:
 	scene::SpacePartitionTree* tree = new scene::SpacePartitionTree;
 
 	Timer timer;
-	float timeupdate = 0.0f;
-	float timerender = 0.0f;
+	uint64_t timeupdate = 0;
+	uint64_t timerender = 0;
 	int visible_objects = 0;
 
 	VulkanExample() : VulkanExampleBase(true)
@@ -126,11 +126,11 @@ public:
 		// Clean up used Vulkan resources 
 		// Note : Inherited destructor cleans up resources stored in base class
 		for (auto& thread : threadData) {
-			vkFreeCommandBuffers(device, thread.commandPool, thread.commandBuffer.size(), thread.commandBuffer.data());
+			vkFreeCommandBuffers(device, thread.commandPool, static_cast<uint32_t>(thread.commandBuffer.size()), thread.commandBuffer.data());
 			vkDestroyCommandPool(device, thread.commandPool, nullptr);
 		}
 		
-		vkFreeCommandBuffers(device, threadUIData.commandPool, threadUIData.commandBuffer.size(), threadUIData.commandBuffer.data());
+		vkFreeCommandBuffers(device, threadUIData.commandPool, static_cast<uint32_t>(threadUIData.commandBuffer.size()), threadUIData.commandBuffer.data());
 		vkDestroyCommandPool(device, threadUIData.commandPool, nullptr);
 
 		for (auto bla : vert_ram_uniform_buffers)
@@ -407,7 +407,7 @@ public:
 				engine::render::VulkanDevice::commandBufferAllocateInfo(
 					thread->commandPool,
 					VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-					thread->commandBuffer.size());
+					static_cast<uint32_t>(thread->commandBuffer.size()));
 			VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &secondaryCmdBufAllocateInfo, thread->commandBuffer.data()));
 
 			thread->objects.reserve(objectsNo / numDrawThreads);
@@ -425,7 +425,7 @@ public:
 			engine::render::VulkanDevice::commandBufferAllocateInfo(
 				threadUIData.commandPool,
 				VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-				threadUIData.commandBuffer.size());
+				static_cast<uint32_t>(threadUIData.commandBuffer.size()));
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &secondaryCmdBufAllocateInfo, threadUIData.commandBuffer.data()));
 
 	}
@@ -539,7 +539,7 @@ public:
 			}
 		}
 
-		int lastpos = threadPool.threads.size() - 1;
+		auto lastpos = threadPool.threads.size() - 1;
 		threadPool.threads[lastpos-1]->addJob([=] { threadRenderUICode(cmdBufferInheritanceInfo); });
 		threadPool.threads[lastpos]->addJob([=] { updateUniformBuffers(); });
 
@@ -558,7 +558,7 @@ public:
 		commandBuffers.push_back(threadUIData.commandBuffer[0]);
 
 		// Execute render commands from the secondary command buffer
-		vkCmdExecuteCommands(drawCmdBuffers[0], commandBuffers.size(), commandBuffers.data());
+		vkCmdExecuteCommands(drawCmdBuffers[0], static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
 		mainRenderPass->End(drawCmdBuffers[0]);
 
@@ -688,8 +688,8 @@ public:
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
 		if (overlay->header("Settings")) {
-			ImGui::Text("%.2f time update", timeupdate);
-			ImGui::Text("%.2f time render", timerender);
+			ImGui::Text("%ld time update", timeupdate);
+			ImGui::Text("%ld time render", timerender);
 			ImGui::Text("%.2d visible objects", visible_objects);
 		}
 	}

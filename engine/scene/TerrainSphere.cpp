@@ -88,9 +88,9 @@ namespace engine
 					float height = haveHeightmap ? GetHeight(j, i) : 0.0f;
 
 					finalradius = radius + height * radius * 0.01f;
-					auto x = std::sin(phi) * std::cos(theta) * finalradius;
-					auto y = std::cos(phi) * finalradius;
-					auto z = std::sin(phi) * std::sin(theta) * finalradius;
+					auto x = (float)(std::sin(phi) * std::cos(theta)) * finalradius;
+					auto y = (float)(std::cos(phi)) * finalradius;
+					auto z = (float)(std::sin(phi) * std::sin(theta)) * finalradius;
 
 					for (auto& component : vertex_layout->m_components[0])
 					{

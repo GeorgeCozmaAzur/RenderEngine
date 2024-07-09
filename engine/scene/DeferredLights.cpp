@@ -62,7 +62,7 @@ namespace engine
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
 				engine::tools::getAssetPath() + "shaders/basicdeferred/deferredlights.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/deferredlights.frag.spv",
-				renderPass, pipelineCache, true, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data(),false,true,false,1U);
+				renderPass, pipelineCache, true, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data(),false,true,false,1U);
 		}
 
 		void DeferredLights::Update()

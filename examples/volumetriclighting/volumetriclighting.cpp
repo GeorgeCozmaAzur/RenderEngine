@@ -292,7 +292,7 @@ public:
 
 		std::vector<VkCommandBuffer> cmdBuffers = { drawShadowCmdBuffers[currentBuffer], drawComputeCmdBuffers[currentBuffer], drawCmdBuffers[currentBuffer] };
 
-		submitInfo.commandBufferCount = cmdBuffers.size();
+		submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
 		submitInfo.pCommandBuffers = cmdBuffers.data();
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 

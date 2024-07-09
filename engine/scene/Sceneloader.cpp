@@ -275,7 +275,7 @@ namespace engine
 							currentVertexLayout = &vnlayout;
 						
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vnlayout.m_vertexInputBindings, vnlayout.m_vertexInputAttributes,
-								shaderfolder+normalmapVS, shaderfolder+normalmapFS, renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
+								shaderfolder+normalmapVS, shaderfolder+normalmapFS, renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data());
 							
 						}
 						else
@@ -303,7 +303,7 @@ namespace engine
 
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
 								shaderfolder + lightingVS, shaderfolder + lightingTexturedFS, renderPass, pipelineCache,
-									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
+									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data());
 
 						}
 					}
@@ -354,14 +354,14 @@ namespace engine
 						{
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
 									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache, true,
-									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStatestrans.size(), blendAttachmentStatestrans.data());
+									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStatestrans.size()), blendAttachmentStatestrans.data());
 							areTransparents[i] = true;
 						}
 						else
 						{
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
 									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache,
-									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, blendAttachmentStates.size(), blendAttachmentStates.data());
+									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data());
 							areTransparents[i] = false;
 						}
 					}
@@ -632,7 +632,7 @@ namespace engine
 					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState };
 
 					render::PipelineProperties props;
-					props.attachmentCount = blendAttachmentStates.size();
+					props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 					props.pAttachments = blendAttachmentStates.data();
 					props.depthBias = true;
 					props.cullMode = VK_CULL_MODE_NONE;

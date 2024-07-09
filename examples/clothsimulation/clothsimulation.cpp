@@ -392,7 +392,7 @@ public:
 	void updateUniformBufferOffscreen()
 	{
 
-		float widthSize = projectionWidth * 0.5;
+		float widthSize = projectionWidth * 0.5f;
 		depthProjectionMatrix = glm::ortho(-widthSize, widthSize, -widthSize, widthSize, 0.0f, projectionDepth);
 		glm::vec3 lp = glm::vec3(depthProjectionStart);
 		glm::mat4 rotM = glm::mat4(1.0f);
@@ -423,7 +423,7 @@ public:
 
 		std::vector<VkCommandBuffer> cmdBuffers = { drawShadowCmdBuffers[currentBuffer], clothcompute.commandBuffers[currentBuffer],  drawCmdBuffers[currentBuffer] };
 
-		submitInfo.commandBufferCount = cmdBuffers.size();
+		submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
 		submitInfo.pCommandBuffers = cmdBuffers.data();
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 
@@ -475,22 +475,22 @@ public:
 			}
 			if (overlay->checkBox("Pin1", &clothcompute.pinnedCorners.x))
 			{
-				clothcompute.ubo.pinnedCorners.x = clothcompute.pinnedCorners.x;
+				clothcompute.ubo.pinnedCorners.x = (float)(clothcompute.pinnedCorners.x);
 				updateComputeUBO();
 			}
 			if (overlay->checkBox("Pin2", &clothcompute.pinnedCorners.y))
 			{
-				clothcompute.ubo.pinnedCorners.y = clothcompute.pinnedCorners.y;
+				clothcompute.ubo.pinnedCorners.y = (float)(clothcompute.pinnedCorners.y);
 				updateComputeUBO();
 			}
 			if (overlay->checkBox("Pin3", &clothcompute.pinnedCorners.z))
 			{
-				clothcompute.ubo.pinnedCorners.z = clothcompute.pinnedCorners.z;
+				clothcompute.ubo.pinnedCorners.z = (float)(clothcompute.pinnedCorners.z);
 				updateComputeUBO();
 			}
 			if (overlay->checkBox("Pin4", &clothcompute.pinnedCorners.w))
 			{
-				clothcompute.ubo.pinnedCorners.w = clothcompute.pinnedCorners.w;
+				clothcompute.ubo.pinnedCorners.w = (float)(clothcompute.pinnedCorners.w);
 				updateComputeUBO();
 			}
 		}

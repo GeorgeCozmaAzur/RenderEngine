@@ -388,11 +388,6 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		VkClearValue clearValues[2];
-		VkViewport viewport;
-		VkRect2D scissor;
-		VkDeviceSize offsets[1] = { 0 };
-
 		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
 		{
 			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));

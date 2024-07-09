@@ -273,7 +273,7 @@ public:
 		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };
 
 		render::PipelineProperties props;
-		props.attachmentCount = blendAttachmentStates.size();
+		props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 		props.pAttachments = blendAttachmentStates.data();
 		/*terrain.AddPipeline(vulkanDevice->GetPipeline(terrain._descriptorLayout->m_descriptorSetLayout, vertexLayoutNM.m_vertexInputBindings, vertexLayoutNM.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/basic/normalmap.vert.spv", engine::tools::getAssetPath() + "shaders/basic/normalmap.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));*/
@@ -298,7 +298,7 @@ public:
 
 		render::PipelineProperties sphereprops;
 		sphereprops.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		sphereprops.attachmentCount = blendAttachmentStates.size();
+		sphereprops.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 		sphereprops.pAttachments = blendAttachmentStates.data();
 
 		VkPipelineColorBlendAttachmentState transparentState{
@@ -314,7 +314,7 @@ public:
 		render::PipelineProperties transprops;
 		transprops.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		transprops.blendEnable = true;
-		transprops.attachmentCount = blendAttachmentStatesTransparent.size();
+		transprops.attachmentCount = static_cast<uint32_t>(blendAttachmentStatesTransparent.size());
 		transprops.pAttachments = blendAttachmentStatesTransparent.data();
 
 		myplanet.Init(engine::tools::getAssetPath() + "textures/planets/mars_1k_topo.jpg", 6000, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), 0, { &colorMap->m_descriptor }, "planet/planet", "planet/planet", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue, 100, 100);

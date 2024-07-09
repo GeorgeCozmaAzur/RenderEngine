@@ -327,7 +327,7 @@ public:
 
 			ObjDesc desc;
 			desc.txtOffset = txtOffset;
-			txtOffset += geoRT->m_textures.size();
+			txtOffset += static_cast<int>(geoRT->m_textures.size());
 			desc.vertexAddress = getBufferDeviceAddress(geo->_vertexBuffer->m_buffer);
 			desc.indexAddress = getBufferDeviceAddress(geo->_indexBuffer->m_buffer);
 			desc.materialAddress = getBufferDeviceAddress(geoRT->materialsBuffer->m_buffer);
@@ -341,7 +341,7 @@ public:
 			indexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(geo->_indexBuffer->m_buffer);
 
 			uint32_t numTriangles = geo->m_indexCount / 3;
-			uint32_t maxVertex = geo->m_vertexCount;
+			uint32_t maxVertex = static_cast<uint32_t>(geo->m_vertexCount);
 
 			// Build
 			//VkAccelerationStructureGeometryKHR accelerationStructureGeometry = engine::initializers::accelerationStructureGeometryKHR();
@@ -484,7 +484,7 @@ public:
 		accelerationStructureBuildGeometryInfo.geometryCount = 1;
 		accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
-		uint32_t primitive_count = bottomLevelASs.size();
+		uint32_t primitive_count = static_cast<uint32_t>(bottomLevelASs.size());
 
 		//VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = engine::initializers::accelerationStructureBuildSizesInfoKHR();
 		VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
@@ -514,7 +514,7 @@ public:
 		accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
 
 		VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
-		accelerationStructureBuildRangeInfo.primitiveCount = bottomLevelASs.size();
+		accelerationStructureBuildRangeInfo.primitiveCount = static_cast<uint32_t>(bottomLevelASs.size());
 		accelerationStructureBuildRangeInfo.primitiveOffset = 0;
 		accelerationStructureBuildRangeInfo.firstVertex = 0;
 		accelerationStructureBuildRangeInfo.transformOffset = 0;
@@ -649,7 +649,7 @@ public:
 			// Binding 4: Scene index buffer
 			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor),
 			// Binding 5: All textures
-			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, diit.data(), diit.size()),
+			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, diit.data(), static_cast<uint32_t>(diit.size())),
 			// Binding 6: Reference to all objects
 			writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 6, &objdescBufferDescriptor)
 		};
@@ -696,7 +696,7 @@ public:
 			// Binding 4: Index buffer
 			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 4),
 			// Binding 5: All textures
-			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 5, alltextures.size()),
+			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 5, static_cast<uint32_t>(alltextures.size())),
 			// Binding 6: Reference to all objects
 			descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 6)
 		};

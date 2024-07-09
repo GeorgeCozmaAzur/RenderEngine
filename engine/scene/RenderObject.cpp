@@ -32,7 +32,7 @@ namespace engine
 		{
 			for (auto geo : m_geometries)
 			{
-				m_dynamicUniformBufferIndices.push_back(m_dynamicUniformBufferIndices.size());
+				m_dynamicUniformBufferIndices.push_back(static_cast<uint32_t>(m_dynamicUniformBufferIndices.size()));
 			}
 		}
 

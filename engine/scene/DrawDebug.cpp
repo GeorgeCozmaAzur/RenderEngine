@@ -82,7 +82,7 @@ namespace engine
 		void DrawDebugVectors::CreateDebugVectorsGeometry(glm::vec3 position, std::vector<glm::vec3> directions, std::vector<glm::vec3> colors)
 		{
 			Geometry* geo = new Geometry;
-			geo->m_indexCount = directions.size() * 2;
+			geo->m_indexCount = static_cast<uint32_t>(directions.size()) * 2;
 			geo->m_indices = new uint32_t[geo->m_indexCount];
 			int ii = 0;
 			for (int i = 0; i < directions.size(); i++)

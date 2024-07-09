@@ -72,8 +72,8 @@ namespace engine
 				{
 					auto theta = 2.0 * M_PI * double(i) / double(resolution);
 					
-					auto x = std::cos(theta) * radius;
-					auto z = std::sin(theta) * radius;
+					auto x = (float)(std::cos(theta)) * radius;
+					auto z = (float)(std::sin(theta)) * radius;
 
 					radius = outerRadius;
 

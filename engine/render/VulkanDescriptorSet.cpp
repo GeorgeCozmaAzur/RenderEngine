@@ -29,7 +29,7 @@ namespace engine
 			writeDescriptorSets.resize(layoutBindings.size());
 			uint32_t textures_iterator = 0;
 			uint32_t buffers_iterator = 0;
-			for (auto binding : layoutBindings)
+			for (const auto &binding : layoutBindings)
 			{
 				writeDescriptorSets[binding.binding].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				writeDescriptorSets[binding.binding].dstSet = m_vkDescriptorSet;

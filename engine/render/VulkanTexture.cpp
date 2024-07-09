@@ -125,7 +125,7 @@ namespace engine
 		{
 			m_format = format;
 
-			m_layers_no = filenames.size();
+			m_layers_no = static_cast<uint32_t>(filenames.size());
 			m_extents = new TextureExtent * [m_layers_no];
 
 			m_imageSize = 0;
