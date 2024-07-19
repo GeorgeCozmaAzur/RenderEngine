@@ -26,10 +26,19 @@ namespace engine
 			std::vector<BoundingBox*> m_boundingBoxes;//TODO should be in the scene manager
 			std::vector<Geometry*> m_boundingBoxesGeometries;
 
+			char* _geometriesPushConstants = nullptr;
+			uint32_t m_sizeofConstant;
+			uint32_t m_constantsNumber;
+
 			virtual ~RenderObject()
 			{
 				for (auto geo : m_geometries)delete geo;
 				for (auto box : m_boundingBoxes)delete box;
+				if (_geometriesPushConstants)
+				{
+					delete []_geometriesPushConstants;
+					_geometriesPushConstants = nullptr;
+				}
 			};
 
 			RenderObject& operator = (const RenderObject& t);
@@ -44,6 +53,7 @@ namespace engine
 			void AddGeometry(Geometry*);
 
 			void PopulateDynamicUniformBufferIndices();
+			void InitGeometriesPushConstants(uint32_t constantSize, uint32_t constantsNumber, void *data);
 
 			bool IsSimilar(RenderObject* another) { return _pipeline == another->_pipeline /*|| m_descriptorSet == another->m_descriptorSet*/; };
 

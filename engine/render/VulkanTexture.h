@@ -26,7 +26,7 @@ namespace engine
 			VkDeviceSize m_imageSize;
 			VkFormat m_format;
 			uint32_t m_width, m_height;
-			TextureExtent** m_extents;
+			TextureExtent** m_extents = nullptr;
 			uint32_t m_layers_no, m_mips_no;
 
 			VkBuffer m_stagingBuffer = VK_NULL_HANDLE;

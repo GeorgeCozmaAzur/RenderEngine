@@ -46,5 +46,16 @@ namespace engine
 			void CreateDebugVectorsGeometry(glm::vec3 position, std::vector<glm::vec3> directions, std::vector<glm::vec3> colors);
 			void Init(render::VulkanDevice* vulkanDevice, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache);
 		};
+
+		class DrawDebugBBs : public RenderObject
+		{
+			render::VertexLayout debugVertexLayout = render::VertexLayout({
+			render::VERTEX_COMPONENT_POSITION,
+			render::VERTEX_COMPONENT_COLOR
+				}, {});
+
+		public:
+			void Init(std::vector<std::vector<glm::vec3>> boundries, render::VulkanDevice* vulkanDevice, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, uint32_t constantSize = 0);
+		};
 	}
 }

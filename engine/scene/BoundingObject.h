@@ -162,9 +162,15 @@ namespace engine
 			bool isInsideSpace(glm::vec3 point1, glm::vec3 point2)
 			{
 				bool between_x = ((m_center.x - point1.x) * (m_center.x - point2.x) <= 0);
+				if (!between_x)
+					return false;
 				bool between_y = ((m_center.y - point1.y) * (m_center.y - point2.y) <= 0);
+				if (!between_y)
+					return false;
 				bool between_z = ((m_center.z - point1.z) * (m_center.z - point2.z) <= 0);
-				return (between_x && between_y && between_z);
+				if (!between_z)
+					return false;
+				return true;//(between_x && between_y && between_z);
 			}
 			bool IsClose(BoundingObject* other)
 			{

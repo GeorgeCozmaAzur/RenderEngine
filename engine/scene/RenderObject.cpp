@@ -35,6 +35,13 @@ namespace engine
 				m_dynamicUniformBufferIndices.push_back(static_cast<uint32_t>(m_dynamicUniformBufferIndices.size()));
 			}
 		}
+		void RenderObject::InitGeometriesPushConstants(uint32_t constantSize, uint32_t constantsNumber, void* data)
+		{
+			m_sizeofConstant = constantSize;
+			m_constantsNumber = constantsNumber;
+			_geometriesPushConstants = new char[constantSize * constantsNumber];
+			memcpy(_geometriesPushConstants, data, constantSize * constantsNumber);
+		}
 
 		void RenderObject::Draw(VkCommandBuffer commandBuffer, uint32_t swapchainImageIndex, render::VulkanPipeline* currentPipeline, render::VulkanDescriptorSet* currentDescriptorSet)
 		{
@@ -61,9 +68,11 @@ namespace engine
 
 			for (uint32_t j = 0; j < m_geometries.size();j++)
 			{
+				if(_geometriesPushConstants != nullptr)
+					vkCmdPushConstants(commandBuffer, _pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_sizeofConstant, _geometriesPushConstants + (m_sizeofConstant * j));
 				if (!m_boundingBoxes.empty() && (m_boundingBoxes.size() - 1) >= j && !m_boundingBoxes[j]->IsVisible()) continue;//TODO remove hardcode
 				if (!m_dynamicUniformBufferIndices.empty()) //TODO see how can we add the current descriptor comparison
-					m_descriptorSets[swapchainImageIndex]->Draw(commandBuffer, _pipeline->getPipelineLayout(), j);
+					m_descriptorSets[swapchainImageIndex]->Draw(commandBuffer, _pipeline->getPipelineLayout(), m_dynamicUniformBufferIndices[j]);
 
 				m_geometries[j]->Draw(&commandBuffer, vip, iip);
 			}

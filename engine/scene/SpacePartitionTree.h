@@ -1,7 +1,8 @@
 #pragma once
-#include "Geometry.h"
+//#include "Geometry.h"
 #include "BoundingObject.h"
 #include <glm/glm.hpp>
+#include <list>
 
 namespace engine
 {
@@ -12,10 +13,8 @@ namespace engine
 		public://TODO maybe not
 
 			std::vector<SpacePartitionTree*> m_children;
-			//int elements_no = 0;
 			int m_totalObjectsNo = 0;
 			int m_ownObjectsNo = 0;
-			Geometry* m_debug_geometry = nullptr;
 
 			std::vector<glm::vec3> m_boundries;
 			std::vector<glm::vec3> m_boundries_extra;
@@ -44,26 +43,15 @@ namespace engine
 
 			void CreateAABB(std::vector<glm::vec3>& vertices, glm::vec3 point1, glm::vec3 point2);
 
-			void CreateDebugGeometry3D();
+			void CreateChildren(int divisions = 2);
 
-			void DivideGeometry3D(Geometry* geo, std::vector<Geometry*>& out_geometries, std::vector<glm::vec3>& boundries);
-
-			void DivideGeometry(Geometry* geo, std::vector<Geometry*>& out_geometries, std::vector<glm::vec3>& boundries);
-
-			void SetDebugGeometry(Geometry* geo);
-			Geometry* GetDebugGeometry();
-
-			void CreateChildren();
-
-			void GatherAllGeometries(std::vector<Geometry*>& out_geometries);
+			void GatherAllBoundries(std::vector<std::vector<glm::vec3>>& out_geometries);
 
 			void TestCollisions();
 
 			void ResetVisibility();
 
 			void TestVisibility(glm::vec4* frustum_planes);
-
-			void UpdateDebugGeometries();
 
 			void DestroyChildren();
 

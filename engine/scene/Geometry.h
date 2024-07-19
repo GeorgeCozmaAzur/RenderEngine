@@ -35,6 +35,8 @@ namespace engine
 			void Draw(VkCommandBuffer* commandBuffer, uint32_t vertexInputBinding, uint32_t instanceInputBinding);
 			void Destroy();
 			~Geometry() { Destroy(); }
+
+			Geometry& operator=(const Geometry& other);
 		};
 	}
 }

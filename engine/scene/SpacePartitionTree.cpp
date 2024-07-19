@@ -28,13 +28,6 @@ namespace engine
 
 		bool SpacePartitionTree::IsObjectInside(BoundingObject* obj)
 		{
-			/*bool between_x = ((obj->pos.x - m_boundries[0].x) * (obj->pos.x - m_boundries[1].x) <= 0);
-			bool between_y = ((obj->pos.y - m_boundries[0].y) * (obj->pos.y - m_boundries[1].y) <= 0);
-			bool between_z = ((obj->pos.z - m_boundries[0].z) * (obj->pos.z - m_boundries[1].z) <= 0);
-			bool ret = (between_x && between_y && between_z);*/
-			//Outputkk("pos: %g %g \n", obj->pos.x, obj->pos.y);
-			//Outputkk("bounds: %g %g %g %g \n", m_boundries[0].x, m_boundries[0].y, m_boundries[1].x, m_boundries[1].y);
-			//Outputkk("inside: %d\n", ret);
 			return obj->isInsideSpace(m_boundries[0], m_boundries[1]);
 		}
 
@@ -72,11 +65,8 @@ namespace engine
 
 		void SpacePartitionTree::GetObjectLocationInTree(BoundingObject* obj, std::vector<int>& depth)
 		{
-			//Outputkk("GetObjectLocationInTree\n");
-			//if (has_active_children)//george
 			for (int i = 0; i < m_children.size(); i++)
 			{
-				//Outputkk("GetObjectLocationInTree child\n");
 				if (m_children[i]->IsObjectInside(obj))
 				{
 					depth.push_back(i);
@@ -88,36 +78,28 @@ namespace engine
 
 		void SpacePartitionTree::AdvanceObject(BoundingObject* obj)
 		{
+			if (obj->position_in_tree.size() > 0)
+			{
+				SpacePartitionTree* objectSpace = this;
+				for (int i : obj->position_in_tree)
+				{
+					objectSpace = objectSpace->m_children[i];
+				}
+				if (objectSpace->IsObjectInside(obj))
+					return;
+			}
+
 			std::vector<int> depth;
 			GetObjectLocationInTree(obj, depth);
-			bool location_moved = false;
-			if (depth.size() != obj->position_in_tree.size())
-			{
-				location_moved = true;
-			}
-			else
-			{
-				for (int i = 0; i < depth.size(); i++)
-				{
-					if (obj->position_in_tree[i] != depth[i])
-					{
-						location_moved = true;
-						break;
-					}
-				}
-			}
 
-			if (location_moved)
-			{
-				if (obj->position_in_tree.size() > 0)
-					RemoveObject(obj, 0);
+			if (obj->position_in_tree.size() > 0)
+				RemoveObject(obj, 0);
 
-				obj->position_in_tree.clear();
-				obj->position_in_tree.insert(obj->position_in_tree.end(), depth.begin(), depth.end());
+			obj->position_in_tree.clear();
+			obj->position_in_tree.insert(obj->position_in_tree.end(), depth.begin(), depth.end());
 
-				if (depth.size() > 0)
-					AddObject(obj, 0);
-			}
+			if (depth.size() > 0)
+				AddObject(obj, 0);
 
 		}
 		void SpacePartitionTree::collectAndClearAllObjects(std::vector<BoundingObject*>& objects)
@@ -131,9 +113,9 @@ namespace engine
 			}
 			else
 			{
-				for (int j = 0; j < m_objects.size(); j++)
+				for(auto obj : m_objects)
 				{
-					objects.push_back(m_objects[j]);
+					objects.push_back(obj);
 				}
 				m_objects.clear();
 			}
@@ -179,13 +161,13 @@ namespace engine
 			{
 				m_hasActiveChildren = true;
 
-				for (int j = 0; j < m_objects.size(); j++)
+				for(auto obj : m_objects)
 				{
 					for (int i = 0; i < m_children.size(); i++)
 					{
-						if (m_children[i]->IsObjectInside(m_objects[j]))
+						if (m_children[i]->IsObjectInside(obj))
 						{
-							m_children[i]->AddObject(m_objects[j], current_depth + 1);
+							m_children[i]->AddObject(obj, current_depth + 1);
 							break;//TODO what if we want duplicates
 						}
 					}
@@ -242,186 +224,44 @@ namespace engine
 
 		}
 
-		void SpacePartitionTree::CreateDebugGeometry3D()
+		void SpacePartitionTree::CreateChildren(int divisions)
 		{
+			float sizeonx = abs(m_boundries[0].x - m_boundries[1].x) / divisions;
+			float sizeony = abs(m_boundries[0].y - m_boundries[1].y) / divisions;
+			float sizeonz = abs(m_boundries[0].z - m_boundries[1].z) / divisions;
 
-			CreateAABB(m_vertices, m_boundries[0], m_boundries[1]);
-
-			Geometry* newgeo = new Geometry;
-
-			std::vector<int> list = { 0,1,1,2,2,3,3,0, 0,4,3,7,2,6,1,5,4,5,5,6,6,7,7,4 };
-			newgeo->m_indices = new uint32_t[list.size()];
-			for (int i = 0; i < list.size(); i++)
-				newgeo->m_indices[i] = list[i];
-			newgeo->m_indexCount = static_cast<uint32_t>(list.size());
-			newgeo->m_vertexCount = 8;
-			newgeo->m_instanceNo = 1;
-
-			newgeo->m_verticesSize = m_vertices.size() * 6;
-			newgeo->m_vertices = new float[newgeo->m_verticesSize];
-			int vindex = 0;
-			for (int i = 0; i < m_vertices.size(); i++)
+			for (int x = 0; x < divisions; x++)
 			{
-				newgeo->m_vertices[vindex++] = m_vertices[i].x;
-				newgeo->m_vertices[vindex++] = m_vertices[i].y;
-				newgeo->m_vertices[vindex++] = m_vertices[i].z;
-
-				newgeo->m_vertices[vindex++] = 1.0f;
-				newgeo->m_vertices[vindex++] = 1.0f;
-				newgeo->m_vertices[vindex++] = 1.0f;
-			}
-
-			m_debug_geometry = newgeo;
-		}
-
-		void SpacePartitionTree::DivideGeometry3D(Geometry* geo, std::vector<Geometry*>& out_geometries, std::vector<glm::vec3>& boundries)
-		{
-			if (!geo)
-				return;
-
-			//hardcoding the vertex layout
-			std::vector<glm::vec3> current_vertices;
-			for (int i = 0; i < geo->m_verticesSize; i += 6)
-			{
-				current_vertices.push_back(glm::vec3(geo->m_vertices[i], geo->m_vertices[i + 1], geo->m_vertices[i + 2]));
-				//current_vertices.push_back(glm::vec3(geo->m_vertices[i + 3], geo->m_vertices[i + 4], geo->m_vertices[1 + 5]));
-			}
-			glm::vec3 color = glm::vec3(geo->m_vertices[3], geo->m_vertices[4], geo->m_vertices[5]);
-			glm::vec3 newcolor = color * 0.5f;
-
-			glm::vec3 center = (current_vertices[0] + current_vertices[6]) * 0.5f;
-
-			for (int i = 0; i < current_vertices.size(); i++)
-			{
-				std::vector<glm::vec3> new_vertices;
-				new_vertices.reserve(current_vertices.size());
-
-				CreateAABB(new_vertices, current_vertices[i], center);
-
-				boundries.push_back(current_vertices[i]);
-				boundries.push_back(center);
-
-				Geometry* newgeo = new Geometry;
-				newgeo->m_indexCount = geo->m_indexCount;
-				newgeo->m_indices = geo->m_indices;
-				newgeo->m_vertexCount = geo->m_vertexCount;
-
-				newgeo->m_verticesSize = new_vertices.size() * 6;
-				newgeo->m_vertices = new float[newgeo->m_verticesSize];
-
-				int vindex = 0;
-				for (int i = 0; i < new_vertices.size(); i++)
+				for (int y = 0; y < divisions; y++)
 				{
-					newgeo->m_vertices[vindex++] = new_vertices[i].x;
-					newgeo->m_vertices[vindex++] = new_vertices[i].y;
-					newgeo->m_vertices[vindex++] = new_vertices[i].z;
+					for (int z = 0; z < divisions; z++)
+					{
+						SpacePartitionTree* tree = new SpacePartitionTree;
 
-					newgeo->m_vertices[vindex++] = newcolor.x;
-					newgeo->m_vertices[vindex++] = newcolor.y;
-					newgeo->m_vertices[vindex++] = newcolor.z;
+						glm::vec3 min(m_boundries[0].x + sizeonx * x, 
+							m_boundries[0].y + sizeonx * y,
+							m_boundries[0].z + sizeonx * z);
+						tree->m_boundries.push_back(min);
+
+						glm::vec3 max(m_boundries[0].x + sizeonx * (x+1),
+							m_boundries[0].y + sizeonx * (y+1),
+							m_boundries[0].z + sizeonx * (z+1));
+						tree->m_boundries.push_back(max);
+
+						m_children.push_back(tree);
+					}
 				}
-
-				out_geometries.push_back(newgeo);
-
 			}
 		}
 
-		void SpacePartitionTree::DivideGeometry(Geometry* geo, std::vector<Geometry*>& out_geometries, std::vector<glm::vec3>& boundries)
+		void SpacePartitionTree::GatherAllBoundries(std::vector<std::vector<glm::vec3>>& out_boundries)
 		{
-			//hardcoding the vertex layout
-			std::vector<glm::vec3> current_vertices;
-			for (int i = 0; i < geo->m_verticesSize; i += 6)
-			{
-				current_vertices.push_back(glm::vec3(geo->m_vertices[i], geo->m_vertices[i + 1], geo->m_vertices[i + 2]));
-				//current_vertices.push_back(glm::vec3(geo->m_vertices[i + 3], geo->m_vertices[i + 4], geo->m_vertices[1 + 5]));
-			}
-			glm::vec3 color = glm::vec3(geo->m_vertices[3], geo->m_vertices[4], geo->m_vertices[5]);
-			glm::vec3 newcolor = color * 0.5f;
-
-			glm::vec3 center = (current_vertices[0] + current_vertices[2]) * 0.5f;
-
-			for (int i = 0; i < current_vertices.size(); i++)
-			{
-				std::vector<glm::vec3> new_vertices;
-				new_vertices.reserve(current_vertices.size());
-
-
-				glm::vec3 point2(0.0f); point2.z = center.z;
-				glm::vec3 point4(0.0f);	point4.z = center.z;
-
-				point2.x = current_vertices[i].x;
-				point2.y = center.y;
-
-				point4.x = center.x;
-				point4.y = current_vertices[i].y;
-
-				new_vertices.push_back(current_vertices[i]);
-				new_vertices.push_back(point2);
-				new_vertices.push_back(center);
-				new_vertices.push_back(point4);
-
-				boundries.push_back(current_vertices[i]);
-				boundries.push_back(center);
-
-				Geometry* newgeo = new Geometry;
-				newgeo->m_indexCount = geo->m_indexCount;
-				newgeo->m_indices = geo->m_indices;//TODO this is dangherosu - it will crash
-				newgeo->m_vertexCount = geo->m_vertexCount;
-
-				newgeo->m_verticesSize = new_vertices.size() * 6;
-				newgeo->m_vertices = new float[newgeo->m_verticesSize];
-
-				int vindex = 0;
-				for (int i = 0; i < new_vertices.size(); i++)
-				{
-					newgeo->m_vertices[vindex++] = new_vertices[i].x;
-					newgeo->m_vertices[vindex++] = new_vertices[i].y;
-					newgeo->m_vertices[vindex++] = new_vertices[i].z;
-
-					newgeo->m_vertices[vindex++] = newcolor.x;
-					newgeo->m_vertices[vindex++] = newcolor.y;
-					newgeo->m_vertices[vindex++] = newcolor.z;
-				}
-
-				out_geometries.push_back(newgeo);
-			}
-		}
-
-		void SpacePartitionTree::SetDebugGeometry(Geometry* geo) { m_debug_geometry = geo; }
-		Geometry* SpacePartitionTree::GetDebugGeometry() { return m_debug_geometry; }
-
-		void SpacePartitionTree::CreateChildren()
-		{
-			//has_active_children = true;//george
-			std::vector<Geometry*> geometries_for_kids;
-			std::vector<glm::vec3> boundries;
-			//DivideGeometry(m_debug_geometry, geometries_for_kids, boundries);
-			DivideGeometry3D(m_debug_geometry, geometries_for_kids, boundries);
-			int b = 0;
-			for (int i = 0; i < geometries_for_kids.size(); i++)
-			{
-				SpacePartitionTree* tree = new SpacePartitionTree;
-				tree->m_boundries.push_back(glm::vec3(boundries[b].x, boundries[b].y, boundries[b].z));
-				tree->m_boundries.push_back(glm::vec3(boundries[b + 1].x, boundries[b + 1].y, boundries[b + 1].z));
-				//Outputkk("create boundries: %g %g %g %g \n", tree->m_boundries[0].x, tree->m_boundries[0].y, tree->m_boundries[1].x, tree->m_boundries[1].y);
-				b += 2;
-				tree->m_debug_geometry = geometries_for_kids[i];
-				m_children.push_back(tree);
-			}
-		}
-
-		void SpacePartitionTree::GatherAllGeometries(std::vector<Geometry*>& out_geometries)
-		{
-			//out_geometries.push_back(m_debug_geometry);
+			out_boundries.push_back(m_boundries);
 			for (int i = 0; i < m_children.size(); i++)
 			{
-				//if(children[i]->children.size() !=0)
-				out_geometries.push_back(m_children[i]->m_debug_geometry);
+				m_children[i]->GatherAllBoundries(out_boundries);
 			}
-			for (int i = 0; i < m_children.size(); i++)
-			{
-				m_children[i]->GatherAllGeometries(out_geometries);
-			}
+			
 		}
 
 		void SpacePartitionTree::TestCollisions()
@@ -436,17 +276,28 @@ namespace engine
 			else
 			{
 				if (m_objects.size() > 0)
-					for (int i = 0; i < m_objects.size() - 1; i++)
+				{
+					//std::list<BoundingObject*>::iterator it;
+					//std::list<BoundingObject*>::iterator otherit;
+					//for(it=m_objects.begin();it!=m_objects.end();++it)
+					for (int i = 0; i < m_objects.size(); i++)
 					{
 						for (int j = i + 1; j < m_objects.size(); j++)
+						//for (otherit = std::next(it); otherit != m_objects.end(); ++otherit)
 						{
 							if (m_objects[i]->IsClose(m_objects[j]))
 							{
 								m_objects[i]->Collide(m_objects[j]);
 								m_objects[j]->Collide(m_objects[i]);
 							}
+							/*if ((*it)->IsClose(*otherit))
+							{
+								(*it)->Collide((*otherit));
+								(*otherit)->Collide((*it));
+							}*/
 						}
 					}
+				}
 			}
 		}
 
@@ -461,9 +312,9 @@ namespace engine
 			}
 			else
 			{
-				for (int i = 0; i < m_objects.size(); i++)
+				for (auto obj : m_objects)
 				{
-					m_objects[i]->SetVisibility(false);
+					obj->SetVisibility(false);
 				}
 			}
 		}
@@ -482,43 +333,16 @@ namespace engine
 			}
 			else
 			{
-				for (int i = 0; i < m_objects.size(); i++)
+				for (auto obj : m_objects)
 				{
-					if (m_objects[i]->FrustumIntersect(frustum_planes))
-						m_objects[i]->SetVisibility(true);
+					if (obj->FrustumIntersect(frustum_planes))
+						obj->SetVisibility(true);
 				}
-			}
-		}
-
-		void SpacePartitionTree::UpdateDebugGeometries()
-		{
-			for (int i = 0; i < m_children.size(); i++)
-			{
-				if (!m_hasActiveChildren)
-				{
-
-					m_children[i]->m_debug_geometry->m_isVisible = false;
-
-				}
-				else
-				{
-					m_children[i]->m_debug_geometry->m_isVisible = true;
-
-
-				}
-
-				m_children[i]->UpdateDebugGeometries();
 			}
 		}
 
 		void SpacePartitionTree::DestroyChildren()
 		{
-			if (m_debug_geometry)
-			{
-				delete m_debug_geometry;
-				m_debug_geometry = nullptr;
-			}
-
 			m_hasActiveChildren = false;
 			for (int i = 0; i < m_children.size(); i++)
 			{

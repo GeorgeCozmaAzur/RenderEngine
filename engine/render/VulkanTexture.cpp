@@ -132,6 +132,7 @@ namespace engine
 
 			std::vector<stbi_uc*> pixelsarrays;
 			//int total_image_size = 0;
+			int i = 0;
 			for (auto filename : filenames)
 #if !defined(__ANDROID__)
 			{
@@ -148,26 +149,28 @@ namespace engine
 				m_width = static_cast<uint32_t>(texWidth);
 				m_height = static_cast<uint32_t>(texHeight);
 				m_mips_no = 1;
+
+				m_extents[i] = new TextureExtent[1];
+				m_extents[i][0].width = m_width;
+				m_extents[i][0].height = m_height;
+				i++;
 			}
 
 			m_ram_data = new char[m_imageSize];
 
-			for (int i=0;i< pixelsarrays.size();i++)
+			int offset = 0;
+			for (i=0;i< pixelsarrays.size();i++)
 			{
 				stbi_uc* pixels = pixelsarrays[i];
-				//m_layers_no = 1;
-				int image_face_size = m_width * m_height * 4;
+
+				int image_face_size = m_extents[i][0].width * m_extents[i][0].height * 4;
 				
-				memcpy(m_ram_data + i * image_face_size, pixels, image_face_size);
+				memcpy(m_ram_data + offset, pixels, image_face_size);
 
-				//m_extents = new TextureExtent * [1];
-				m_extents[i] = new TextureExtent[1];
-				{
-					m_extents[i][0].width = m_width;
-					m_extents[i][0].height = m_height;
-					m_extents[i][0].size = image_face_size;
+				offset += image_face_size;
 
-				}
+				m_extents[i][0].size = image_face_size;
+				
 				stbi_image_free(pixels);
 			}
 #endif

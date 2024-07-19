@@ -57,5 +57,15 @@ namespace engine
 
 			vkCmdDrawIndexed(*commandBuffer, m_indexCount, m_instanceNo, 0, 0, 0);
 		}
+
+		Geometry& Geometry::operator=(const Geometry& other)
+		{
+			m_indexCount = other.m_indexCount;
+			m_instanceNo = other.m_instanceNo;
+			_indexBuffer = other._indexBuffer;
+			_vertexBuffer = other._vertexBuffer;
+			_instanceBuffer = other._instanceBuffer;
+			return *this;
+		}
 	}
 }

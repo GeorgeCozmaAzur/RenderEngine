@@ -131,7 +131,70 @@ namespace engine
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/drawdebug/colored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+				engine::tools::getAssetPath() + "shaders/drawdebug/vertexcolored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
 		}
+
+		void DrawDebugBBs::Init(std::vector<std::vector<glm::vec3>> boundries, render::VulkanDevice* vulkanDevice, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, uint32_t constantSize)
+		{
+			_vertexLayout = &debugVertexLayout;
+
+			for (auto bb : boundries)
+			{
+				glm::vec3 first = bb[0];
+				glm::vec3 second = bb[1];
+				scene::Geometry* geometry = new scene::Geometry();
+				geometry->_device = vulkanDevice->logicalDevice;
+				geometry->m_instanceNo = 1;
+				std::vector<uint32_t> wire_indices = { 0,1,1,2,2,3,3,0, 0,4,3,7,2,6,1,5,4,5,5,6,6,7,7,4 };
+				geometry->m_indexCount = static_cast<uint32_t>(wire_indices.size());
+				geometry->m_indices = new uint32_t[wire_indices.size()];
+				for (int i = 0; i < wire_indices.size(); i++)
+				{
+					geometry->m_indices[i] = wire_indices[i];
+				}
+				geometry->m_vertexCount = 8;
+				geometry->m_verticesSize = geometry->m_vertexCount * _vertexLayout->GetVertexSize(0);
+				geometry->m_vertices = new float[geometry->m_verticesSize];
+
+				std::vector<glm::vec3> vertices;
+				vertices.reserve(geometry->m_vertexCount * 2);
+				vertices.push_back(first);
+				vertices.push_back(glm::vec3(0.0, 1.0, 0.0));
+				vertices.push_back(glm::vec3(second.x, first.y, first.z));
+				vertices.push_back(glm::vec3(0.0, 1.0, 0.0));
+				vertices.push_back(glm::vec3(second.x, first.y, second.z));
+				vertices.push_back(glm::vec3(0.0, 1.0, 0.0));
+				vertices.push_back(glm::vec3(first.x, first.y, second.z));
+				vertices.push_back(glm::vec3(0.0, 1.0, 0.0));
+
+				vertices.push_back(glm::vec3(first.x, second.y, first.z));
+				vertices.push_back(glm::vec3(0.0, 0.0, 1.0));
+				vertices.push_back(glm::vec3(second.x, second.y, first.z));
+				vertices.push_back(glm::vec3(0.0, 0.0, 1.0));
+				vertices.push_back(second);
+				vertices.push_back(glm::vec3(0.0, 0.0, 1.0));
+				vertices.push_back(glm::vec3(first.x, second.y, second.z));
+				vertices.push_back(glm::vec3(0.0, 0.0, 1.0));
+
+				memcpy(geometry->m_vertices, vertices.data(), geometry->m_verticesSize);
+
+				geometry->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_indexCount * sizeof(uint32_t), geometry->m_indices), false);
+				geometry->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_verticesSize * sizeof(float), geometry->m_vertices), false);
+				m_geometries.push_back(geometry);
+			}
+			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
+			{
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
+			};
+			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(bindings);
+
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &globalUniformBufferVS->m_descriptor }, {},
+				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
+
+			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
+				engine::tools::getAssetPath() + "shaders/drawdebug/colored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, constantSize);
+
+		}
+
 	}
 }
