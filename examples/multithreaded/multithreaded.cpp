@@ -20,6 +20,7 @@
 #include "threadpool.hpp"
 #include "scene/SpacePartitionTree.h"
 #include "scene/Timer.h"
+#include "scene/DrawDebug.h"
 
 using namespace engine;
 
@@ -103,9 +104,12 @@ public:
 	scene::SpacePartitionTree* tree = new scene::SpacePartitionTree;
 
 	Timer timer;
+	uint64_t timeadvance = 0;
 	uint64_t timeupdate = 0;
 	uint64_t timerender = 0;
 	int visible_objects = 0;
+
+	scene::DrawDebugBBs dbgbb;
 
 	VulkanExample() : VulkanExampleBase(true)
 	{
@@ -142,63 +146,6 @@ public:
 			delete bla;
 		}
 		delete tree;
-	}
-
-	scene::Geometry* CreateGeometrycubestuff(bool walls, bool wireframe, glm::vec3& bound1, glm::vec3& bound2)
-	{
-		scene::Geometry* geometry = new scene::Geometry();
-		geometry->_device = device;
-		geometry->m_instanceNo = 1;
-
-
-		std::vector<glm::vec3> vertices;
-		const int k_noVerts = 8;
-		vertices.reserve(k_noVerts * 2);
-
-		std::vector<uint32_t> ext_indices = { 0, 3, 2, 2, 1, 0, 4, 5, 6,6,7,4 };
-		std::vector<uint32_t> wire_indices = { 0,1,1,2,2,3,3,0, 0,4,3,7,2,6,1,5,4,5,5,6,6,7,7,4 };
-
-		geometry->m_indices = walls ? wire_indices.data() : ext_indices.data();
-
-		vertices.push_back(glm::vec3(-10.0, -10.0, -10.0));
-		vertices.push_back(glm::vec3(0.0, 1.0, 0.0));
-		vertices.push_back(glm::vec3(10.0, -10.0, -10.0));
-		vertices.push_back(glm::vec3(0.0, 1.0, 0.0));
-		vertices.push_back(glm::vec3(10.0, -10.0, 10.0));
-		vertices.push_back(glm::vec3(0.0, 1.0, 0.0));
-		vertices.push_back(glm::vec3(-10.0, -10.0, 10.0));
-		vertices.push_back(glm::vec3(0.0, 1.0, 0.0));
-
-		vertices.push_back(glm::vec3(-10.0, 10.0, -10.0));
-		vertices.push_back(glm::vec3(0.0, 0.0, 1.0));
-		vertices.push_back(glm::vec3(10.0, 10.0, -10.0));
-		vertices.push_back(glm::vec3(0.0, 0.0, 1.0));
-		vertices.push_back(glm::vec3(10.0, 10.0, 10.0));
-		vertices.push_back(glm::vec3(0.0, 0.0, 1.0));
-		vertices.push_back(glm::vec3(-10.0, 10.0, 10.0));
-		vertices.push_back(glm::vec3(0.0, 0.0, 1.0));
-
-		geometry->m_vertexCount = k_noVerts;
-		geometry->m_indexCount = static_cast<uint32_t>(walls ? wire_indices.size() : ext_indices.size());
-		uint32_t vBufferSize = static_cast<uint32_t>(vertices.size()) * sizeof(glm::vec3);
-		uint32_t iBufferSize = geometry->m_indexCount * sizeof(uint32_t);
-
-		geometry->m_verticesSize = 16 * 3;
-		geometry->m_vertices = new float[geometry->m_verticesSize];
-
-		int vi = 0;
-		for (int i = 0; i < vertices.size(); i++)
-		{
-			vi = i * 3;
-			geometry->m_vertices[vi] = vertices[i].x;
-			geometry->m_vertices[vi + 1] = vertices[i].y;
-			geometry->m_vertices[vi + 2] = vertices[i].z;
-		}
-
-		bound1 = vertices[0];
-		bound2 = vertices[2 * 6];
-
-		return geometry;
 	}
 
 	void setupGeometry()
@@ -251,17 +198,16 @@ public:
 		cube_limitations.push_back(CubeLmitation(glm::vec3(0, -10, 0), glm::vec4(0, 0, 1, 10)));
 		cube_limitations.push_back(CubeLmitation(glm::vec3(0, -10, 0), glm::vec4(0, 0, -1, 10)));
 
-		glm::vec3 bound1, bound2;
-		tree->SetDebugGeometry(CreateGeometrycubestuff(true, true, bound1, bound2));
-		tree->CreateChildren();
+		glm::vec3 bound1(-10.0f,-10.0f,-10.0f), bound2(10.0f,10.0f,10.0f);
 		tree->m_boundries.push_back(bound1);
 		tree->m_boundries.push_back(bound2);
+		tree->CreateChildren();
+		
 		for (auto child : tree->m_children)
 		{
 			child->CreateChildren();
 		}
-		std::vector<scene::Geometry*> geos;
-		tree->GatherAllGeometries(geos);
+		
 	}
 
 	void SetupTextures()
@@ -303,10 +249,10 @@ public:
 	void setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 * static_cast<uint32_t>(objectsNo)},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 * static_cast<uint32_t>(objectsNo) + 2},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * static_cast<uint32_t>(objectsNo)}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2 * objectsNo);
+		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2 * objectsNo+2);
 	}
 
 	void SetupDescriptors()
@@ -339,6 +285,8 @@ public:
 		}
 	}
 
+	std::vector<float> constants;
+
 	void init()
 	{	
 		setupGeometry();
@@ -347,6 +295,14 @@ public:
 		setupDescriptorPool();
 		SetupDescriptors();
 		setupPipelines();
+
+		std::vector <std::vector<glm::vec3>> boundries;
+		tree->GatherAllBoundries(boundries);
+		dbgbb.Init(boundries, vulkanDevice, sceneVertexUniformBuffer,queue,mainRenderPass->GetRenderPass(), pipelineCache, sizeof(float));
+		
+		constants.resize(boundries.size());
+		std::fill(constants.begin(), constants.end(), 1.0f);
+		dbgbb.InitGeometriesPushConstants(sizeof(float), constants.size(), constants.data());
 	}
 
 	//just a testing function
@@ -366,6 +322,7 @@ public:
 			{
 				objects[j].Draw(drawCmdBuffers[i]);
 			}
+			dbgbb.Draw(drawCmdBuffers[i]);
 
 			drawUI(drawCmdBuffers[i]);
 
@@ -590,19 +547,27 @@ public:
 			vert_uniform_buffers[i]->copyTo(&vert_ram_uniform_buffers[i]->model,sizeof(vert_ram_uniform_buffers[i]->model));
 		}
 	}
-
+	bool multithreaded = true;
 	void draw()
 	{
 		VulkanExampleBase::prepareFrame();
 
 		//TODO add fences
 		timer.start();
-		updateCommandBuffers(currentBuffer);
+		if(multithreaded)
+			updateCommandBuffers(currentBuffer);
+		else
+		{
+			buildCommandBuffers();
+			updateUniformBuffers();
+		}
+		memcpy(dbgbb._geometriesPushConstants, constants.data(), constants.size()*sizeof(float));
+		
 		timer.stop();
 		timerender = timer.elapsedMicroseconds();
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[0];
+		submitInfo.pCommandBuffers = &drawCmdBuffers[multithreaded? 0 : currentBuffer];
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 
 		VulkanExampleBase::submitFrame();
@@ -614,8 +579,11 @@ public:
 		init();
 		
 		prepareUI();
-		//buildCommandBuffers();
-		prepareMultiThreadedRenderer();
+		if (multithreaded)
+			prepareMultiThreadedRenderer();
+		else
+			buildCommandBuffers();
+		
 		prepared = true;
 	}
 
@@ -624,6 +592,21 @@ public:
 		if (!prepared)
 			return;
 		draw();
+	}
+
+	void SetTreeColors(scene::SpacePartitionTree* root, int &index)
+	{
+		if (root->m_objects.size() > 0)
+		{
+			constants[index] = 1.0f;
+		}
+		else
+			constants[index] = 0.0f;
+		index++;
+		for (int i = 0; i < root->m_children.size(); i++)
+		{
+			SetTreeColors(root->m_children[i], index);
+		}
 	}
 
 	virtual void update(float dt)
@@ -651,6 +634,13 @@ public:
 			}
 			tree->AdvanceObject(balls[i]);		
 		}
+
+		timer.stop();
+		timeadvance = timer.elapsedMicroseconds();
+		timer.start();
+
+		int ind = 0;
+		SetTreeColors(tree, ind);
 
 		tree->TestCollisions();
 
@@ -688,6 +678,7 @@ public:
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
 		if (overlay->header("Settings")) {
+			ImGui::Text("%ld time advance", timeadvance);
 			ImGui::Text("%ld time update", timeupdate);
 			ImGui::Text("%ld time render", timerender);
 			ImGui::Text("%.2d visible objects", visible_objects);
