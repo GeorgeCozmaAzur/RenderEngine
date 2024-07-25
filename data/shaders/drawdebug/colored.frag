@@ -8,5 +8,7 @@ layout (location = 0) out vec4 outFragColor;
 void main() 
 {
 	vec4 color = vec4(inColor, inColor.x);
+	if(color.r <= 0.5)
+	discard;
 	outFragColor  = color;	
 }

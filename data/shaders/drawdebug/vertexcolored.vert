@@ -16,11 +16,6 @@ layout (binding = 1) uniform UBO
 	mat4 model; 
 } ubo;
 */
-layout(push_constant) uniform PushConsts 
-{
-	float color;
-} pushConsts;
-
 layout (location = 0) out vec3 outColor;
 
 out gl_PerVertex {
@@ -29,6 +24,6 @@ out gl_PerVertex {
 
 void main() 
 {
-	outColor = vec3(pushConsts.color);
+	outColor = inColor;
 	gl_Position = uboView.projection * uboView.view * vec4(inPos.xyz, 1.0);
 }
