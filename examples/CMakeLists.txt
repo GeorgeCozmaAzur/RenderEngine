@@ -48,6 +48,7 @@ set(EXAMPLES
 	deferredlights
 	clothsimulation
 	emptyproject
+	fishes
 	multithreaded
 	normalparallax
 	pbr
