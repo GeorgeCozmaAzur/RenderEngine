@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SimpleModel.h"
-#include "render/VulkanDevice.hpp"
+#include "render/VulkanDevice.h"
 
 namespace engine
 {

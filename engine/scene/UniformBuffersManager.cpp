@@ -1,5 +1,5 @@
 #include "UniformBuffersManager.h"
-#include "render/VulkanDevice.hpp"
+#include "render/VulkanDevice.h"
 
 namespace engine
 {

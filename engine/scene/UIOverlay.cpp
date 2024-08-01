@@ -95,7 +95,7 @@ namespace engine
 			render::VulkanBuffer* stagingBuffer = _device->CreateStagingBuffer(uploadSize, fontData);;
 
 			// Copy buffer data to font image
-			VkCommandBuffer copyCmd = _device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+			VkCommandBuffer copyCmd = _device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
 			// Prepare for transfer
 			m_fontTexture->ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -122,7 +122,7 @@ namespace engine
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-			_device->flushCommandBuffer(copyCmd, _queue, true);
+			_device->FlushCommandBuffer(copyCmd, _queue, true);
 
 			_device->DestroyStagingBuffer(stagingBuffer);
 

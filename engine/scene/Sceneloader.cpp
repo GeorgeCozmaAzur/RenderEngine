@@ -2,7 +2,7 @@
 #include <assimp/Importer.hpp> 
 #include <assimp/scene.h>  
 #include <assimp/cimport.h>
-#include "render/VulkanDevice.hpp"
+#include "render/VulkanDevice.h"
 #include "scene/Timer.h"
 #include "camera.hpp"
 #include "render/VulkanRenderPass.h"
@@ -177,15 +177,15 @@ namespace engine
 				std::string texFormatSuffix;
 				VkFormat CompressedTexFormat;
 				// Get supported compressed texture format
-				if (device->features.textureCompressionBC) {
+				if (device->m_enabledFeatures.textureCompressionBC) {
 					texFormatSuffix = "_bc3_unorm";
 					CompressedTexFormat = VK_FORMAT_BC3_UNORM_BLOCK;
 				}
-				else if (device->features.textureCompressionASTC_LDR) {
+				else if (device->m_enabledFeatures.textureCompressionASTC_LDR) {
 					texFormatSuffix = "_astc_8x8_unorm";
 					CompressedTexFormat = VK_FORMAT_ASTC_8x8_UNORM_BLOCK;
 				}
-				else if (device->features.textureCompressionETC2) {
+				else if (device->m_enabledFeatures.textureCompressionETC2) {
 					texFormatSuffix = "_etc2_unorm";
 					CompressedTexFormat = VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK;
 				}

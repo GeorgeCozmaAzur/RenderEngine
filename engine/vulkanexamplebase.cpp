@@ -131,18 +131,18 @@ void VulkanExampleBase::createCommandBuffers()
 {
 	// Create one command buffer for each swap chain image and reuse for rendering
 	if(swapChain.queueNodeIndex != UINT32_MAX)
-		drawCmdBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
+		drawCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
 }
 
 void VulkanExampleBase::destroyCommandBuffers()
 {
 	if (swapChain.queueNodeIndex != UINT32_MAX)
-		vulkanDevice->freeDrawCommandBuffers();
+		vulkanDevice->FreeDrawCommandBuffers();
 }
 
 void VulkanExampleBase::createPipelineCache()
 {
-	pipelineCache = vulkanDevice->createPipelineCache();
+	pipelineCache = vulkanDevice->CreatePipelineCache();
 }
 
 void VulkanExampleBase::prepare()
@@ -221,7 +221,7 @@ void VulkanExampleBase::renderFrame()
 void VulkanExampleBase::renderLoop()
 {
 	if (benchmark.active) {
-		benchmark.run([=] { render(); }, vulkanDevice->properties);
+		benchmark.run([=] { render(); }, vulkanDevice->m_properties);
 		vkDeviceWaitIdle(device);
 		if (benchmark.filename != "") {
 			benchmark.saveResults();
@@ -710,7 +710,7 @@ VulkanExampleBase::~VulkanExampleBase()
 	// Clean up Vulkan resources
 	swapChain.cleanup();
 	destroyCommandBuffers();
-	vulkanDevice->destroyPipelineCache();
+	vulkanDevice->DestroyPipelineCache();
 	vulkanDevice->DestroySemaphore(semaphores.presentComplete);
 	vulkanDevice->DestroySemaphore(semaphores.renderComplete);
 
@@ -837,12 +837,13 @@ bool VulkanExampleBase::initVulkan()
 	// Vulkan device creation
 	// This is handled by a separate class that gets a logical device representation
 	// and encapsulates functions related to a device
-	vulkanDevice = new engine::render::VulkanDevice(instance, 0, &enabledFeatures, enabledDeviceExtensions, deviceCreatepNextChain);
+	enabledDeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	vulkanDevice = new engine::render::VulkanDevice(instance, &enabledFeatures, enabledDeviceExtensions, swapChain.GetSurface(), deviceCreatepNextChain);
 
 	device = vulkanDevice->logicalDevice;
 
 	// Get a graphics queue from the device
-	vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.graphics, 0, &queue);
+	vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.graphicsFamily, 0, &queue);
 
 	// Find a suitable depth format
 	VkBool32 validDepthFormat = engine::tools::getSupportedDepthFormat(vulkanDevice->physicalDevice, &depthFormat);
@@ -1912,7 +1913,7 @@ void VulkanExampleBase::buildCommandBuffers() {}
 
 void VulkanExampleBase::createCommandPool()
 {
-	cmdPool = vulkanDevice->getCommandPool(swapChain.queueNodeIndex);
+	cmdPool = vulkanDevice->GetCommandPool(swapChain.queueNodeIndex);
 }
 
 void VulkanExampleBase::setupDepthStencil()

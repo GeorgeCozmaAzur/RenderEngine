@@ -76,6 +76,11 @@ namespace engine
 			/** @brief Queue family index of the detected graphics and presenting device queue */
 			uint32_t queueNodeIndex = UINT32_MAX;
 
+			VkSurfaceKHR GetSurface() {
+				return surface
+					;
+			}
+
 			/** @brief Creates the platform specific surface abstraction of the native platform window used for presentation */
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 			void initSurface(void* platformHandle, void* platformWindow)

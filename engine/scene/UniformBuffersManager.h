@@ -1,5 +1,5 @@
 #pragma once
-#include "render/VulkanDevice.hpp"
+#include "render/VulkanDevice.h"
 #include "render/VulkanBuffer.hpp"
 
 #include <vector>
