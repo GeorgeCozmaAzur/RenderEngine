@@ -48,7 +48,7 @@
 #include "VulkanDebug.h"
 
 #include "render/VulkanDevice.h"
-#include "render/VulkanSwapChain.hpp"
+#include "render/VulkanSwapChain.h"
 #include "scene/UIOverlay.h"
 #include "scene/camera.hpp"
 #include "benchmark.hpp"
@@ -87,6 +87,8 @@ protected:
 	VkDevice device;
 	// Handle to the device graphics queue that command buffers are submitted to
 	VkQueue queue;
+	// Handle to the device presentation queue
+	VkQueue presentationQueue;
 	// Depth buffer format (selected during Vulkan initialization)
 	VkFormat depthFormat;
 	// Command buffer pool
@@ -410,8 +412,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)									\
 {																									\
 	for (int32_t i = 0; i < __argc; i++) { VulkanExample::args.push_back(__argv[i]); };  			\
 	vulkanExample = new VulkanExample();															\
-	vulkanExample->initVulkan();																	\
 	vulkanExample->setupWindow(hInstance, WndProc);													\
+	vulkanExample->initVulkan();																	\
 	vulkanExample->prepare();																		\
 	vulkanExample->renderLoop();																	\
 	delete(vulkanExample);																			\

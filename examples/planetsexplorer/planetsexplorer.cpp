@@ -185,7 +185,7 @@ public:
 		scenepositions = vulkanDevice->GetColorRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT);
 		scenedepth = vulkanDevice->GetDepthRenderTarget(width, height, true);
 
-		scenepass = vulkanDevice->GetRenderPass({ scenecolor, scenepositions, scenedepth }, 0);
+		scenepass = vulkanDevice->GetRenderPass({ scenecolor, scenepositions, scenedepth }, {});
 		render::VulkanFrameBuffer* fb = vulkanDevice->GetFrameBuffer(scenepass->GetRenderPass(), width, height, { scenecolor->m_descriptor.imageView, scenepositions->m_descriptor.imageView, scenedepth->m_descriptor.imageView }, { { 0.0f, 0.0f, 0.0f, 1.0f } });
 		scenepass->AddFrameBuffer(fb);
 

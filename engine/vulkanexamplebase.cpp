@@ -92,7 +92,7 @@ VkResult VulkanExampleBase::createInstance(bool enableValidation)
 
 std::string VulkanExampleBase::getWindowTitle()
 {
-	std::string device(vulkanDevice->GetDeviceName());
+	std::string device("device");//vulkanDevice->GetDeviceName());
 	std::string windowTitle;
 	windowTitle = title + " - " + device;
 	if (!settings.overlay) {
@@ -130,13 +130,13 @@ bool VulkanExampleBase::checkCommandBuffers()
 void VulkanExampleBase::createCommandBuffers()
 {
 	// Create one command buffer for each swap chain image and reuse for rendering
-	if(swapChain.queueNodeIndex != UINT32_MAX)
-		drawCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
+	if(vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
+		drawCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 }
 
 void VulkanExampleBase::destroyCommandBuffers()
 {
-	if (swapChain.queueNodeIndex != UINT32_MAX)
+	if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
 		vulkanDevice->FreeDrawCommandBuffers();
 }
 
@@ -150,9 +150,10 @@ void VulkanExampleBase::prepare()
 	if (vulkanDevice->enableDebugMarkers) {
 		engine::debugmarker::setup(device);
 	}
-	initSwapchain();
-	createCommandPool();
+	//initSwapchain();
+	
 	setupSwapChain();
+	createCommandPool();
 	createCommandBuffers();
 	setupDepthStencil();
 	setupRenderPass();
@@ -584,7 +585,7 @@ void VulkanExampleBase::prepareFrame()
 
 void VulkanExampleBase::submitFrame()
 {
-	VkResult result = swapChain.queuePresent(queue, currentBuffer, semaphores.renderComplete);
+	VkResult result = swapChain.queuePresent(presentationQueue, currentBuffer, semaphores.renderComplete);
 	if (!((result == VK_SUCCESS) || (result == VK_SUBOPTIMAL_KHR))) {
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			// Swap chain is no longer compatible with the surface and needs to be recreated
@@ -594,7 +595,7 @@ void VulkanExampleBase::submitFrame()
 			VK_CHECK_RESULT(result);
 		}
 	}
-	VK_CHECK_RESULT(vkQueueWaitIdle(queue));
+	VK_CHECK_RESULT(vkQueueWaitIdle(presentationQueue));
 }
 
 VulkanExampleBase::VulkanExampleBase(bool enableValidation)
@@ -708,7 +709,7 @@ VulkanExampleBase::VulkanExampleBase(bool enableValidation)
 VulkanExampleBase::~VulkanExampleBase()
 {
 	// Clean up Vulkan resources
-	swapChain.cleanup();
+	swapChain.CleanUp();
 	destroyCommandBuffers();
 	vulkanDevice->DestroyPipelineCache();
 	vulkanDevice->DestroySemaphore(semaphores.presentComplete);
@@ -775,61 +776,7 @@ bool VulkanExampleBase::initVulkan()
 		engine::debug::setupDebugging(instance, debugReportFlags, VK_NULL_HANDLE);
 	}
 
-	// GPU selection
-
-	// Select physical device to be used for the Vulkan example
-	// Defaults to the first device unless specified by command line
-	//uint32_t selectedDevice = 0;
-/*
-#if !defined(VK_USE_PLATFORM_ANDROID_KHR)	
-	// GPU selection via command line argument
-	for (size_t i = 0; i < args.size(); i++)
-	{
-		// Select GPU
-		if ((args[i] == std::string("-g")) || (args[i] == std::string("-gpu")))
-		{
-			char* endptr;
-			uint32_t index = strtol(args[i + 1], &endptr, 10);
-			if (endptr != args[i + 1]) 
-			{ 
-				if (index > gpuCount - 1)
-				{
-					std::cerr << "Selected device index " << index << " is out of range, reverting to device 0 (use -listgpus to show available Vulkan devices)" << std::endl;
-				} 
-				else
-				{
-					std::cout << "Selected Vulkan device " << index << std::endl;
-					selectedDevice = index;
-				}
-			};
-			break;
-		}
-		// List available GPUs
-		if (args[i] == std::string("-listgpus"))
-		{
-			uint32_t gpuCount = 0;
-			VK_CHECK_RESULT(vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr));
-			if (gpuCount == 0) 
-			{
-				std::cerr << "No Vulkan devices found!" << std::endl;
-			}
-			else 
-			{
-				// Enumerate devices
-				std::cout << "Available Vulkan devices" << std::endl;
-				std::vector<VkPhysicalDevice> devices(gpuCount);
-				VK_CHECK_RESULT(vkEnumeratePhysicalDevices(instance, &gpuCount, devices.data()));
-				for (uint32_t i = 0; i < gpuCount; i++) {
-					VkPhysicalDeviceProperties deviceProperties;
-					vkGetPhysicalDeviceProperties(devices[i], &deviceProperties);
-					std::cout << "Device [" << i << "] : " << deviceProperties.deviceName << std::endl;
-					std::cout << " Type: " << engine::tools::physicalDeviceTypeString(deviceProperties.deviceType) << std::endl;
-					std::cout << " API: " << (deviceProperties.apiVersion >> 22) << "." << ((deviceProperties.apiVersion >> 12) & 0x3ff) << "." << (deviceProperties.apiVersion & 0xfff) << std::endl;
-				}
-			}
-		}
-	}
-#endif*/
+	initSwapchain();
 
 	// Derived examples can override this to set actual features (based on above readings) to enable for logical device creation
 	getEnabledFeatures();
@@ -838,18 +785,22 @@ bool VulkanExampleBase::initVulkan()
 	// This is handled by a separate class that gets a logical device representation
 	// and encapsulates functions related to a device
 	enabledDeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	vulkanDevice = new engine::render::VulkanDevice(instance, &enabledFeatures, enabledDeviceExtensions, swapChain.GetSurface(), deviceCreatepNextChain);
+	vulkanDevice = new engine::render::VulkanDevice(instance, &enabledFeatures, enabledDeviceExtensions, swapChain.surface, deviceCreatepNextChain);
 
 	device = vulkanDevice->logicalDevice;
 
 	// Get a graphics queue from the device
 	vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.graphicsFamily, 0, &queue);
+	if (vulkanDevice->queueFamilyIndices.graphicsFamily != vulkanDevice->queueFamilyIndices.presentFamily)
+		vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.presentFamily, 0, &presentationQueue);
+	else
+		presentationQueue = queue;
 
 	// Find a suitable depth format
 	VkBool32 validDepthFormat = engine::tools::getSupportedDepthFormat(vulkanDevice->physicalDevice, &depthFormat);
 	assert(validDepthFormat);
 
-	swapChain.connect(instance, vulkanDevice->physicalDevice, device);
+	//swapChain.connect(instance, vulkanDevice->physicalDevice, device);
 
 	// Create synchronization objects
 	VkSemaphoreCreateInfo semaphoreCreateInfo{};
@@ -1913,7 +1864,7 @@ void VulkanExampleBase::buildCommandBuffers() {}
 
 void VulkanExampleBase::createCommandPool()
 {
-	cmdPool = vulkanDevice->GetCommandPool(swapChain.queueNodeIndex);
+	cmdPool = vulkanDevice->GetCommandPool(vulkanDevice->queueFamilyIndices.graphicsFamily);//vulkanDevice->queueFamilyIndices.graphicsFamily);
 }
 
 void VulkanExampleBase::setupDepthStencil()
@@ -1927,16 +1878,16 @@ void VulkanExampleBase::setupDepthStencil()
 
 void VulkanExampleBase::setupFrameBuffer()
 {
-	for (uint32_t i = 0; i < swapChain.imageCount; i++)
+	for (uint32_t i = 0; i < swapChain.swapChainImageViews.size(); i++)
 	{
-		render::VulkanFrameBuffer *fb = vulkanDevice->GetFrameBuffer(mainRenderPass->GetRenderPass(), width, height, { swapChain.buffers[i].m_descriptor.imageView, depthStencil->m_descriptor.imageView }, defaultClearColor);
+		render::VulkanFrameBuffer *fb = vulkanDevice->GetFrameBuffer(mainRenderPass->GetRenderPass(), width, height, { swapChain.swapChainImageViews[i], depthStencil->m_descriptor.imageView }, defaultClearColor);
 		mainRenderPass->AddFrameBuffer(fb);
 	}
 }
 
 void VulkanExampleBase::setupRenderPass()
 {
-	mainRenderPass = vulkanDevice->GetRenderPass({ {swapChain.colorFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR}, {depthFormat, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL} });
+	mainRenderPass = vulkanDevice->GetRenderPass({ {swapChain.m_surfaceFormat.format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR}, {depthFormat, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL} });
 }
 
 void VulkanExampleBase::getEnabledFeatures()
@@ -2037,7 +1988,7 @@ void VulkanExampleBase::windowResized()
 void VulkanExampleBase::initSwapchain()
 {
 #if defined(_WIN32)
-	swapChain.initSurface(windowInstance, window);
+	swapChain.InitSurface(instance, windowInstance, window);
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)	
 	swapChain.initSurface(androidApp->window);
 #elif (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
@@ -2053,7 +2004,7 @@ void VulkanExampleBase::initSwapchain()
 
 void VulkanExampleBase::setupSwapChain()
 {
-	swapChain.create(&width, &height, settings.vsync);
+	swapChain.Create(vulkanDevice->physicalDevice, vulkanDevice->logicalDevice, &width, &height, vulkanDevice->queueFamilyIndices.graphicsFamily, vulkanDevice->queueFamilyIndices.presentFamily, settings.vsync);
 }
 
 void VulkanExampleBase::OnUpdateUIOverlay(engine::scene::UIOverlay *overlay) {}

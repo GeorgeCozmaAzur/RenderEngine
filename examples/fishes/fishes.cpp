@@ -208,7 +208,7 @@ public:
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
-		size_t minUboAlignment = vulkanDevice->properties.limits.minUniformBufferOffsetAlignment;
+		size_t minUboAlignment = vulkanDevice->m_properties.limits.minUniformBufferOffsetAlignment;
 		dynamicAlignment = sizeof(glm::mat4);
 		if (minUboAlignment > 0) {
 			dynamicAlignment = (dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);

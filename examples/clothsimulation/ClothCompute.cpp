@@ -36,12 +36,12 @@ namespace engine
 			storageBuffers.outbuffer = vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 				, queue, storageBufferSize, nullptr);
 
-			VkCommandBuffer copyCmd = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+			VkCommandBuffer copyCmd = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			VkBufferCopy copyRegion = {};
 			copyRegion.size = storageBufferSize;
 			vkCmdCopyBuffer(copyCmd, stagingBuffer->m_buffer, storageBuffers.inbuffer->m_buffer, 1, &copyRegion);
 			vkCmdCopyBuffer(copyCmd, stagingBuffer->m_buffer, storageBuffers.outbuffer->m_buffer, 1, &copyRegion);
-			vulkanDevice->flushCommandBuffer(copyCmd, queue, true);
+			vulkanDevice->FlushCommandBuffer(copyCmd, queue, true);
 			vulkanDevice->DestroyBuffer(stagingBuffer);
 
 			m_indices.resize((m_gridSize.y - 1) * (m_gridSize.x * 2 + 1));

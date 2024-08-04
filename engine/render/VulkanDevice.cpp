@@ -81,8 +81,9 @@ namespace engine
 
                         i++;
                     }
-                    //if (!queueFamilyIndices.isComplete())
-                    //    continue;
+                    queueFamilyIndices.presentFamily = queueFamilyIndices.graphicsFamily;//TODO HARDCODE FOR NOW
+                   // if (!queueFamilyIndices.isComplete())
+                   //     continue;
 
                     vkGetPhysicalDeviceMemoryProperties(device, &memoryProperties);
 
@@ -106,7 +107,12 @@ namespace engine
         void VulkanDevice::CreateLogicalDevice(const std::vector<const char*> layers, void* pNextChain)
         {
             std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-            std::set<uint32_t> uniqueQueueFamilies = { queueFamilyIndices.graphicsFamily /*, queueFamilyIndices.presentFamily*/ };
+            std::set<uint32_t> uniqueQueueFamilies = { queueFamilyIndices.graphicsFamily };
+
+            if (queueFamilyIndices.graphicsFamily != queueFamilyIndices.presentFamily)
+            {
+                uniqueQueueFamilies.emplace(queueFamilyIndices.presentFamily);
+            }
 
             float queuePriority = 1.0f;
             for (uint32_t queueFamily : uniqueQueueFamilies) {

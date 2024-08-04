@@ -150,7 +150,7 @@ public:
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		scenedepth = vulkanDevice->GetDepthRenderTarget(width, height, false);
 
-		scenepass = vulkanDevice->GetRenderPass({ scenecolor ,scenepositions, scenenormals, sceneLightscolor, scenedepth }, 0, { render::RenderSubpass({}, {0,1,2,4}), render::RenderSubpass({1,2}, {3}) } );
+		scenepass = vulkanDevice->GetRenderPass({ scenecolor ,scenepositions, scenenormals, sceneLightscolor, scenedepth }, { render::RenderSubpass({}, {0,1,2,4}), render::RenderSubpass({1,2}, {3}) } );
 		render::VulkanFrameBuffer* fb = vulkanDevice->GetFrameBuffer(scenepass->GetRenderPass(), width, height, 
 			{ scenecolor->m_descriptor.imageView, scenepositions->m_descriptor.imageView, scenenormals->m_descriptor.imageView, sceneLightscolor->m_descriptor.imageView, scenedepth->m_descriptor.imageView },
 			{ { 0.95f, 0.95f, 0.95f, 1.0f } });
@@ -165,15 +165,15 @@ public:
 		//models.example.LoadGeometry(engine::tools::getAssetPath() + "models/medieval/Medieval_House.obj", &vertexLayoutInstanced, 0.01f, MODELS_NO, glm::vec3(0.0, 2.0, 0.0));
 
 		// Textures
-		if (vulkanDevice->features.textureCompressionBC) {
+		if (vulkanDevice->m_enabledFeatures.textureCompressionBC) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
 			colorMap2 = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "models/armor/color_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
 		}
-		else if (vulkanDevice->features.textureCompressionASTC_LDR) {
+		else if (vulkanDevice->m_enabledFeatures.textureCompressionASTC_LDR) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
 			colorMap2 = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/armor/color_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
 		}
-		else if (vulkanDevice->features.textureCompressionETC2) {
+		else if (vulkanDevice->m_enabledFeatures.textureCompressionETC2) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
 			colorMap2 = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/armor/color_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
 		}
@@ -339,6 +339,7 @@ public:
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		//cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
 		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
 		{

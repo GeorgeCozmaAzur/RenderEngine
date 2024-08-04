@@ -240,12 +240,12 @@ public:
 		render::VulkanPipeline* pipeline = vulkanDevice->GetPipeline(layout->m_descriptorSetLayout, {}, {},
 			engine::tools::getAssetPath() + "shaders/pbr/genbrdflut.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/genbrdflut.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-		VkCommandBuffer cmdBuf = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 		offscreenRenderPass->Begin(cmdBuf,0);
 		pipeline->Draw(cmdBuf);
 		vkCmdDraw(cmdBuf, 3, 1, 0, 0);
 		offscreenRenderPass->End(cmdBuf);
-		vulkanDevice->flushCommandBuffer(cmdBuf, queue);
+		vulkanDevice->FlushCommandBuffer(cmdBuf, queue);
 		vkQueueWaitIdle(queue);
 
 		//dbgtex.Init(vulkanDevice, BRDFLUTMap, queue, mainRenderPass->GetRenderPass(), pipelineCache);
@@ -305,7 +305,7 @@ public:
 			glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
 		};
 
-		VkCommandBuffer cmdBuf = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 		// Change image layout for all cubemap faces to transfer destination
 		irradianceMap->ChangeLayout(cmdBuf, 
 			VK_IMAGE_LAYOUT_UNDEFINED,
@@ -372,7 +372,7 @@ public:
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vulkanDevice->flushCommandBuffer(cmdBuf, queue);
+		vulkanDevice->FlushCommandBuffer(cmdBuf, queue);
 	}
 
 	void generatePrefilteredCube()
@@ -426,7 +426,7 @@ public:
 			glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
 		};
 
-		VkCommandBuffer cmdBuf = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
 		VkViewport viewport = { 0, 0, (float)dim, (float)dim, 0.0f, 1.0f };
 		prefilterMap->ChangeLayout(cmdBuf, 
@@ -495,7 +495,7 @@ public:
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vulkanDevice->flushCommandBuffer(cmdBuf, queue);
+		vulkanDevice->FlushCommandBuffer(cmdBuf, queue);
 	}
 
 	void init()

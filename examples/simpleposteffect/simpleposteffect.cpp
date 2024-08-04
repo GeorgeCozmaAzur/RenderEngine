@@ -62,7 +62,7 @@ public:
 		render::VulkanTexture* scenecolor = vulkanDevice->GetColorRenderTarget(width, height, FB_COLOR_HDR_FORMAT);
 		render::VulkanTexture* scenedepth = vulkanDevice->GetDepthRenderTarget(width, height, false);
 
-		scenepass = vulkanDevice->GetRenderPass({ scenecolor , scenedepth }, 0);
+		scenepass = vulkanDevice->GetRenderPass({ scenecolor , scenedepth }, {});
 		VulkanFrameBuffer* fb = vulkanDevice->GetFrameBuffer(scenepass->GetRenderPass(), width, height, { scenecolor->m_descriptor.imageView, scenedepth->m_descriptor.imageView }, { { 30.8f, 100.95f, 300.f, 1.0f } });
 		scenepass->AddFrameBuffer(fb);
 

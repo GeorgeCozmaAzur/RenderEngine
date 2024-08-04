@@ -2,7 +2,7 @@
 #include "vulkan/vulkan.h"
 #include "vulkanexamplebase.h"
 #include "VulkanTools.h"
-#include "render/VulkanDevice.hpp"
+#include "render/VulkanDevice.h"
 #include "scene/SimpleModelRT.h"
 
 class VulkanExample : public VulkanExampleBase
@@ -233,11 +233,11 @@ public:
 
 		storageImage = vulkanDevice->GetRenderTarget(extent.width, extent.height, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 
-		VkCommandBuffer cmdBuffer = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer cmdBuffer = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 		storageImage->ChangeLayout(cmdBuffer,
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL);
-		vulkanDevice->flushCommandBuffer(cmdBuffer, queue);
+		vulkanDevice->FlushCommandBuffer(cmdBuffer, queue);
 	}
 
 	uint64_t getBufferDeviceAddress(VkBuffer buffer)
@@ -404,13 +404,13 @@ public:
 
 			// Build the acceleration structure on the device via a one-time command buffer submission
 			// Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but we prefer device builds
-			VkCommandBuffer commandBuffer = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+			VkCommandBuffer commandBuffer = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			vkCmdBuildAccelerationStructuresKHR(
 				commandBuffer,
 				1,
 				&accelerationBuildGeometryInfo,
 				accelerationBuildStructureRangeInfos.data());
-			vulkanDevice->flushCommandBuffer(commandBuffer, queue);
+			vulkanDevice->FlushCommandBuffer(commandBuffer, queue);
 
 			deleteScratchBuffer(scratchBuffer);
 
@@ -426,9 +426,9 @@ public:
 		render::VulkanBuffer* staging = vulkanDevice->CreateStagingBuffer(bufferSize, m_objDesc.data());
 		VkBufferCopy bufferCopy{};
 		bufferCopy.size = bufferSize;
-		VkCommandBuffer copyCmd = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer copyCmd = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 		vkCmdCopyBuffer(copyCmd, staging->m_buffer, m_bObjDesc->m_buffer, 1, &bufferCopy);
-		vulkanDevice->flushCommandBuffer(copyCmd, queue, true);
+		vulkanDevice->FlushCommandBuffer(copyCmd, queue, true);
 	}
 
 	/*
@@ -522,13 +522,13 @@ public:
 
 		// Build the acceleration structure on the device via a one-time command buffer submission
 		// Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but we prefer device builds
-		VkCommandBuffer commandBuffer = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer commandBuffer = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 		vkCmdBuildAccelerationStructuresKHR(
 			commandBuffer,
 			1,
 			&accelerationBuildGeometryInfo,
 			accelerationBuildStructureRangeInfos.data());
-		vulkanDevice->flushCommandBuffer(commandBuffer, queue);
+		vulkanDevice->FlushCommandBuffer(commandBuffer, queue);
 
 		deleteScratchBuffer(scratchBuffer);
 		//instancesBuffer.destroy();
@@ -789,7 +789,7 @@ public:
 	void windowResized()
 	{
 		// Recreate image
-		createStorageImage(swapChain.colorFormat, { width, height, 1 });
+		createStorageImage(swapChain.m_surfaceFormat.format, { width, height, 1 });
 		// Update descriptor
 		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, storageImage->m_descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL };
 		VkWriteDescriptorSet resultImageWrite = writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);
@@ -830,7 +830,7 @@ public:
 			*/
 
 			// Prepare current swap chain image as transfer destination
-			swapChain.buffers[i].ChangeLayout(drawCmdBuffers[i],
+			swapChain.swapChainImageViews[i].ChangeLayout(drawCmdBuffers[i],
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -845,7 +845,7 @@ public:
 			copyRegion.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
 			copyRegion.dstOffset = { 0, 0, 0 };
 			copyRegion.extent = { width, height, 1 };
-			vkCmdCopyImage(drawCmdBuffers[i], storageImage->m_vkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapChain.images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+			vkCmdCopyImage(drawCmdBuffers[i], storageImage->m_vkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapChain.m_images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 			// Transition swap chain image back for presentation
 			swapChain.buffers[i].ChangeLayout(drawCmdBuffers[i],
@@ -923,7 +923,7 @@ public:
 		createBottomLevelAccelerationStructure();
 		createTopLevelAccelerationStructure();
 
-		createStorageImage(swapChain.colorFormat, { width, height, 1 });
+		createStorageImage(swapChain.m_surfaceFormat.format, { width, height, 1 });
 		createTextures();
 		createUniformBuffer();
 		createRayTracingPipeline();

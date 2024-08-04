@@ -189,10 +189,10 @@ public:
 
 		dbgtex.Init(vulkanDevice, scene.shadowmapColor, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 
-		if (swapChain.queueNodeIndex != UINT32_MAX)
+		if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
 		{
-			drawShadowCmdBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
-			drawComputeCmdBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
+			drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+			drawComputeCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 		}
 		initComputeObjects();
 	}
@@ -370,10 +370,10 @@ public:
 
 	virtual void windowResized()
 	{
-		if (swapChain.queueNodeIndex != UINT32_MAX)
+		if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
 		{
-			drawShadowCmdBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
-			drawComputeCmdBuffers = vulkanDevice->createdrawCommandBuffers(swapChain.imageCount, swapChain.queueNodeIndex);
+			drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+			drawComputeCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 		}
 	}
 

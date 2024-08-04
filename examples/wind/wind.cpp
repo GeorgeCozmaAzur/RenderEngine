@@ -98,13 +98,13 @@ public:
 	void SetupTextures()
 	{
 		// Textures
-		/*if (vulkanDevice->features.textureCompressionBC) {
+		/*if (vulkanDevice->m_enabledFeatures.textureCompressionBC) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
 		}
-		else if (vulkanDevice->features.textureCompressionASTC_LDR) {
+		else if (vulkanDevice->m_enabledFeatures.textureCompressionASTC_LDR) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
 		}
-		else if (vulkanDevice->features.textureCompressionETC2) {
+		else if (vulkanDevice->m_enabledFeatures.textureCompressionETC2) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
 		}
 		else {

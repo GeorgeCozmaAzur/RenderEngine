@@ -213,13 +213,13 @@ public:
 	void SetupTextures()
 	{
 		// Textures
-		if (vulkanDevice->features.textureCompressionBC) {
+		if (vulkanDevice->m_enabledFeatures.textureCompressionBC) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
 		}
-		else if (vulkanDevice->features.textureCompressionASTC_LDR) {
+		else if (vulkanDevice->m_enabledFeatures.textureCompressionASTC_LDR) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
 		}
-		else if (vulkanDevice->features.textureCompressionETC2) {
+		else if (vulkanDevice->m_enabledFeatures.textureCompressionETC2) {
 			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
 		}
 		else {
@@ -353,36 +353,29 @@ public:
 			// Create one command pool for each thread
 			VkCommandPoolCreateInfo cmdPoolCreateInfo{};
 			cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			cmdPoolCreateInfo.queueFamilyIndex = swapChain.queueNodeIndex;
+			cmdPoolCreateInfo.queueFamilyIndex = vulkanDevice->queueFamilyIndices.graphicsFamily;
 			cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 			VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &thread->commandPool));
 
 			// One secondary command buffer per object that is updated by this thread
 			thread->commandBuffer.resize(numObjectsPerThread);
 			// Generate secondary command buffers for each thread
-			VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo =
-				engine::render::VulkanDevice::commandBufferAllocateInfo(
-					thread->commandPool,
-					VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-					static_cast<uint32_t>(thread->commandBuffer.size()));
+			VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, thread->commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY, static_cast<uint32_t>(thread->commandBuffer.size()) };
 			VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &secondaryCmdBufAllocateInfo, thread->commandBuffer.data()));
 
 			thread->objects.reserve(objectsNo / numDrawThreads);
 		}
 		VkCommandPoolCreateInfo cmdPoolCreateInfo{};
 		cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		cmdPoolCreateInfo.queueFamilyIndex = swapChain.queueNodeIndex;
+		cmdPoolCreateInfo.queueFamilyIndex = vulkanDevice->queueFamilyIndices.graphicsFamily;
 		cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &threadUIData.commandPool));
 
 		// One secondary command buffer per object that is updated by this thread
 		threadUIData.commandBuffer.resize(numObjectsPerThread);
 		// Generate secondary command buffers for each thread
-		VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo =
-			engine::render::VulkanDevice::commandBufferAllocateInfo(
-				threadUIData.commandPool,
-				VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-				static_cast<uint32_t>(threadUIData.commandBuffer.size()));
+		VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, threadUIData.commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY, static_cast<uint32_t>(threadUIData.commandBuffer.size()) };
+
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &secondaryCmdBufAllocateInfo, threadUIData.commandBuffer.data()));
 
 	}
