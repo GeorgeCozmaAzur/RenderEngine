@@ -53,9 +53,9 @@ namespace engine
 		public:
 			VkDevice _device = VK_NULL_HANDLE;
 
-			VkImage m_vkImage;
-			VkDeviceMemory m_deviceMemory;
-			VkDescriptorImageInfo m_descriptor;//TODO make all this private
+			VkImage m_vkImage = VK_NULL_HANDLE;
+			VkDeviceMemory m_deviceMemory = VK_NULL_HANDLE;
+			VkDescriptorImageInfo m_descriptor{};//TODO make all this private
 
 			VkFormat m_format;
 			VkDeviceSize m_imageSize;

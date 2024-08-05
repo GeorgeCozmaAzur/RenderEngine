@@ -828,9 +828,12 @@ public:
 			/*
 				Copy ray tracing output to swap chain image
 			*/
+			//temporary texture
+			render::VulkanTexture swapChainTexture;
+			swapChainTexture.m_vkImage = swapChain.m_images[i];
 
 			// Prepare current swap chain image as transfer destination
-			swapChain.swapChainImageViews[i].ChangeLayout(drawCmdBuffers[i],
+			swapChainTexture.ChangeLayout(drawCmdBuffers[i],
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -848,7 +851,7 @@ public:
 			vkCmdCopyImage(drawCmdBuffers[i], storageImage->m_vkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapChain.m_images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 			// Transition swap chain image back for presentation
-			swapChain.buffers[i].ChangeLayout(drawCmdBuffers[i],
+			swapChainTexture.ChangeLayout(drawCmdBuffers[i],
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -860,6 +863,9 @@ public:
 			//drawUI(drawCmdBuffers[i], frameBuffers[i]);//george
 
 			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+
+			//make sure the temporary texture doesn't take the image with it's destruction
+			swapChainTexture.m_vkImage = nullptr;
 		}
 	}
 
