@@ -92,6 +92,8 @@ namespace engine
 
 			void Update(TextureData* textureData, VkCommandBuffer copyCmd, VkQueue copyQueue);
 
+			void UpdateGeneratingMipmaps(TextureData* textureData, VkCommandBuffer copyCmd, VkQueue copyQueue);
+
 			void CreateDescriptor(VkSamplerAddressMode adressMode, VkImageViewType viewType, float maxAnisoropy = 1);
 
 			/** @brief Release all Vulkan resources held by this texture */

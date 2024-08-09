@@ -73,6 +73,10 @@ namespace engine
 				return m_properties.deviceName;
 			}
 
+			// Selected a suitable supported depth format starting with 32 bit down to 16 bit
+			// Returns false if none of the depth formats in the list is supported by the device
+			VkBool32 GetSupportedDepthFormat(VkFormat* depthFormat);
+
 			// Creates a staging buffer
 			VulkanBuffer* CreateStagingBuffer(VkDeviceSize size, void* data = nullptr);
 
@@ -97,12 +101,12 @@ namespace engine
 			// Gets a texture from a file
 			VulkanTexture* GetTexture(std::string filename, VkFormat format, VkQueue copyQueue,
 				VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-				VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, bool generateMipmaps = false);
 
 			// Gets a texture array from a list of files
 			VulkanTexture* GetTextureArray(std::vector<std::string> filenames, VkFormat format, VkQueue copyQueue,
 				VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-				VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, bool generateMipmaps = false);
 
 			// Gets a cubemap texture from a file
 			VulkanTexture* GetTextureCubeMap(std::string filename, VkFormat format, VkQueue copyQueue, VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,

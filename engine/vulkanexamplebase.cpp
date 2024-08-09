@@ -797,7 +797,7 @@ bool VulkanExampleBase::initVulkan()
 		presentationQueue = queue;
 
 	// Find a suitable depth format
-	VkBool32 validDepthFormat = engine::tools::getSupportedDepthFormat(vulkanDevice->physicalDevice, &depthFormat);
+	VkBool32 validDepthFormat = vulkanDevice->GetSupportedDepthFormat(&depthFormat);
 	assert(validDepthFormat);
 
 	//swapChain.connect(instance, vulkanDevice->physicalDevice, device);

@@ -151,6 +151,33 @@ namespace engine
             }
         }
 
+        VkBool32 VulkanDevice::GetSupportedDepthFormat(VkFormat* depthFormat)
+        {
+            // Since all depth formats may be optional, we need to find a suitable depth format to use
+            // Start with the highest precision packed format
+            std::vector<VkFormat> depthFormats = {
+                VK_FORMAT_D32_SFLOAT_S8_UINT,
+                VK_FORMAT_D32_SFLOAT,
+                VK_FORMAT_D24_UNORM_S8_UINT,
+                VK_FORMAT_D16_UNORM_S8_UINT,
+                VK_FORMAT_D16_UNORM
+            };
+
+            for (auto& format : depthFormats)
+            {
+                VkFormatProperties formatProps;
+                vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProps);
+                // Format must support depth stencil attachment for optimal tiling
+                if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+                {
+                    *depthFormat = format;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         VulkanBuffer* VulkanDevice::CreateStagingBuffer(VkDeviceSize size, void* data)
         {
             VulkanBuffer* buffer = new VulkanBuffer;
@@ -278,20 +305,26 @@ namespace engine
 
         VulkanTexture* VulkanDevice::GetTexture(std::string filename, VkFormat format, VkQueue copyQueue,
             VkImageUsageFlags imageUsageFlags,
-            VkImageLayout imageLayout)
+            VkImageLayout imageLayout, 
+            bool generateMipmaps)
         {
             VulkanTexture* tex = new VulkanTexture;
             Texture2DData data;
             data.LoadFromFile(filename, format);
             data.CreateStagingBuffer(logicalDevice, &memoryProperties);
 
+            uint32_t mipsNo = generateMipmaps ? (static_cast<uint32_t>(std::floor(std::log2(std::max(data.m_width, data.m_height)))) + 1) : data.m_mips_no;
+
             tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
                 imageLayout,
                 VK_IMAGE_ASPECT_COLOR_BIT,
-                data.m_mips_no);
+                mipsNo);
 
             VkCommandBuffer copyCmd = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-            tex->Update(&data, copyCmd, copyQueue);
+            if (!generateMipmaps)
+                tex->Update(&data, copyCmd, copyQueue);
+            else
+                tex->UpdateGeneratingMipmaps(&data, copyCmd, copyQueue);
             FlushCommandBuffer(copyCmd, copyQueue);
 
             tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
@@ -305,20 +338,26 @@ namespace engine
 
         VulkanTexture* VulkanDevice::GetTextureArray(std::vector<std::string> filenames, VkFormat format, VkQueue copyQueue,
             VkImageUsageFlags imageUsageFlags,
-            VkImageLayout imageLayout)
+            VkImageLayout imageLayout,
+            bool generateMipmaps)
         {
             VulkanTexture* tex = new VulkanTexture;
             Texture2DData data;
             data.LoadFromFiles(filenames, format);
             data.CreateStagingBuffer(logicalDevice, &memoryProperties);
 
+            uint32_t mipsNo = generateMipmaps ? (static_cast<uint32_t>(std::floor(std::log2(std::max(data.m_width, data.m_height)))) + 1) : data.m_mips_no;
+
             tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
                 imageLayout,
                 VK_IMAGE_ASPECT_COLOR_BIT,
-                data.m_mips_no, data.m_layers_no);
+                mipsNo, data.m_layers_no);
 
             VkCommandBuffer copyCmd = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-            tex->Update(&data, copyCmd, copyQueue);
+            if (!generateMipmaps)
+                tex->Update(&data, copyCmd, copyQueue);
+            else
+                tex->UpdateGeneratingMipmaps(&data, copyCmd, copyQueue);
             FlushCommandBuffer(copyCmd, copyQueue);
 
             tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
@@ -424,7 +463,7 @@ namespace engine
         VulkanTexture* VulkanDevice::GetDepthRenderTarget(uint32_t width, uint32_t height, bool useInShaders, VkImageAspectFlags aspectMask, bool withStencil, bool updateLayout, VkQueue copyQueue)
         {
             VkFormat fbDepthFormat;
-            VkBool32 validDepthFormat = engine::tools::getSupportedDepthFormat(physicalDevice, &fbDepthFormat);
+            VkBool32 validDepthFormat = GetSupportedDepthFormat(&fbDepthFormat);
             assert(validDepthFormat);
             if (!withStencil)
                 fbDepthFormat = VK_FORMAT_D32_SFLOAT;

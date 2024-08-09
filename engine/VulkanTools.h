@@ -74,10 +74,6 @@ namespace engine
 		/** @brief Returns an error code as a string */
 		std::string errorString(VkResult errorCode);
 
-		// Selected a suitable supported depth format starting with 32 bit down to 16 bit
-		// Returns false if none of the depth formats in the list is supported by the device
-		VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat *depthFormat);
-
 		uint32_t getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkPhysicalDeviceMemoryProperties *memoryProperties, VkBool32 *memTypeFound = nullptr);
 
 		// Display error message and exit on fatal error

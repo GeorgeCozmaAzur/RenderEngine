@@ -141,7 +141,10 @@ public:
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
-		clothMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "models/sponza/za_curtain_blue_diff.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
+		clothMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "models/sponza/za_curtain_blue_diff.png", VK_FORMAT_R8G8B8A8_UNORM, queue,
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			true);
 		
 	}
 
