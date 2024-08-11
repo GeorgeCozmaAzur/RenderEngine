@@ -8,6 +8,29 @@
 
 #include "vulkanexamplebase.h"
 
+#if defined(_WIN32)
+#define KEY_ESCAPE VK_ESCAPE 
+#define KEY_F1 VK_F1
+#define KEY_F2 VK_F2
+#define KEY_F3 VK_F3
+#define KEY_F4 VK_F4
+#define KEY_F5 VK_F5
+#define KEY_W 0x57
+#define KEY_A 0x41
+#define KEY_S 0x53
+#define KEY_D 0x44
+#define KEY_P 0x50
+#define KEY_SPACE 0x20
+#define KEY_KPADD 0x6B
+#define KEY_KPSUB 0x6D
+#define KEY_B 0x42
+#define KEY_F 0x46
+#define KEY_L 0x4C
+#define KEY_N 0x4E
+#define KEY_O 0x4F
+#define KEY_T 0x54
+#endif
+
 std::vector<const char*> VulkanExampleBase::args;
 
 VkResult VulkanExampleBase::createInstance(bool enableValidation)
@@ -163,7 +186,7 @@ void VulkanExampleBase::prepare()
 
 void VulkanExampleBase::prepareUI()
 {
-	settings.overlay = settings.overlay && (!benchmark.active);
+	settings.overlay = settings.overlay;
 	if (settings.overlay) {
 		UIOverlay._device = vulkanDevice;
 		UIOverlay._queue = queue;
@@ -221,15 +244,6 @@ void VulkanExampleBase::renderFrame()
 
 void VulkanExampleBase::renderLoop()
 {
-	if (benchmark.active) {
-		benchmark.run([=] { render(); }, vulkanDevice->m_properties);
-		vkDeviceWaitIdle(device);
-		if (benchmark.filename != "") {
-			benchmark.saveResults();
-		}
-		return;
-	}
-
 	destWidth = width;
 	destHeight = height;
 	lastTimestamp = std::chrono::high_resolution_clock::now();
@@ -638,48 +652,6 @@ VulkanExampleBase::VulkanExampleBase(bool enableValidation)
 		if ((args[i] == std::string("-h")) || (args[i] == std::string("-height"))) {
 			uint32_t h = strtol(args[i + 1], &numConvPtr, 10);
 			if (numConvPtr != args[i + 1]) { height = h; };
-		}
-		// Benchmark
-		if ((args[i] == std::string("-b")) || (args[i] == std::string("--benchmark"))) {
-			benchmark.active = true;
-			engine::tools::errorModeSilent = true;
-		}
-		// Warmup time (in seconds)
-		if ((args[i] == std::string("-bw")) || (args[i] == std::string("--benchwarmup"))) {
-			if (args.size() > i + 1) {
-				uint32_t num = strtol(args[i + 1], &numConvPtr, 10);
-				if (numConvPtr != args[i + 1]) {
-					benchmark.warmup = num;
-				} else {
-					std::cerr << "Warmup time for benchmark mode must be specified as a number!" << std::endl;
-				}
-			}
-		}
-		// Benchmark runtime (in seconds)
-		if ((args[i] == std::string("-br")) || (args[i] == std::string("--benchruntime"))) {
-			if (args.size() > i + 1) {
-				uint32_t num = strtol(args[i + 1], &numConvPtr, 10);
-				if (numConvPtr != args[i + 1]) {
-					benchmark.duration = num;
-				}
-				else {
-					std::cerr << "Benchmark run duration must be specified as a number!" << std::endl;
-				}
-			}
-		}
-		// Bench result save filename (overrides default)
-		if ((args[i] == std::string("-bf")) || (args[i] == std::string("--benchfilename"))) {
-			if (args.size() > i + 1) {
-				if (args[i + 1][0] == '-') {
-					std::cerr << "Filename for benchmark results must not start with a hyphen!" << std::endl;
-				} else {
-					benchmark.filename = args[i + 1];
-				}
-			}
-		}
-		// Output frame times to benchmark result file
-		if ((args[i] == std::string("-bt")) || (args[i] == std::string("--benchframetimes"))) {
-			benchmark.outputFrameTimes = true;
 		}
 	}
 	

@@ -43,7 +43,6 @@
 
 #include "vulkan/vulkan.h"
 
-#include "keycodes.hpp"
 #include "VulkanTools.h"
 #include "VulkanDebug.h"
 
@@ -51,7 +50,6 @@
 #include "render/VulkanSwapChain.h"
 #include "scene/UIOverlay.h"
 #include "scene/camera.hpp"
-#include "benchmark.hpp"
 
 using namespace engine;
 
@@ -138,10 +136,6 @@ public:
 
 	/** @brief Last frame time measured using a high performance timer (if available) */
 	float frameTimer = 1.0f;
-	/** @brief Returns os specific base asset path (for shaders, models, textures) */
-	//const std::string getAssetPath();
-
-	engine::Benchmark benchmark;
 
 	/** @brief Encapsulated physical and logical vulkan device */
 	engine::render::VulkanDevice* vulkanDevice = nullptr;
