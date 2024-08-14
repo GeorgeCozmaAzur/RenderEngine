@@ -128,7 +128,7 @@ public:
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
 		modelVertexUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniform), true, queue);
-		modelVertexUniformBuffer->map();
+		modelVertexUniformBuffer->Map();
 
 		updateUniformBuffers();
 	}
@@ -212,7 +212,7 @@ public:
 		uniform_manager.Update();
 
 		modelUniform.model = glm::rotate(glm::mat4(1.0f), ModelAngle, glm::vec3(1.0, 0.0, 0.0));
-		modelVertexUniformBuffer->copyTo(&modelUniform, sizeof(modelUniform));
+		modelVertexUniformBuffer->MemCopy(&modelUniform, sizeof(modelUniform));
 	}
 
 	void draw()

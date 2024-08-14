@@ -1,6 +1,6 @@
 #pragma once
 #include <VulkanTools.h>
-#include "render/VulkanBuffer.hpp"//TODO see how to remove this
+#include "render/VulkanBuffer.h"
 
 namespace engine
 {

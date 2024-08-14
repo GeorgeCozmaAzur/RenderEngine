@@ -125,13 +125,13 @@ public:
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
 		modelFragmentUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformFS), true, queue);
-		modelFragmentUniformBuffer->map();
+		modelFragmentUniformBuffer->Map();
 		
 		modelSBVertexUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformVS), true, queue);
-		modelSBVertexUniformBuffer->map();
+		modelSBVertexUniformBuffer->Map();
 
 		modelSBFragmentUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelSBUniformFS), true, queue);
-		modelSBFragmentUniformBuffer->map();
+		modelSBFragmentUniformBuffer->Map();
 
 		updateUniformBuffers();
 	}
@@ -147,7 +147,7 @@ public:
 
 		uniform_manager.Update();
 
-		modelFragmentUniformBuffer->copyTo(&modelUniformFS, sizeof(modelUniformFS));
+		modelFragmentUniformBuffer->MemCopy(&modelUniformFS, sizeof(modelUniformFS));
 
 		/*modelUniformVS.model = 
 			glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
@@ -156,9 +156,9 @@ public:
 			0.0f, 0.0f, 0.0f, 1.0f);*/
 
 		modelUniformVS.model = glm::mat4(glm::mat3(camera.matrices.view));
-		modelSBVertexUniformBuffer->copyTo(&modelUniformVS, sizeof(modelUniformVS));
+		modelSBVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
 
-		modelSBFragmentUniformBuffer->copyTo(&modelSBUniformFS, sizeof(modelSBUniformFS));
+		modelSBFragmentUniformBuffer->MemCopy(&modelSBUniformFS, sizeof(modelSBUniformFS));
 
 		//dbgtex.UpdateUniformBuffers(camera.matrices.perspective, camera.matrices.view, 1.0);
 	}

@@ -181,7 +181,7 @@ namespace engine
         VulkanBuffer* VulkanDevice::CreateStagingBuffer(VkDeviceSize size, void* data)
         {
             VulkanBuffer* buffer = new VulkanBuffer;
-            VkResult res = buffer->createBuffer(logicalDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryProperties, size, data);
+            VkResult res = buffer->Create(logicalDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryProperties, size, data);
             if (res)
             {
                 delete buffer;
@@ -206,7 +206,7 @@ namespace engine
         VulkanBuffer* VulkanDevice::GetBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data)
         {
             VulkanBuffer* buffer = new VulkanBuffer;
-            VkResult res = buffer->createBuffer(logicalDevice, usageFlags, memoryPropertyFlags, &memoryProperties, size, data);
+            VkResult res = buffer->Create(logicalDevice, usageFlags, memoryPropertyFlags, &memoryProperties, size, data);
             if (res)
             {
                 delete buffer;
@@ -238,10 +238,8 @@ namespace engine
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     size);
                 VulkanBuffer* staging = CreateStagingBuffer(size, data);
-                VkBufferCopy bufferCopy{};
-                bufferCopy.size = size;
                 VkCommandBuffer copyCmd = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-                vkCmdCopyBuffer(copyCmd, staging->m_buffer, buffer->m_buffer, 1, &bufferCopy);
+                CopyBuffer(staging, buffer, copyCmd);
                 FlushCommandBuffer(copyCmd, queue, true);
 
             }
@@ -266,8 +264,8 @@ namespace engine
                     if ((usageFlags & VK_BUFFER_USAGE_TRANSFER_SRC_BIT) && (memoryPropertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)))
                     {
                         //TODO should we need a staging buffer
-                        VK_CHECK_RESULT(outBuffer->map());
-                        memcpy(outBuffer->m_mapped, data, size);
+                        VK_CHECK_RESULT(outBuffer->Map());
+                        outBuffer->MemCopy(data,size);
                     }
             }
 
@@ -275,20 +273,20 @@ namespace engine
         }
         void VulkanDevice::CopyBuffer(VulkanBuffer* src, VulkanBuffer* dst, VkCommandBuffer copyCmd, VkBufferCopy* copyRegion)
         {
-            assert(dst->m_size <= src->m_size);
-            assert(src->m_buffer);
+            assert(dst->GetSize() <= src->GetSize());
+            assert(src->GetVkBuffer());
 
             VkBufferCopy bufferCopy{};
             if (copyRegion == nullptr)
             {
-                bufferCopy.size = src->m_size;
+                bufferCopy.size = src->GetSize();
             }
             else
             {
                 bufferCopy = *copyRegion;
             }
 
-            vkCmdCopyBuffer(copyCmd, src->m_buffer, dst->m_buffer, 1, &bufferCopy);
+            vkCmdCopyBuffer(copyCmd, src->GetVkBuffer(), dst->GetVkBuffer(), 1, &bufferCopy);
         }
 
         void VulkanDevice::DestroyBuffer(VulkanBuffer* buffer)

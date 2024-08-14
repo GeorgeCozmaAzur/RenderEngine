@@ -110,7 +110,7 @@ namespace engine
 
 			vkCmdCopyBufferToImage(
 				copyCmd,
-				stagingBuffer->m_buffer,
+				stagingBuffer->GetVkBuffer(),
 				m_fontTexture->m_vkImage,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				1,
@@ -189,14 +189,14 @@ namespace engine
 			if (m_geometries[0]->m_vertexCount != imDrawData->TotalVtxCount) {
 				if (m_geometries[0]->_vertexBuffer)
 				{
-					m_geometries[0]->_vertexBuffer->unmap();
+					m_geometries[0]->_vertexBuffer->Unmap();
 					_device->DestroyBuffer(m_geometries[0]->_vertexBuffer);
 				}
 
 				m_geometries[0]->_vertexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBufferSize);
 				m_geometries[0]->m_vertexCount = imDrawData->TotalVtxCount;
-				m_geometries[0]->_vertexBuffer->unmap();
-				m_geometries[0]->_vertexBuffer->map();
+				m_geometries[0]->_vertexBuffer->Unmap();
+				m_geometries[0]->_vertexBuffer->Map();
 				updateCmdBuffers = true;
 			}
 
@@ -205,31 +205,31 @@ namespace engine
 			if (m_geometries[0]->m_indexCount < touint(imDrawData->TotalIdxCount)) {
 				if (m_geometries[0]->_indexBuffer)
 				{
-					m_geometries[0]->_indexBuffer->unmap();
+					m_geometries[0]->_indexBuffer->Unmap();
 					_device->DestroyBuffer(m_geometries[0]->_indexBuffer);
 				}
 
 				m_geometries[0]->_indexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, indexBufferSize);
 				m_geometries[0]->m_indexCount = imDrawData->TotalIdxCount;
-				m_geometries[0]->_indexBuffer->map();
+				m_geometries[0]->_indexBuffer->Map();
 				updateCmdBuffers = true;
 			}
 
 			// Upload data
-			ImDrawVert* vtxDst = (ImDrawVert*)m_geometries[0]->_vertexBuffer->m_mapped;
-			ImDrawIdx* idxDst = (ImDrawIdx*)m_geometries[0]->_indexBuffer->m_mapped;
+			int vtxOffset = 0;
+			int idxOffset = 0;
 
 			for (int n = 0; n < imDrawData->CmdListsCount; n++) {
 				const ImDrawList* cmd_list = imDrawData->CmdLists[n];
-				memcpy(vtxDst, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
-				memcpy(idxDst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
-				vtxDst += cmd_list->VtxBuffer.Size;
-				idxDst += cmd_list->IdxBuffer.Size;
+				m_geometries[0]->_vertexBuffer->MemCopy(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), vtxOffset);
+				m_geometries[0]->_indexBuffer->MemCopy(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), idxOffset);
+				vtxOffset += cmd_list->VtxBuffer.Size;
+				idxOffset += cmd_list->IdxBuffer.Size;
 			}
 
 			// Flush to make writes visible to GPU
-			m_geometries[0]->_vertexBuffer->flush();
-			m_geometries[0]->_indexBuffer->flush();
+			m_geometries[0]->_vertexBuffer->Flush();
+			m_geometries[0]->_indexBuffer->Flush();
 
 			return updateCmdBuffers;
 		}
@@ -254,8 +254,9 @@ namespace engine
 			m_descriptorSets[0]->Draw(commandBuffer, _pipeline->getPipelineLayout(), 0);
 
 			VkDeviceSize offsets[1] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_geometries[0]->_vertexBuffer->m_buffer, offsets);
-			vkCmdBindIndexBuffer(commandBuffer, m_geometries[0]->_indexBuffer->m_buffer, 0, VK_INDEX_TYPE_UINT16);
+			const VkBuffer vertexBuffer = m_geometries[0]->_vertexBuffer->GetVkBuffer();
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
+			vkCmdBindIndexBuffer(commandBuffer, m_geometries[0]->_indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 			for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
 			{

@@ -144,7 +144,7 @@ namespace engine
 			m_geometries.push_back(geometry);
 
 			uniformBufferVS = vulkanDevice->GetUniformBuffer(sizeof(uboVS), true, queue);
-			uniformBufferVS->map();
+			uniformBufferVS->Map();
 
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 			{
@@ -169,7 +169,7 @@ namespace engine
 		void Rings::UpdateUniforms(glm::mat4& model)
 		{
 			if(uniformBufferVS)
-			uniformBufferVS->copyTo(&model, sizeof(model));
+			uniformBufferVS->MemCopy(&model, sizeof(model));
 		}
 	}
 }

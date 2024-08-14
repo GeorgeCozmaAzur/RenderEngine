@@ -128,9 +128,9 @@ public:
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
 		modelFragmentUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformFS), true, queue);
-		modelFragmentUniformBuffer->map();
+		modelFragmentUniformBuffer->Map();
 		modelFragmentTexturedUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformTexturedFS), true, queue);
-		modelFragmentTexturedUniformBuffer->map();
+		modelFragmentTexturedUniformBuffer->Map();
 		
 
 		updateUniformBuffers();
@@ -235,8 +235,8 @@ public:
 		modelUniformTexturedFS.cameraPosition = glm::vec4(cucu, 1.0f);
 		modelUniformTexturedFS.lightPosition = light_pos;
 
-		modelFragmentUniformBuffer->copyTo(&modelUniformFS, sizeof(modelUniformFS));
-		modelFragmentTexturedUniformBuffer->copyTo(&modelUniformTexturedFS, sizeof(modelUniformTexturedFS));
+		modelFragmentUniformBuffer->MemCopy(&modelUniformFS, sizeof(modelUniformFS));
+		modelFragmentTexturedUniformBuffer->MemCopy(&modelUniformTexturedFS, sizeof(modelUniformTexturedFS));
 
 	}
 

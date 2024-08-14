@@ -5,7 +5,7 @@
 #include "render/VulkanDescriptorSetLayout.h"
 #include "render/VertexLayout.h"
 #include "BoundingObject.h"
-#include "render/VulkanBuffer.hpp"
+#include "render/VulkanBuffer.h"
 #include "scene/Geometry.h"
 
 namespace engine

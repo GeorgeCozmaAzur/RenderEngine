@@ -54,7 +54,7 @@ namespace engine
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				total_buffer_size);
 
-			VK_CHECK_RESULT(buffer->map());
+			VK_CHECK_RESULT(buffer->Map());
 			m_buffers.insert(std::pair<int, render::VulkanBuffer*>(mask, buffer));
 
 			return buffer;
@@ -89,7 +89,7 @@ namespace engine
 					{
 						if (value.second->dirty)//TODO do dirty functionality
 						{
-							memcpy((char*)buffer.second->m_mapped + old_size, value.second->data, value.second->size);
+							buffer.second->MemCopy(value.second->data, value.second->size, old_size);
 							value.second->dirty = false;
 						}
 						old_size += value.second->size;

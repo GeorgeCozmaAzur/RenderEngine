@@ -127,9 +127,9 @@ public:
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
 		modelVertexUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformVS), true, queue);
-		modelVertexUniformBuffer->map();
+		modelVertexUniformBuffer->Map();
 		modelFragmentUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformFS), true, queue);
-		modelFragmentUniformBuffer->map();
+		modelFragmentUniformBuffer->Map();
 
 		updateUniformBuffers();
 	}
@@ -239,7 +239,7 @@ public:
 		uniform_manager.Update();
 
 		//modelUniformVS.wind = glm::vec4(0.0f, 0.0f, 1.0f, 0.5f);
-		//modelVertexUniformBuffer->copyTo(&modelUniformVS, sizeof(modelUniformVS));
+		//modelVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
 	}
 
 	void draw()
@@ -274,10 +274,10 @@ public:
 	{
 		modelUniformVS.advance += dt;
 		modelUniformVS.wind = glm::vec4(1.0f, 0.0f, 0.0f, 0.1f);
-		modelVertexUniformBuffer->copyTo(&modelUniformVS, sizeof(modelUniformVS));
+		modelVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
 
 		modelUniformFS.advance += dt;
-		modelFragmentUniformBuffer->copyTo(&modelUniformFS, sizeof(modelUniformFS));
+		modelFragmentUniformBuffer->MemCopy(&modelUniformFS, sizeof(modelUniformFS));
 	}
 
 	virtual void viewChanged()

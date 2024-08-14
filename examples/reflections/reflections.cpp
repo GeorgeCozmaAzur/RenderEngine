@@ -190,10 +190,10 @@ public:
 
 
 		// Map persistent
-		VK_CHECK_RESULT(uniformBuffers.vsModel->map());
-		VK_CHECK_RESULT(uniformBuffers.vsMirror->map());
-		VK_CHECK_RESULT(uniformBuffers.vsOffScreen->map());
-		VK_CHECK_RESULT(uniformBuffers.vsDebugQuad->map());
+		VK_CHECK_RESULT(uniformBuffers.vsModel->Map());
+		VK_CHECK_RESULT(uniformBuffers.vsMirror->Map());
+		VK_CHECK_RESULT(uniformBuffers.vsOffScreen->Map());
+		VK_CHECK_RESULT(uniformBuffers.vsDebugQuad->Map());
 		updateUniformBuffers();
 		updateUniformBufferOffscreen();
 	}
@@ -211,7 +211,7 @@ public:
 		uboShared.model = glm::scale(uboShared.model, glm::vec3(1.0f, -1.0f, 1.0f));
 		uboShared.model = glm::translate(uboShared.model, meshPos);
 
-		memcpy(uniformBuffers.vsOffScreen->m_mapped, &uboShared, sizeof(uboShared));
+		uniformBuffers.vsOffScreen->MemCopy(&uboShared, sizeof(uboShared));
 	}
 
 	void updateUniformBuffers()
@@ -227,7 +227,7 @@ public:
 
 		uboShared.model = glm::translate(uboShared.model, meshPos);
 
-		memcpy(uniformBuffers.vsModel->m_mapped, &uboShared, sizeof(uboShared));
+		uniformBuffers.vsModel->MemCopy(&uboShared, sizeof(uboShared));
 
 		// Mirror
 		uboShared.model = viewMatrix * glm::translate(glm::mat4(1.0f), cameraPos);
@@ -235,13 +235,13 @@ public:
 		uboShared.model = glm::rotate(uboShared.model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
 		uboShared.model = glm::rotate(uboShared.model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
-		memcpy(uniformBuffers.vsMirror->m_mapped, &uboShared, sizeof(uboShared));
+		uniformBuffers.vsMirror->MemCopy(&uboShared, sizeof(uboShared));
 
 		// Debug quad
 		uboShared.projection = glm::ortho(4.0f, 0.0f, 0.0f, 4.0f * (float)height / (float)width, -1.0f, 1.0f);
 		uboShared.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
-		memcpy(uniformBuffers.vsDebugQuad->m_mapped, &uboShared, sizeof(uboShared));
+		uniformBuffers.vsDebugQuad->MemCopy(&uboShared, sizeof(uboShared));
 	}
 
 	void setupDescriptors()

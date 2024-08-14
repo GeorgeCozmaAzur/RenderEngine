@@ -228,12 +228,12 @@ namespace engine
 			if (vertexUniformBufferSize > 0)
 			{
 				uniformBufferVS = vulkanDevice->GetUniformBuffer(vertexUniformBufferSize, true, queue);
-				uniformBufferVS->map();
+				uniformBufferVS->Map();
 			}
 			if (fragmentUniformBufferSize > 0)
 			{
 				uniformBufferFS = vulkanDevice->GetUniformBuffer(fragmentUniformBufferSize, true, queue);
-				uniformBufferFS->map();
+				uniformBufferFS->Map();
 			}
 
 			std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
@@ -271,7 +271,7 @@ namespace engine
 		void TerrainUVSphere::UpdateUniforms(glm::mat4& model)
 		{
 			if(uniformBufferVS)
-			uniformBufferVS->copyTo(&model, sizeof(model));
+			uniformBufferVS->MemCopy(&model, sizeof(model));
 		}
 	}
 }

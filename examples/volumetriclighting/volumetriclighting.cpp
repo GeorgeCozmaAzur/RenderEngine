@@ -116,7 +116,7 @@ public:
 		textureBlueNoise = vulkanDevice->GetTextureArray(textureBlueNoiseFilenames, VK_FORMAT_R8G8B8A8_UNORM, queue);
 
 		computeUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(uboCompute));
-		VK_CHECK_RESULT(computeUniformBuffer->map());
+		VK_CHECK_RESULT(computeUniformBuffer->Map());
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> computebindings
 		{
@@ -169,7 +169,7 @@ public:
 		scene.normalmapVS = "normalmapshadowmap.vert.spv";
 		scene.normalmapFS = "normalmapshadowmap_vf.frag.spv";
 		scene.sceneFragmentUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(uboFSscene));
-		VK_CHECK_RESULT(scene.sceneFragmentUniformBuffer->map());
+		VK_CHECK_RESULT(scene.sceneFragmentUniformBuffer->Map());
 		/*scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/sponza/", "crytek-sponza-huge-vray.obj", 0.01, vulkanDevice, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 		scene.light_pos = glm::vec4(34.0f, -90.0f, 40.0f, 1.0f);*/
 		scene::ModelCreateInfo2 modelCreateInfo(1.0, 1.0f, glm::vec3(0.0,0,0.0));
@@ -340,13 +340,13 @@ public:
 		uboCompute.camera_position = glm::vec4(-camera.position, 1.0f);
 		uboCompute.time = depth;
 		uboCompute.noise_index = m_currentNoiseIndex;
-		memcpy(computeUniformBuffer->m_mapped, &uboCompute, sizeof(uboCompute));
+		computeUniformBuffer->MemCopy(&uboCompute, sizeof(uboCompute));
 
 		previous_view_proj = camera.matrices.perspective * camera.matrices.view;
 
 		uboFSscene.view_proj = scene.m_camera->matrices.perspective * scene.m_camera->matrices.view;
 		uboFSscene.bias_near_far_pow = glm::vec4(0.002f, scene.m_camera->getNearClip(), scene.m_camera->getFarClip(), 1.0f);
-		memcpy(scene.sceneFragmentUniformBuffer->m_mapped, &uboFSscene, sizeof(uboFSscene));
+		scene.sceneFragmentUniformBuffer->MemCopy(&uboFSscene, sizeof(uboFSscene));
 
 		dbgtex.UpdateUniformBuffers(camera.matrices.perspective, camera.matrices.view, depth);
 

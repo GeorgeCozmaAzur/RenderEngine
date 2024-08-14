@@ -19,7 +19,7 @@
 #include <vulkan/vulkan.h>
 #include "VulkanTools.h"
 #include "VulkanDebug.h"
-#include "render/VulkanBuffer.hpp"
+#include "render/VulkanBuffer.h"
 #include "render/VulkanDevice.h"
 #include "render/VulkanPipeline.h"
 

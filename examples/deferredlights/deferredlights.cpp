@@ -263,8 +263,8 @@ public:
 
 
 		// Map persistent
-		VK_CHECK_RESULT(uniformBuffers.vsModel->map());
-		VK_CHECK_RESULT(uniformBuffers.fsdeferred->map());
+		VK_CHECK_RESULT(uniformBuffers.vsModel->Map());
+		VK_CHECK_RESULT(uniformBuffers.fsdeferred->Map());
 		updateUniformBuffers();
 
 		deferredLights.Init(uniformBuffers.vsModel,vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, LIGHTS_NO, scenepositions, scenenormals);
@@ -284,13 +284,14 @@ public:
 		uboShared.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 		uboShared.model = glm::translate(uboShared.model, meshPos);
 
-		memcpy(uniformBuffers.vsModel->m_mapped, &uboShared, sizeof(uboShared));
+		uniformBuffers.vsModel->MemCopy(&uboShared, sizeof(uboShared));
 
 		for (int i = 0; i < LIGHTS_NO; i++)
 		{
 			uboDeferred.lights[i].radius = 0.25f;
 		}
-		memcpy(uniformBuffers.fsdeferred->m_mapped, &uboDeferred, sizeof(uboDeferred));
+
+		uniformBuffers.fsdeferred->MemCopy(&uboDeferred, sizeof(uboDeferred));
 	}
 
 	void setupDescriptors()

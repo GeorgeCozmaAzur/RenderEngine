@@ -241,9 +241,9 @@ public:
 
 
 		// Map persistent
-		VK_CHECK_RESULT(uniformBuffers.vsModel->map());
-		VK_CHECK_RESULT(uniformBuffers.fsdeferred->map());
-		VK_CHECK_RESULT(uniformBuffers.vsDebugQuad->map());
+		VK_CHECK_RESULT(uniformBuffers.vsModel->Map());
+		VK_CHECK_RESULT(uniformBuffers.fsdeferred->Map());
+		VK_CHECK_RESULT(uniformBuffers.vsDebugQuad->Map());
 		updateUniformBuffers();
 	}
 
@@ -260,19 +260,19 @@ public:
 
 		uboShared.model = glm::translate(uboShared.model, meshPos);
 
-		memcpy(uniformBuffers.vsModel->m_mapped, &uboShared, sizeof(uboShared));
+		uniformBuffers.vsModel->MemCopy(&uboShared, sizeof(uboShared));
 
 		// Debug quad
 		uboShared.projection = glm::ortho(4.0f, 0.0f, 0.0f, 4.0f * (float)height / (float)width, -1.0f, 1.0f);
 		uboShared.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
-		memcpy(uniformBuffers.vsDebugQuad->m_mapped, &uboShared, sizeof(uboShared));
+		uniformBuffers.vsDebugQuad->MemCopy(&uboShared, sizeof(uboShared));
 
 		for (int i = 0; i < LIGHTS_NO; i++)
 		{
 			uboDeferred.lights[i].radius = 0.25f;
 		}
-		memcpy(uniformBuffers.fsdeferred->m_mapped, &uboDeferred, sizeof(uboDeferred));
+		uniformBuffers.fsdeferred->MemCopy(&uboDeferred, sizeof(uboDeferred));
 	}
 
 	void setupDescriptors()

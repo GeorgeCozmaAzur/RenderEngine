@@ -312,16 +312,16 @@ public:
 		uniformBuffers.offscreen = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			sizeof(uboOffscreenVS));
-		VK_CHECK_RESULT(uniformBuffers.offscreen->map());
+		VK_CHECK_RESULT(uniformBuffers.offscreen->Map());
 
 		uniformBuffers.scene = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			sizeof(uboVSscene));
 	
-		VK_CHECK_RESULT(uniformBuffers.scene->map());
+		VK_CHECK_RESULT(uniformBuffers.scene->Map());
 
 		uniformBufferFS = vulkanDevice->GetUniformBuffer(sizeof(uboFS), true, queue);
-		uniformBufferFS->map();
+		uniformBufferFS->Map();
 
 		updateLight();
 		updateUniformBufferOffscreen();
@@ -352,9 +352,9 @@ public:
 
 		uboVSscene.depthBiasMVP = uboOffscreenVS.depthMVP;
 
-		memcpy(uniformBuffers.scene->m_mapped, &uboVSscene, sizeof(uboVSscene));
+		uniformBuffers.scene->MemCopy(&uboVSscene, sizeof(uboVSscene));
 
-		uniformBufferFS->copyTo(&uboFS, sizeof(uboFS));
+		uniformBufferFS->MemCopy(&uboFS, sizeof(uboFS));
 
 		/*uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &uboVSscene.projection, 0, sizeof(camera.matrices.perspective));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &uboVSscene.view, 0, sizeof(camera.matrices.view));
@@ -371,7 +371,7 @@ public:
 
 		uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
 
-		memcpy(uniformBuffers.offscreen->m_mapped, &uboOffscreenVS, sizeof(uboOffscreenVS));
+		uniformBuffers.offscreen->MemCopy(&uboOffscreenVS, sizeof(uboOffscreenVS));
 
 	}
 
@@ -497,7 +497,7 @@ public:
 			}
 			if (overlay->comboBox("Technique", &uboFS.techniqueIndex, techniquesNames)) {
 				//buildCommandBuffers();
-				//uniformBufferFS->copyTo(&uboFS, sizeof(uboFS));
+				//uniformBufferFS->MemCopy(&uboFS, sizeof(uboFS));
 			}
 		}
 	}

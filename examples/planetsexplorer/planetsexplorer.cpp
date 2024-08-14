@@ -208,19 +208,19 @@ public:
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW, scene::UNIFORM_LIGHT0_SPACE ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 		uniformBufferMPVS = vulkanDevice->GetUniformBuffer(sizeof(uboVS), true, queue);
-		uniformBufferMPVS->map();
+		uniformBufferMPVS->Map();
 
 		uniformBufferSunVS = vulkanDevice->GetUniformBuffer(sizeof(uboVS), true, queue);
-		uniformBufferSunVS->map();
+		uniformBufferSunVS->Map();
 
 		modelSBVertexUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(modelUniformVS), true, queue);
-		modelSBVertexUniformBuffer->map();
+		modelSBVertexUniformBuffer->Map();
 
 		uniformBufferoffscreen = vulkanDevice->GetUniformBuffer(sizeof(uboOffscreenVS), true, queue);
-		uniformBufferoffscreen->map();
+		uniformBufferoffscreen->Map();
 
 		matricesUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(matricesUniformVS), true, queue);
-		matricesUniformBuffer->map();
+		matricesUniformBuffer->Map();
 
 		updateUniformBuffers();
 	}
@@ -450,14 +450,14 @@ public:
 
 		uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
 
-		memcpy(uniformBufferoffscreen->m_mapped, &uboOffscreenVS, sizeof(uboOffscreenVS));
+		uniformBufferoffscreen->MemCopy(&uboOffscreenVS, sizeof(uboOffscreenVS));
 
 	}
 	
 	void updateUniformBuffers()
 	{
 		uboVS.modelView = glm::mat4(1.0f);
-		uniformBufferSunVS->copyTo(&uboVS, sizeof(uboVS));
+		uniformBufferSunVS->MemCopy(&uboVS, sizeof(uboVS));
 
 		mainplanetmatrix = glm::mat4(1.0f);
 		
@@ -467,7 +467,7 @@ public:
 		mainplanetmatrix = glm::rotate(mainplanetmatrix, glm::radians(planetRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 
 		uboVS.modelView = mainplanetmatrix;
-		uniformBufferMPVS->copyTo(&uboVS, sizeof(uboVS));
+		uniformBufferMPVS->MemCopy(&uboVS, sizeof(uboVS));
 		rings.UpdateUniforms(mainplanetmatrix);
 		
 		glm::mat4 modelmatrix = glm::rotate(mainplanetmatrix, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -478,9 +478,9 @@ public:
 		//sphere.UpdateUniforms(modelmatrix);
 		uboVS.modelView = modelmatrix;
 		if(myplanet.GetVSUniformBuffer())
-		myplanet.GetVSUniformBuffer()->copyTo(&uboVS, sizeof(uboVS));
+		myplanet.GetVSUniformBuffer()->MemCopy(&uboVS, sizeof(uboVS));
 		if (atmosphere.GetVSUniformBuffer())
-			atmosphere.GetVSUniformBuffer()->copyTo(&uboVS, sizeof(uboVS));
+			atmosphere.GetVSUniformBuffer()->MemCopy(&uboVS, sizeof(uboVS));
 		glm::vec3 center = glm::vec3(4.0, 0.0, 0.0);
 		if (atmosphere.GetFSUniformBuffer())
 		{		
@@ -500,19 +500,19 @@ public:
 
 			modelUniformAtmosphereFS.scatteringCoefficients = glm::vec4(scatteringCoefficients, 0.021);
 			modelUniformAtmosphereFS.distanceFactor = distanceFactor;
-			atmosphere.GetFSUniformBuffer()->copyTo(&modelUniformAtmosphereFS, sizeof(modelUniformAtmosphereFS));
+			atmosphere.GetFSUniformBuffer()->MemCopy(&modelUniformAtmosphereFS, sizeof(modelUniformAtmosphereFS));
 		}
 
 		camera.updateViewMatrix(glm::inverse(modelmatrix));
 
 		modelUniformVS.model = glm::mat4(glm::mat3(camera.matrices.view));
-		modelSBVertexUniformBuffer->copyTo(&modelUniformVS, sizeof(modelUniformVS));
+		modelSBVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
 
 		glm::mat4 cammat = glm::lookAt(glm::vec3(modelUniformAtmosphereFS.cameraPosition), center, glm::normalize(glm::vec3(-0.3,-0.8,0.0)));
 
 		matricesUniformVS.cameraInvProjection = glm::inverse(camera.matrices.perspective);		
 		matricesUniformVS.cameraInvView = glm::inverse(camera.matrices.viewold);
-		matricesUniformBuffer->copyTo(&matricesUniformVS, sizeof(matricesUniformVS));
+		matricesUniformBuffer->MemCopy(&matricesUniformVS, sizeof(matricesUniformVS));
 
 		updateUniformBufferOffscreen();
 

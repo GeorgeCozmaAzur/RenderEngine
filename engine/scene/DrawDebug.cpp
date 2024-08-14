@@ -48,7 +48,7 @@ namespace engine
 			VkDeviceSize bufferSize = m_hasDepth ? sizeof(uboVSdepth) : sizeof(uboVS);
 			uniformBufferVS = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboVS));
-			VK_CHECK_RESULT(uniformBufferVS->map());
+			VK_CHECK_RESULT(uniformBufferVS->Map());
 
 			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &uniformBufferVS->m_descriptor }, { &m_texture ->m_descriptor },
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
@@ -68,14 +68,14 @@ namespace engine
 			{
 				uboVS.projection = projection;
 				uboVS.modelView = view;
-				memcpy(uniformBufferVS->m_mapped, &uboVS, sizeof(uboVS));
+				uniformBufferVS->MemCopy(&uboVS, sizeof(uboVS));
 			}
 			else
 			{
 				uboVSdepth.projection = projection;
 				uboVSdepth.modelView = view;
 				uboVSdepth.depth = depth;
-				memcpy(uniformBufferVS->m_mapped, &uboVSdepth, sizeof(uboVSdepth));
+				uniformBufferVS->MemCopy(&uboVSdepth, sizeof(uboVSdepth));
 			}
 		}
 

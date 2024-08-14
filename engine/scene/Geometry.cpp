@@ -37,11 +37,11 @@ namespace engine
 
 		void Geometry::UpdateIndexBuffer(void* data, size_t offset, size_t size)
 		{
-			memcpy(_indexBuffer->m_mapped, data, size);
+			_indexBuffer->MemCopy(data, size);
 		}
 		void Geometry::UpdateInstanceBuffer(void* data, size_t offset, size_t size)
 		{
-			memcpy(_instanceBuffer->m_mapped, data, size);
+			_instanceBuffer->MemCopy(data, size);
 		}
 
 		void Geometry::Draw(VkCommandBuffer* commandBuffer, uint32_t vertexInputBinding, uint32_t instanceInputBinding)
@@ -50,10 +50,14 @@ namespace engine
 				return;
 
 			VkDeviceSize offsets[1] = { 0 };
-			vkCmdBindVertexBuffers(*commandBuffer, vertexInputBinding, 1, &_vertexBuffer->m_buffer, offsets);
-			vkCmdBindIndexBuffer(*commandBuffer, _indexBuffer->m_buffer, 0, VK_INDEX_TYPE_UINT32);
-			if (_instanceBuffer && _instanceBuffer->m_buffer && instanceInputBinding > 0)
-				vkCmdBindVertexBuffers(*commandBuffer, instanceInputBinding, 1, &_instanceBuffer->m_buffer, offsets);
+			const VkBuffer vertexBuffer = _vertexBuffer->GetVkBuffer();
+			vkCmdBindVertexBuffers(*commandBuffer, vertexInputBinding, 1, &vertexBuffer, offsets);
+			vkCmdBindIndexBuffer(*commandBuffer, _indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			if (_instanceBuffer && _instanceBuffer->GetVkBuffer() && instanceInputBinding > 0)
+			{
+				const VkBuffer instanceBuffer = _instanceBuffer->GetVkBuffer();
+				vkCmdBindVertexBuffers(*commandBuffer, instanceInputBinding, 1, &instanceBuffer, offsets);
+			}
 
 			vkCmdDrawIndexed(*commandBuffer, m_indexCount, m_instanceNo, 0, 0, 0);
 		}

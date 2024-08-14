@@ -39,8 +39,8 @@ namespace engine
 			VkCommandBuffer copyCmd = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 			VkBufferCopy copyRegion = {};
 			copyRegion.size = storageBufferSize;
-			vkCmdCopyBuffer(copyCmd, stagingBuffer->m_buffer, storageBuffers.inbuffer->m_buffer, 1, &copyRegion);
-			vkCmdCopyBuffer(copyCmd, stagingBuffer->m_buffer, storageBuffers.outbuffer->m_buffer, 1, &copyRegion);
+			vkCmdCopyBuffer(copyCmd, stagingBuffer->GetVkBuffer(), storageBuffers.inbuffer->GetVkBuffer(), 1, &copyRegion);
+			vkCmdCopyBuffer(copyCmd, stagingBuffer->GetVkBuffer(), storageBuffers.outbuffer->GetVkBuffer(), 1, &copyRegion);
 			vulkanDevice->FlushCommandBuffer(copyCmd, queue, true);
 			vulkanDevice->DestroyBuffer(stagingBuffer);
 
@@ -58,7 +58,7 @@ namespace engine
 		void ClothComputeObject::PrepareUniformBuffer(render::VulkanDevice* vulkanDevice, float projectionWidth, float projectionDepth)
 		{
 			m_uniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(ubo));
-			VK_CHECK_RESULT(m_uniformBuffer->map());
+			VK_CHECK_RESULT(m_uniformBuffer->Map());
 
 			float dx = m_size.x / (m_gridSize.x - 1);
 			float dy = m_size.y / (m_gridSize.y - 1);
@@ -73,7 +73,7 @@ namespace engine
 
 		void ClothComputeObject::UpdateUniformBuffer()
 		{
-			memcpy(m_uniformBuffer->m_mapped, &ubo, sizeof(ubo));
+			m_uniformBuffer->MemCopy(&ubo, sizeof(ubo));
 		}
 	}
 }

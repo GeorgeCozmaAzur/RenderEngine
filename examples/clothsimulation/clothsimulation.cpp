@@ -158,7 +158,7 @@ public:
 		clothcompute.PrepareUniformBuffer(vulkanDevice, projectionWidth, projectionDepth);
 
 		uniformBufferoffscreen = vulkanDevice->GetUniformBuffer(sizeof(uboOffscreenVS), true, queue);
-		uniformBufferoffscreen->map();
+		uniformBufferoffscreen->Map();
 
 		updateUniformBuffers();
 		updateComputeUBO();
@@ -294,9 +294,9 @@ public:
 		bufferBarrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
 		bufferBarrier.size = VK_WHOLE_SIZE;
 		std::vector<VkBufferMemoryBarrier> bufferBarriers;
-		bufferBarrier.buffer = clothcompute.storageBuffers.inbuffer->m_buffer;
+		bufferBarrier.buffer = clothcompute.storageBuffers.inbuffer->GetVkBuffer();
 		bufferBarriers.push_back(bufferBarrier);
-		bufferBarrier.buffer = clothcompute.storageBuffers.outbuffer->m_buffer;
+		bufferBarrier.buffer = clothcompute.storageBuffers.outbuffer->GetVkBuffer();
 		bufferBarriers.push_back(bufferBarrier);
 		vkCmdPipelineBarrier(
 			commandBuffer,
@@ -405,7 +405,7 @@ public:
 
 		uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix /** depthModelMatrix*/;
 
-		memcpy(uniformBufferoffscreen->m_mapped, &uboOffscreenVS, sizeof(uboOffscreenVS));
+		uniformBufferoffscreen->MemCopy(&uboOffscreenVS, sizeof(uboOffscreenVS));
 
 	}
 

@@ -227,7 +227,7 @@ public:
 
 		dynamic = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufferSize);
 		dynamic->m_descriptor.range = dynamicAlignment;
-		dynamic->map();
+		dynamic->Map();
 
 		// Prepare per-object matrices with offsets and random rotations
 		std::default_random_engine rndEngine(0); //benchmark.active ? 0 : (unsigned)time(nullptr));
@@ -254,8 +254,6 @@ public:
 
 		updateUniformBuffers();
 		updateDynamicUniformBuffer();
-		//memcpy(dynamic->m_mapped, uboDataDynamic.model, dynamic->m_size);
-		//dynamic->flush(dynamic->m_size, 0);
 	}
 
 	void updateUniformBuffers()
@@ -344,8 +342,8 @@ public:
 		threadPool.wait();
 		oldtrans = groupPosition;
 
-		memcpy(dynamic->m_mapped, uboDataDynamic.model, dynamic->m_size);
-		dynamic->flush(dynamic->m_size, 0);
+		dynamic->MemCopy(uboDataDynamic.model, dynamic->GetSize());
+		dynamic->Flush(dynamic->GetSize(), 0);
 		
 		timer.stop();
 		timeupdate = timer.elapsedMicroseconds();

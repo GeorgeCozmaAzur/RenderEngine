@@ -239,7 +239,7 @@ public:
 		for (int i = 0;i < objectsNo;i++)
 		{
 			vert_uniform_buffers[i] = vulkanDevice->GetUniformBuffer(sizeof(UBOVS));
-			vert_uniform_buffers[i]->map();
+			vert_uniform_buffers[i]->Map();
 		}
 		updateglobalUniformBuffers();
 		updateUniformBuffers();
@@ -532,12 +532,12 @@ public:
 			vert_ram_uniform_buffers[i]->projection = camera.matrices.perspective;
 			vert_ram_uniform_buffers[i]->view = camera.matrices.view;
 			vert_ram_uniform_buffers[i]->model = glm::translate(glm::mat4(1.0f), balls_positions[i]);
-			vert_uniform_buffers[i]->copyTo(vert_ram_uniform_buffers[i], sizeof(UBOVS));
+			vert_uniform_buffers[i]->MemCopy(vert_ram_uniform_buffers[i], sizeof(UBOVS));
 		}
 		
 		for (int i = 0;i < objectsNo;i++)
 		{		
-			vert_uniform_buffers[i]->copyTo(&vert_ram_uniform_buffers[i]->model,sizeof(vert_ram_uniform_buffers[i]->model));
+			vert_uniform_buffers[i]->MemCopy(&vert_ram_uniform_buffers[i]->model,sizeof(vert_ram_uniform_buffers[i]->model));
 		}
 	}
 	bool multithreaded = true;

@@ -2,7 +2,7 @@
 #include "vulkan/vulkan.h"
 #include <vector>
 #include <map>
-#include "VulkanBuffer.hpp"
+#include "VulkanBuffer.h"
 #include "render/VulkanTexture.h"
 #include "scene/RenderObject.h"
 #include "VulkanRenderPass.h"

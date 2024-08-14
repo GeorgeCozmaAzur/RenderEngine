@@ -202,7 +202,7 @@ public:
 
 		VkBufferDeviceAddressInfoKHR bufferDeviceAddresInfo{};
 		bufferDeviceAddresInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-		bufferDeviceAddresInfo.buffer = scratchBuffer.buffer->m_buffer;
+		bufferDeviceAddresInfo.buffer = scratchBuffer.buffer->GetVkBuffer();
 		scratchBuffer.deviceAddress = vkGetBufferDeviceAddressKHR(vulkanDevice->logicalDevice, &bufferDeviceAddresInfo);
 		return scratchBuffer;
 	}
@@ -213,7 +213,7 @@ public:
 		// Acceleration structure
 		VkAccelerationStructureCreateInfoKHR accelerationStructureCreate_info{};
 		accelerationStructureCreate_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-		accelerationStructureCreate_info.buffer = accelerationStructure.buffer->m_buffer;
+		accelerationStructureCreate_info.buffer = accelerationStructure.buffer->GetVkBuffer();
 		accelerationStructureCreate_info.size = buildSizeInfo.accelerationStructureSize;
 		accelerationStructureCreate_info.type = type;
 		vkCreateAccelerationStructureKHR(vulkanDevice->logicalDevice, &accelerationStructureCreate_info, nullptr, &accelerationStructure.handle);
@@ -265,12 +265,12 @@ public:
 		const VkMemoryPropertyFlags memoryUsageFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 		shaderBindingTable.vbuffer = vulkanDevice->GetBuffer(bufferUsageFlags, memoryUsageFlags, rayTracingPipelineProperties.shaderGroupHandleSize * handleCount);
 		// Get the strided address to be used when dispatching the rays
-		VkStridedDeviceAddressRegionKHR bla = getSbtEntryStridedDeviceAddressRegion(shaderBindingTable.vbuffer->m_buffer, handleCount);
+		VkStridedDeviceAddressRegionKHR bla = getSbtEntryStridedDeviceAddressRegion(shaderBindingTable.vbuffer->GetVkBuffer(), handleCount);
 		shaderBindingTable.stridedDeviceAddressRegion.deviceAddress = bla.deviceAddress;
 		shaderBindingTable.stridedDeviceAddressRegion.size = bla.size;
 		shaderBindingTable.stridedDeviceAddressRegion.stride = bla.stride;
 		// Map persistent 
-		shaderBindingTable.vbuffer->map();
+		shaderBindingTable.vbuffer->Map();
 	}
 
 	void createTextures()
@@ -328,17 +328,17 @@ public:
 			ObjDesc desc;
 			desc.txtOffset = txtOffset;
 			txtOffset += static_cast<int>(geoRT->m_textures.size());
-			desc.vertexAddress = getBufferDeviceAddress(geo->_vertexBuffer->m_buffer);
-			desc.indexAddress = getBufferDeviceAddress(geo->_indexBuffer->m_buffer);
-			desc.materialAddress = getBufferDeviceAddress(geoRT->materialsBuffer->m_buffer);
-			desc.materialIndexAddress = getBufferDeviceAddress(geoRT->materialsIndexBuffer->m_buffer);
+			desc.vertexAddress = getBufferDeviceAddress(geo->_vertexBuffer->GetVkBuffer());
+			desc.indexAddress = getBufferDeviceAddress(geo->_indexBuffer->GetVkBuffer());
+			desc.materialAddress = getBufferDeviceAddress(geoRT->materialsBuffer->GetVkBuffer());
+			desc.materialIndexAddress = getBufferDeviceAddress(geoRT->materialsIndexBuffer->GetVkBuffer());
 			m_objDesc.emplace_back(desc);
 
 			VkDeviceOrHostAddressConstKHR vertexBufferDeviceAddress{};
 			VkDeviceOrHostAddressConstKHR indexBufferDeviceAddress{};
 
-			vertexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(geo->_vertexBuffer->m_buffer);
-			indexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(geo->_indexBuffer->m_buffer);
+			vertexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(geo->_vertexBuffer->GetVkBuffer());
+			indexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(geo->_indexBuffer->GetVkBuffer());
 
 			uint32_t numTriangles = geo->m_indexCount / 3;
 			uint32_t maxVertex = static_cast<uint32_t>(geo->m_vertexCount);
@@ -427,7 +427,7 @@ public:
 		VkBufferCopy bufferCopy{};
 		bufferCopy.size = bufferSize;
 		VkCommandBuffer copyCmd = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-		vkCmdCopyBuffer(copyCmd, staging->m_buffer, m_bObjDesc->m_buffer, 1, &bufferCopy);
+		vkCmdCopyBuffer(copyCmd, staging->GetVkBuffer(), m_bObjDesc->GetVkBuffer(), 1, &bufferCopy);
 		vulkanDevice->FlushCommandBuffer(copyCmd, queue, true);
 	}
 
@@ -464,7 +464,7 @@ public:
 			sizeof(VkAccelerationStructureInstanceKHR) * instances.size(), instances.data());
 
 		VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress{};
-		instanceDataDeviceAddress.deviceAddress = getBufferDeviceAddress(instancesBuffer->m_buffer);
+		instanceDataDeviceAddress.deviceAddress = getBufferDeviceAddress(instancesBuffer->GetVkBuffer());
 
 		//VkAccelerationStructureGeometryKHR accelerationStructureGeometry = engine::initializers::accelerationStructureGeometryKHR();
 		VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
@@ -554,10 +554,10 @@ public:
 		createShaderBindingTable(shaderBindingTables.hit, 1);
 
 		// Copy handles
-		memcpy(shaderBindingTables.raygen.vbuffer->m_mapped, shaderHandleStorage.data(), handleSize);
+		shaderBindingTables.raygen.vbuffer->MemCopy(shaderHandleStorage.data(), handleSize);
 		// We are using two miss shaders, so we need to get two handles for the miss shader binding table
-		memcpy(shaderBindingTables.miss.vbuffer->m_mapped, shaderHandleStorage.data() + handleSizeAligned, handleSize * 2);
-		memcpy(shaderBindingTables.hit.vbuffer->m_mapped, shaderHandleStorage.data() + handleSizeAligned * 3, handleSize);
+		shaderBindingTables.miss.vbuffer->MemCopy(shaderHandleStorage.data() + handleSizeAligned, handleSize * 2);
+		shaderBindingTables.hit.vbuffer->MemCopy(shaderHandleStorage.data() + handleSizeAligned * 3, handleSize);
 	}
 
 	inline VkWriteDescriptorSet writeDescriptorSet(
@@ -627,9 +627,9 @@ public:
 		accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
 		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, storageImage->m_descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL };
-		VkDescriptorBufferInfo vertexBufferDescriptor{ scene.m_geometries[0]->_vertexBuffer->m_buffer, 0, VK_WHOLE_SIZE };
-		VkDescriptorBufferInfo indexBufferDescriptor{ scene.m_geometries[0]->_indexBuffer->m_buffer, 0, VK_WHOLE_SIZE };
-		VkDescriptorBufferInfo objdescBufferDescriptor{ m_bObjDesc->m_buffer, 0, VK_WHOLE_SIZE };
+		VkDescriptorBufferInfo vertexBufferDescriptor{ scene.m_geometries[0]->_vertexBuffer->GetVkBuffer(), 0, VK_WHOLE_SIZE };
+		VkDescriptorBufferInfo indexBufferDescriptor{ scene.m_geometries[0]->_indexBuffer->GetVkBuffer(), 0, VK_WHOLE_SIZE };
+		VkDescriptorBufferInfo objdescBufferDescriptor{ m_bObjDesc->GetVkBuffer(), 0, VK_WHOLE_SIZE };
 
 		std::vector<VkDescriptorImageInfo> diit;
 		for (auto& texture : alltextures)
@@ -778,7 +778,7 @@ public:
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			sizeof(uniformData),
 			&uniformData);
-		VK_CHECK_RESULT(ubo->map());
+		VK_CHECK_RESULT(ubo->Map());
 
 		updateUniformBuffers();
 	}
@@ -876,7 +876,7 @@ public:
 		uniformData.lightPos = glm::vec4(cos(glm::radians(timer * 360.0f)) * 40.0f, 50.0f + sin(glm::radians(timer * 360.0f)) * 20.0f, 25.0f + sin(glm::radians(timer * 360.0f)) * 5.0f, 0.0f);
 		// Pass the vertex size to the shader for unpacking vertices
 		uniformData.vertexSize = vertexLayoutRT.GetVertexSize(0);
-		memcpy(ubo->m_mapped, &uniformData, sizeof(uniformData));
+		ubo->MemCopy(&uniformData, sizeof(uniformData));
 	}
 
 	void getEnabledFeatures()
