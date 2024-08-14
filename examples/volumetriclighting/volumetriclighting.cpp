@@ -95,14 +95,16 @@ public:
 		rotation = glm::vec3(15.0f, 0.f, 0.0f);
 		title = "Vulkan Engine Empty Scene";
 		settings.overlay = true;
-		camera.type = scene::Camera::CameraType::firstperson;
 		camera.movementSpeed = 20.0f;
-		camera.setPerspective(60.0f, (float)width / (float)height, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
-		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, -5.0f, 0.0f));
+		camera.SetPerspective(60.0f, (float)width / (float)height, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
+		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera.SetPosition(glm::vec3(0.0f, -5.0f, 0.0f));
 		//camera.setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
 
-		previous_view_proj = camera.matrices.perspective * camera.matrices.view;
+		glm::mat4 perspectiveMatrix = camera.GetPerspectiveMatrix();
+		glm::mat4 viewMatrix = camera.GetViewMatrix();
+
+		previous_view_proj = perspectiveMatrix * viewMatrix;
 	}
 
 	~VulkanExample()
@@ -331,24 +333,27 @@ public:
 		//scene.light_pos = glm::vec4(0.0f, sin(lightAngle) * 150, cos(lightAngle) * 150, 1.0f);
 		scene.light_pos = glm::vec4(sin(lightAngle) * 80, -20.0f, cos(lightAngle) * 80, 1.0f);
 
-		uboCompute.view = camera.matrices.view;
-		uboCompute.projection = camera.matrices.perspective;
-		uboCompute.inv_view_proj = glm::inverse(camera.matrices.perspective * camera.matrices.view);
+		glm::mat4 perspectiveMatrix = scene.m_camera->GetPerspectiveMatrix();
+		glm::mat4 viewMatrix = scene.m_camera->GetViewMatrix();
+
+		uboCompute.view = viewMatrix;
+		uboCompute.projection = perspectiveMatrix;
+		uboCompute.inv_view_proj = glm::inverse(perspectiveMatrix * viewMatrix);
 		uboCompute.prev_view_proj = previous_view_proj;
 		uboCompute.bias_near_far_pow = glm::vec4(0.002f, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE, 1.0f);
 		uboCompute.light_view_proj = scene.uboShadowOffscreenVS.depthMVP;
-		uboCompute.camera_position = glm::vec4(-camera.position, 1.0f);
+		uboCompute.camera_position = glm::vec4(-camera.GetPosition(), 1.0f);
 		uboCompute.time = depth;
 		uboCompute.noise_index = m_currentNoiseIndex;
 		computeUniformBuffer->MemCopy(&uboCompute, sizeof(uboCompute));
 
-		previous_view_proj = camera.matrices.perspective * camera.matrices.view;
+		previous_view_proj = perspectiveMatrix * viewMatrix;
 
-		uboFSscene.view_proj = scene.m_camera->matrices.perspective * scene.m_camera->matrices.view;
+		uboFSscene.view_proj = perspectiveMatrix * viewMatrix;
 		uboFSscene.bias_near_far_pow = glm::vec4(0.002f, scene.m_camera->getNearClip(), scene.m_camera->getFarClip(), 1.0f);
 		scene.sceneFragmentUniformBuffer->MemCopy(&uboFSscene, sizeof(uboFSscene));
 
-		dbgtex.UpdateUniformBuffers(camera.matrices.perspective, camera.matrices.view, depth);
+		dbgtex.UpdateUniformBuffers(perspectiveMatrix, viewMatrix, depth);
 
 		uint32_t read_idx = static_cast<uint32_t>(m_ct_ping_pong);
 		uint32_t write_idx = static_cast<uint32_t>(!m_ct_ping_pong);

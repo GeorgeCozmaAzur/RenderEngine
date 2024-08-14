@@ -86,11 +86,10 @@ public:
 		rotation = glm::vec3(0.0f, 0.f, 0.0f);
 		title = "Reflections example";
 		settings.overlay = true;
-		camera.type = scene::Camera::CameraType::firstperson;
 		camera.movementSpeed = 20.5f;
-		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
-		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, -5.0f, -5.0f));
+		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
+		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera.SetPosition(glm::vec3(0.0f, -5.0f, -5.0f));
 
 		// The scene shader uses a clipping plane, so this feature has to be enabled
 		enabledFeatures.shaderClipDistance = VK_TRUE;

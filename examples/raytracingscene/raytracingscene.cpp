@@ -138,10 +138,9 @@ public:
 	{
 		title = "Ray traced textured models with shadows";
 		timerSpeed *= 0.25f;
-		camera.type = scene::Camera::CameraType::firstperson;
-		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 512.0f);
-		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, 0.5f, -1.5f));
+		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 512.0f);
+		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera.SetPosition(glm::vec3(0.0f, 0.5f, -1.5f));
 		enableExtensions();
 	}
 
@@ -871,8 +870,11 @@ public:
 
 	void updateUniformBuffers()
 	{
-		uniformData.projInverse = glm::inverse(camera.matrices.perspective);
-		uniformData.viewInverse = glm::inverse(camera.matrices.view);
+		glm::mat4 perspectiveMatrix = camera.GetPerspectiveMatrix();
+		glm::mat4 viewMatrix = camera.GetViewMatrix();
+
+		uniformData.projInverse = glm::inverse(perspectiveMatrix);
+		uniformData.viewInverse = glm::inverse(viewMatrix);
 		uniformData.lightPos = glm::vec4(cos(glm::radians(timer * 360.0f)) * 40.0f, 50.0f + sin(glm::radians(timer * 360.0f)) * 20.0f, 25.0f + sin(glm::radians(timer * 360.0f)) * 5.0f, 0.0f);
 		// Pass the vertex size to the shader for unpacking vertices
 		uniformData.vertexSize = vertexLayoutRT.GetVertexSize(0);
@@ -953,7 +955,7 @@ public:
 		if (!prepared)
 			return;
 		draw();
-		if (!paused || camera.updated)
+		if (!paused /*|| camera.updated*/)
 			updateUniformBuffers();
 	}
 

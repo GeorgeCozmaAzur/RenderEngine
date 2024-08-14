@@ -356,8 +356,8 @@ public:
 
 		uniformBufferFS->MemCopy(&uboFS, sizeof(uboFS));
 
-		/*uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &uboVSscene.projection, 0, sizeof(camera.matrices.perspective));
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &uboVSscene.view, 0, sizeof(camera.matrices.view));
+		/*uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &uboVSscene.projection, 0, sizeof(perspectiveMatrix));
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &uboVSscene.view, 0, sizeof(viewMatrix));
 		uniform_manager.Update();*/
 
 	}
@@ -473,7 +473,7 @@ public:
 		if (!prepared)
 			return;
 		draw();
-		if (!paused || camera.updated)
+		if (!paused /*|| camera.updated*/)
 		{
 			updateLight();
 			updateUniformBufferOffscreen();

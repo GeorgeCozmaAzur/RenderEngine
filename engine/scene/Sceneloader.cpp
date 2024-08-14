@@ -4,7 +4,7 @@
 #include <assimp/cimport.h>
 #include "render/VulkanDevice.h"
 #include "scene/Timer.h"
-#include "camera.hpp"
+#include "Camera.h"
 #include "render/VulkanRenderPass.h"
 //#include "fbxsdk.h"
 #include <algorithm>
@@ -732,14 +732,16 @@ namespace engine
 			);
 
 			glm::mat4 biasedDepthMVP = depthbiasMatrix * uboShadowOffscreenVS.depthMVP;
+			glm::mat4 viewMatrix = m_camera->GetViewMatrix();
+			glm::mat4 perspectiveMatrix = m_camera->GetPerspectiveMatrix();
 
-			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION, &m_camera->matrices.perspective, 0, sizeof(m_camera->matrices.perspective));
-			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &m_camera->matrices.view, 0, sizeof(m_camera->matrices.view));
+			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION, &perspectiveMatrix, 0, sizeof(perspectiveMatrix));
+			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &biasedDepthMVP, 0, sizeof(biasedDepthMVP));
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
-			glm::vec3 cucu = m_camera->position;
+			glm::vec3 cucu = m_camera->GetPosition();
 			cucu.y = -cucu.y;
-			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->position));
+			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->GetPosition()));
 
 			/*glm::mat4 viewproj = m_camera->matrices.perspective * m_camera->matrices.view;
 			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION_VIEW, &viewproj, 0, sizeof(viewproj));
@@ -750,10 +752,11 @@ namespace engine
 
 		void SceneLoader::UpdateView(float timer)
 		{
-			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &m_camera->matrices.view, 0, sizeof(m_camera->matrices.view));
-			glm::vec3 cucu = m_camera->position;
+			glm::mat4 viewMatrix = m_camera->GetViewMatrix();
+			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
+			glm::vec3 cucu = m_camera->GetPosition();
 			cucu.y = -cucu.y;
-			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->position));
+			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->GetPosition()));
 
 			/*glm::mat4 viewproj = m_camera->matrices.perspective * m_camera->matrices.view;
 			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION_VIEW, &viewproj, 0, sizeof(viewproj));

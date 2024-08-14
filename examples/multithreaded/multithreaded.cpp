@@ -118,11 +118,10 @@ public:
 		rotation = glm::vec3(15.0f, 0.f, 0.0f);
 		title = "Render Engine Empty Scene";
 		settings.overlay = true;
-		camera.type = scene::Camera::CameraType::firstperson;
 		camera.movementSpeed = 20.5f;
-		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
-		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, 5.0f, -10.0f));
+		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
+		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera.SetPosition(glm::vec3(0.0f, 5.0f, -10.0f));
 	}
 
 	~VulkanExample()
@@ -516,21 +515,27 @@ public:
 	}
 	void updateglobalUniformBuffers()
 	{
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &camera.matrices.perspective, 0, sizeof(camera.matrices.perspective));
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &camera.matrices.view, 0, sizeof(camera.matrices.view));
+		glm::mat4 perspectiveMatrix = camera.GetPerspectiveMatrix();
+		glm::mat4 viewMatrix = camera.GetViewMatrix();
+
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &perspectiveMatrix, 0, sizeof(perspectiveMatrix));
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
-		glm::vec3 cucu = -camera.position;
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.position));
+		glm::vec3 cucu = -camera.GetPosition();
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.GetPosition()));
 
 		uniform_manager.Update();
 	}
 
 	void updateUniformBuffers()
 	{	
+		glm::mat4 perspectiveMatrix = camera.GetPerspectiveMatrix();
+		glm::mat4 viewMatrix = camera.GetViewMatrix();
+
 		for (int i = 0; i < vert_uniform_buffers.size(); i++)
 		{
-			vert_ram_uniform_buffers[i]->projection = camera.matrices.perspective;
-			vert_ram_uniform_buffers[i]->view = camera.matrices.view;
+			vert_ram_uniform_buffers[i]->projection = perspectiveMatrix;
+			vert_ram_uniform_buffers[i]->view = viewMatrix;
 			vert_ram_uniform_buffers[i]->model = glm::translate(glm::mat4(1.0f), balls_positions[i]);
 			vert_uniform_buffers[i]->MemCopy(vert_ram_uniform_buffers[i], sizeof(UBOVS));
 		}

@@ -78,13 +78,12 @@ public:
 		rotation = glm::vec3(15.0f, 0.f, 0.0f);
 		title = "Render Engine Empty Scene";
 		settings.overlay = true;
-		camera.type = scene::Camera::CameraType::firstperson;
 		camera.movementSpeed = 20.5f;
-		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
+		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		/*camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		camera.setTranslation(glm::vec3(0.0f, 5.0f, 0.0f));*/
-		camera.setRotation({ -3.75f, 180.0f, 0.0f });
-		camera.setPosition({ 0.55f, 0.85f, 12.0f });
+		camera.SetRotation({ -3.75f, 180.0f, 0.0f });
+		camera.SetPosition({ 0.55f, 0.85f, 12.0f });
 	}
 
 	~VulkanExample()
@@ -138,12 +137,15 @@ public:
 
 	void updateUniformBuffers()
 	{
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &camera.matrices.perspective, 0, sizeof(camera.matrices.perspective));
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &camera.matrices.view, 0, sizeof(camera.matrices.view));
+		glm::mat4 perspectiveMatrix = camera.GetPerspectiveMatrix();
+		glm::mat4 viewMatrix = camera.GetViewMatrix();
+
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &perspectiveMatrix, 0, sizeof(perspectiveMatrix));
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
-		glm::vec3 cucu = -camera.position;
+		glm::vec3 cucu = -camera.GetPosition();
 		//cucu.y = -cucu.y;
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.position));
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.GetPosition()));
 
 		uniform_manager.Update();
 
@@ -155,12 +157,12 @@ public:
 			0.0f, 0.0f, 1.0f, 0.0f,
 			0.0f, 0.0f, 0.0f, 1.0f);*/
 
-		modelUniformVS.model = glm::mat4(glm::mat3(camera.matrices.view));
+		modelUniformVS.model = glm::mat4(glm::mat3(viewMatrix));
 		modelSBVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
 
 		modelSBFragmentUniformBuffer->MemCopy(&modelSBUniformFS, sizeof(modelSBUniformFS));
 
-		//dbgtex.UpdateUniformBuffers(camera.matrices.perspective, camera.matrices.view, 1.0);
+		//dbgtex.UpdateUniformBuffers(perspectiveMatrix, viewMatrix, 1.0);
 	}
 
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs

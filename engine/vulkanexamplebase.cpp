@@ -209,7 +209,7 @@ void VulkanExampleBase::renderFrame()
 	auto tEnd = std::chrono::high_resolution_clock::now();
 	auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
 	frameTimer = (float)tDiff / 1000.0f;
-	camera.update(frameTimer);
+	camera.Update(frameTimer);
 	
 	if (camera.moving())
 	{
@@ -993,8 +993,7 @@ void VulkanExampleBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			break;
 		}
 
-		if (camera.firstperson)
-		{
+
 			switch (wParam)
 			{
 			case KEY_W:
@@ -1010,13 +1009,12 @@ void VulkanExampleBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 				camera.keys.right = true;
 				break;
 			}
-		}
+		
 
 		keyPressed((uint32_t)wParam);
 		break;
 	case WM_KEYUP:
-		if (camera.firstperson)
-		{
+
 			switch (wParam)
 			{
 			case KEY_W:
@@ -1032,7 +1030,7 @@ void VulkanExampleBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 				camera.keys.right = false;
 				break;
 			}
-		}
+		
 		switch (wParam)
 		{
 		case KEY_N:
@@ -1068,10 +1066,10 @@ void VulkanExampleBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	{
 		short wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
 		zoom += (float)wheelDelta * 0.005f * zoomSpeed;
-		if (camera.subtype == scene::Camera::surface)
-			camera.translateSphere(glm::vec3((float)wheelDelta * 0.0001f * camera.movementSpeed, 0.0f, 0.0f));
+		if (camera.type == scene::Camera::surface)
+			camera.TranslateOnSphere(glm::vec3((float)wheelDelta * 0.0001f * camera.movementSpeed, 0.0f, 0.0f));
 		else
-		camera.translate(glm::vec3(0.0f, 0.0f, (float)wheelDelta * 0.005f * zoomSpeed));
+		camera.Translate(glm::vec3(0.0f, 0.0f, (float)wheelDelta * 0.005f * zoomSpeed));
 		viewUpdated = true;
 		break;
 	}
@@ -1904,7 +1902,7 @@ void VulkanExampleBase::windowResize()
 	vkDeviceWaitIdle(device);
 
 	if ((width > 0.0f) && (height > 0.0f)) {
-		camera.updateAspectRatio((float)width / (float)height);
+		camera.UpdateAspectRatio((float)width / (float)height);
 	}
 
 	// Notify derived class
@@ -1935,18 +1933,19 @@ void VulkanExampleBase::handleMouseMove(int32_t x, int32_t y)
 	if (mouseButtons.left) {
 		rotation.x += dy * 1.25f * rotationSpeed;
 		rotation.y -= dx * 1.25f * rotationSpeed;
-		camera.rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
+		//camera.Rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
+		camera.Rotate(glm::vec3(dy , -dx , 0.0f));
 		viewUpdated = true;
 	}
 	if (mouseButtons.right) {
 		zoom += dy * .005f * zoomSpeed;
-		camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f * zoomSpeed));
+		camera.Translate(glm::vec3(-0.0f, 0.0f, dy * .005f * zoomSpeed));
 		viewUpdated = true;
 	}
 	if (mouseButtons.middle) {
 		cameraPos.x -= dx * 0.01f;
 		cameraPos.y -= dy * 0.01f;
-		camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
+		camera.Translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
 		viewUpdated = true;
 	}
 	mousePos = glm::vec2((float)x, (float)y);

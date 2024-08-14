@@ -115,11 +115,11 @@ public:
 		rotation = glm::vec3(0.0f, 0.f, 0.0f);
 		title = "Deferred lighting example";
 		settings.overlay = true;
-		camera.type = scene::Camera::CameraType::lookat;
+
 		camera.movementSpeed = 20.5f;
-		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
-		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.setTranslation(glm::vec3(0.0f, 100.0f,-5.0f));
+		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
+		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera.SetPosition(glm::vec3(0.0f, 100.0f,-5.0f));
 		rotation.x = -20.0;
 		rotation.y = -10.0;
 	}

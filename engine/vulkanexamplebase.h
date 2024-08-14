@@ -49,7 +49,7 @@
 #include "render/VulkanDevice.h"
 #include "render/VulkanSwapChain.h"
 #include "scene/UIOverlay.h"
-#include "scene/camera.hpp"
+#include "scene/Camera.h"
 
 using namespace engine;
 

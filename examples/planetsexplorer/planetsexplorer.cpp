@@ -132,11 +132,10 @@ public:
 		rotation = glm::vec3(15.0f, 0.f, 0.0f);
 		title = "Render Engine Empty Scene";
 		settings.overlay = true;
-		camera.type = scene::Camera::CameraType::firstperson;
-		camera.subtype = scene::Camera::CameraSubType::surface;
+		camera.type = scene::Camera::CameraType::surface;
 		camera.movementSpeed = 300.0f;
-		camera.setPerspective(45.0f, (float)width / (float)height, 1.0f, farplane);
-		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));	
+		camera.SetPerspective(45.0f, (float)width / (float)height, 1.0f, farplane);
+		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));	
 	}
 
 	~VulkanExample()
@@ -363,7 +362,7 @@ public:
 			{ &scenecolor->m_descriptor, &scenepositions->m_descriptor, &scenedepth->m_descriptor, &bluenoise->m_descriptor }, 
 			atmosphereLayout->m_descriptorSetLayout, atmosphereLayout->m_setLayoutBindings);
 
-		camera.setTranslationOnSphere(2.0, 0.5, myplanet.GetRadius() + 50.0f);
+		camera.SetPositionOnSphere(2.0, 0.5, myplanet.GetRadius() + 50.0f);
 		/*int stride = terrain._vertexLayout->GetVertexSize(0) / sizeof(float);
 		for (auto geo : terrain.m_geometries)
 		{
@@ -485,7 +484,7 @@ public:
 		if (atmosphere.GetFSUniformBuffer())
 		{		
 			modelUniformAtmosphereFS.sun = glm::vec4( glm::vec3(glm::inverse(modelmatrix) * glm::vec4(0.0,0.0,0.0, 1.0f)), sunIntensity);//modelmatrix[3];
-			modelUniformAtmosphereFS.cameraPosition = glm::vec4(camera.position, 1.0f);//modelmatrix * glm::vec4(0.0, 0.0, 0.0, 1.0f);
+			modelUniformAtmosphereFS.cameraPosition = glm::vec4(camera.GetPosition(), 1.0f);//modelmatrix * glm::vec4(0.0, 0.0, 0.0, 1.0f);
 			glm::vec3 vdir = glm::normalize(center - glm::vec3(modelUniformAtmosphereFS.cameraPosition));
 			modelUniformAtmosphereFS.viewDirection = glm::vec4(vdir, 0.0);
 			modelUniformAtmosphereFS.dimensions = glm::vec4(myplanet.GetRadius(), atmosphere.GetRadius(), rayleighDensity, mieDensity);
@@ -503,23 +502,27 @@ public:
 			atmosphere.GetFSUniformBuffer()->MemCopy(&modelUniformAtmosphereFS, sizeof(modelUniformAtmosphereFS));
 		}
 
-		camera.updateViewMatrix(glm::inverse(modelmatrix));
+		camera.UpdateViewMatrix(glm::inverse(modelmatrix));
 
-		modelUniformVS.model = glm::mat4(glm::mat3(camera.matrices.view));
+		glm::mat4 perspectiveMatrix = camera.GetPerspectiveMatrix();
+		glm::mat4 viewMatrix = camera.GetViewMatrix();
+		glm::mat4 oldViewMatrix = camera.GetOldViewMatrix();
+
+		modelUniformVS.model = glm::mat4(glm::mat3(viewMatrix));
 		modelSBVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
 
 		glm::mat4 cammat = glm::lookAt(glm::vec3(modelUniformAtmosphereFS.cameraPosition), center, glm::normalize(glm::vec3(-0.3,-0.8,0.0)));
 
-		matricesUniformVS.cameraInvProjection = glm::inverse(camera.matrices.perspective);		
-		matricesUniformVS.cameraInvView = glm::inverse(camera.matrices.viewold);
+		matricesUniformVS.cameraInvProjection = glm::inverse(perspectiveMatrix);
+		matricesUniformVS.cameraInvView = glm::inverse(oldViewMatrix);
 		matricesUniformBuffer->MemCopy(&matricesUniformVS, sizeof(matricesUniformVS));
 
 		updateUniformBufferOffscreen();
 
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &camera.matrices.perspective, 0, sizeof(camera.matrices.perspective));
-		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &camera.matrices.view, 0, sizeof(camera.matrices.view));
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &perspectiveMatrix, 0, sizeof(perspectiveMatrix));
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
-		glm::vec3 cucu = modelmatrix * glm::vec4(camera.position, 1.0f);
+		glm::vec3 cucu = modelmatrix * glm::vec4(camera.GetPosition(), 1.0f);
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(cucu));
 		glm::mat4 lightspace = depthProjectionMatrix * depthViewMatrix;
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_SPACE, &lightspace, 0, sizeof(lightspace));
