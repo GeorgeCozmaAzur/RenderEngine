@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include <vulkan/vulkan.h>
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "scene/SceneLoader.h"
 
 #define FB_COLOR_HDR_FORMAT VK_FORMAT_R32G32B32A32_SFLOAT
@@ -20,7 +20,7 @@
 using namespace engine;
 using namespace engine::render;
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -33,7 +33,7 @@ public:
 
 	VulkanDescriptorSet* pfdesc = nullptr;
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -94,73 +94,53 @@ public:
 		pfdesc = vulkanDevice->GetDescriptorSet({}, { &scenecolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
 	}
 
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
-			scene.DrawShadowsInSeparatePass(drawCmdBuffers[i]);
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			scene.DrawShadowsInSeparatePass(drawCommandBuffers[i]);
 
-			scenepass->Begin(drawCmdBuffers[i], 0);
+			scenepass->Begin(drawCommandBuffers[i], 0);
 
 			for (int j = 0; j < scene_render_objects.size(); j++) {
-				scene_render_objects[j]->Draw(drawCmdBuffers[i]);
+				scene_render_objects[j]->Draw(drawCommandBuffers[i]);
 			}
 
-			scenepass->End(drawCmdBuffers[i]);
+			scenepass->End(drawCommandBuffers[i]);
 
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 			
-			blackandwhitepipeline->Draw(drawCmdBuffers[i]);
-			pfdesc->Draw(drawCmdBuffers[i], blackandwhitepipeline->getPipelineLayout(), 0);
-			vkCmdDraw(drawCmdBuffers[i], 3, 1, 0, 0);
+			blackandwhitepipeline->Draw(drawCommandBuffers[i]);
+			pfdesc->Draw(drawCommandBuffers[i], blackandwhitepipeline->getPipelineLayout(), 0);
+			vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
-
-	
 
 	void updateUniformBuffers()
 	{
 		scene.Update(timer * 0.05f);
 	}
 
-	void draw()
+	void Prepare()
 	{
-		VulkanExampleBase::prepareFrame();
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-	}
-
-	void prepare()
-	{
-		VulkanExampleBase::prepare();
+		
 		init();
-		prepareUI();
-		buildCommandBuffers();
+		PrepareUI();
+		BuildCommandBuffers();
 		//scene.uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &perspectiveMatrix, 0, sizeof(perspectiveMatrix));
 		updateUniformBuffers();
 		prepared = true;
-	}
-
-	virtual void render()
-	{
-		if (!prepared)
-			return;
-		draw();
 	}
 
 	virtual void update(float dt)
@@ -168,7 +148,7 @@ public:
 
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{
 		//updateUniformBuffers();
 		scene.UpdateView(timer * 0.05f);

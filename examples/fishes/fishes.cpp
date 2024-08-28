@@ -13,7 +13,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/random.hpp>
 
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
 #include <random>
@@ -72,7 +72,7 @@ glm::vec3 randomPointInEllipsoid(float radiusX, float radiusY, float radiusZ) {
 	return glm::vec3(x, y, z);
 }
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -127,7 +127,7 @@ public:
 
 	engine::ThreadPool threadPool;
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -393,57 +393,34 @@ public:
 		setupPipelines();
 	}
 
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 
 			//draw here
-			plane.Draw(drawCmdBuffers[i]);
+			plane.Draw(drawCommandBuffers[i]);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
-	void draw()
+	void Prepare()
 	{
-		VulkanExampleBase::prepareFrame();
-
-		timer.start();
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-		timer.stop();
-		timewaitforgpu = timer.elapsedMicroseconds();
-	}
-
-	void prepare()
-	{
-		VulkanExampleBase::prepare();
 		init();
-		
-		prepareUI();
-		buildCommandBuffers();
+		PrepareUI();
+		BuildCommandBuffers();
 		prepared = true;
-	}
-
-	virtual void render()
-	{
-		if (!prepared)
-			return;
-		draw();
 	}
 
 	virtual void update(float dt)
@@ -451,7 +428,7 @@ public:
 		updateDynamicUniformBuffer();
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{
 		updateUniformBuffers();
 	}

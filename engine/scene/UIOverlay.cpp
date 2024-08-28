@@ -223,8 +223,8 @@ namespace engine
 				const ImDrawList* cmd_list = imDrawData->CmdLists[n];
 				m_geometries[0]->_vertexBuffer->MemCopy(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), vtxOffset);
 				m_geometries[0]->_indexBuffer->MemCopy(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), idxOffset);
-				vtxOffset += cmd_list->VtxBuffer.Size;
-				idxOffset += cmd_list->IdxBuffer.Size;
+				vtxOffset += cmd_list->VtxBuffer.Size * sizeof(ImDrawVert);
+				idxOffset += cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx);
 			}
 
 			// Flush to make writes visible to GPU

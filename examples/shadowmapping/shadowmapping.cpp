@@ -10,7 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <vulkan/vulkan.h>
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "render/VulkanRenderPass.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
@@ -32,7 +32,7 @@
 #define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 using namespace engine;
 using namespace engine::render;
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 	bool displayShadowMap = false;
@@ -125,7 +125,7 @@ public:
 	std::vector<std::string> techniquesNames;
 	//int32_t techniqueIndex = 0;
 
-	VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
+	VulkanExample() : VulkanApplication(ENABLE_VALIDATION)
 	{
 		zoom = -20.0f;
 		rotation = { -15.0f, -390.0f, 0.0f };
@@ -375,33 +375,33 @@ public:
 
 	}
 
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
 			/*
 				First render pass: Generate shadow map by rendering the scene from light's POV
 			*/
 			{
 
-				offscreenPass->Begin(drawCmdBuffers[i], 0);
+				offscreenPass->Begin(drawCommandBuffers[i], 0);
 
 				// Set depth bias (aka "Polygon offset")
 				// Required to avoid shadow mapping artefacts
 				vkCmdSetDepthBias(
-					drawCmdBuffers[i],
+					drawCommandBuffers[i],
 					depthBiasConstant,
 					0.0f,
 					depthBiasSlope);
 
-				offscreen_scenes[sceneIndex]->Draw(drawCmdBuffers[i]);
+				offscreen_scenes[sceneIndex]->Draw(drawCommandBuffers[i]);
 
-				offscreenPass->End(drawCmdBuffers[i]);
+				offscreenPass->End(drawCommandBuffers[i]);
 			}
 
 		/*	filterPass->Begin(drawCmdBuffers[i], 0);
@@ -421,7 +421,7 @@ public:
 			*/
 
 			{
-				mainRenderPass->Begin(drawCmdBuffers[i], i);
+				mainRenderPass->Begin(drawCommandBuffers[i], i);
 
 				// Visualize shadow map
 				if (displayShadowMap) {
@@ -429,50 +429,33 @@ public:
 				}
 
 				// 3D scene							
-				scenes[sceneIndex]->Draw(drawCmdBuffers[i]);
+				scenes[sceneIndex]->Draw(drawCommandBuffers[i]);
 
-				drawUI(drawCmdBuffers[i]);
+				DrawUI(drawCommandBuffers[i]);
 
-				mainRenderPass->End(drawCmdBuffers[i]);
+				mainRenderPass->End(drawCommandBuffers[i]);
 			}
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
-	void draw()
+	void Prepare()
 	{
-		VulkanExampleBase::prepareFrame();
-
-		// Command buffer to be sumitted to the queue
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-
-		// Submit to queue
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-	}
-
-	void prepare()
-	{
-		VulkanExampleBase::prepare();
+		
 		loadAssets();
 		prepareOffscreenFramebuffer();
 		prepareUniformBuffers();
 		preparePipelines();
 		setupDescriptorPool();
-		prepareUI();
+		PrepareUI();
 		setupDescriptorSets();
-		buildCommandBuffers();
+		BuildCommandBuffers();
 		prepared = true;
 	}
 
-	virtual void render()
+	virtual void update(float dt)
 	{
-		if (!prepared)
-			return;
-		draw();
 		if (!paused /*|| camera.updated*/)
 		{
 			updateLight();
@@ -481,19 +464,14 @@ public:
 		}
 	}
 
-	virtual void update(float dt)
-	{
-
-	}
-
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
 		if (overlay->header("Settings")) {
 			if (overlay->comboBox("Scenes", &sceneIndex, sceneNames)) {
-				buildCommandBuffers();
+				BuildCommandBuffers();
 			}
 			if (overlay->checkBox("Display shadow render target", &displayShadowMap)) {
-				buildCommandBuffers();
+				BuildCommandBuffers();
 			}
 			if (overlay->comboBox("Technique", &uboFS.techniqueIndex, techniquesNames)) {
 				//buildCommandBuffers();

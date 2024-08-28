@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include <vulkan/vulkan.h>
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "render/VulkanTexture.h"
 #include "scene/DrawDebug.h"
 #include "scene/SceneLoader.h"
@@ -30,7 +30,7 @@
 
 using namespace engine;
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -88,7 +88,7 @@ public:
 	std::vector<VkCommandBuffer> drawShadowCmdBuffers;
 	std::vector<VkCommandBuffer> drawComputeCmdBuffers;
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -191,12 +191,23 @@ public:
 
 		dbgtex.Init(vulkanDevice, scene.shadowmapColor, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 
-		if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
-		{
-			drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
-			drawComputeCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
-		}
 		initComputeObjects();
+	}
+
+	virtual void CreateCommandBuffers()
+	{
+		if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
+			return;
+		// Create one command buffer for each swap chain image and reuse for rendering
+		
+		drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+		drawComputeCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+		drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+
+		allDrawCommandBuffers.push_back(drawShadowCmdBuffers);
+		allDrawCommandBuffers.push_back(drawComputeCmdBuffers);
+		allDrawCommandBuffers.push_back(drawCommandBuffers);
+		
 	}
 
 	void buildShadowCommanBuffers()
@@ -251,35 +262,35 @@ public:
 		}
 	}
 
-	void buildCommandBuffers()
+	virtual void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
 			// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
-			textureCompute3dTargetRaymarch->PipelineBarrier(drawCmdBuffers[i], 
+			textureCompute3dTargetRaymarch->PipelineBarrier(drawCommandBuffers[i], 
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
 				);
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 
 			for (int j = 0; j < scene_render_objects.size(); j++) {
 				if(scene_render_objects[j])
-				scene_render_objects[j]->Draw(drawCmdBuffers[i]);
+				scene_render_objects[j]->Draw(drawCommandBuffers[i]);
 			}
 
-			dbgtex.Draw(drawCmdBuffers[i]);
+			dbgtex.Draw(drawCommandBuffers[i]);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
@@ -288,35 +299,15 @@ public:
 		scene.Update(timer * 0.05f);		
 	}
 
-	void draw()
+	void Prepare()
 	{
-		VulkanExampleBase::prepareFrame();
-
-		std::vector<VkCommandBuffer> cmdBuffers = { drawShadowCmdBuffers[currentBuffer], drawComputeCmdBuffers[currentBuffer], drawCmdBuffers[currentBuffer] };
-
-		submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
-		submitInfo.pCommandBuffers = cmdBuffers.data();
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-	}
-
-	void prepare()
-	{
-		VulkanExampleBase::prepare();
+		
 		init();
-		prepareUI();
+		PrepareUI();
 		buildShadowCommanBuffers();
 		buildComputeCommandBuffers();
-		buildCommandBuffers();
+		BuildCommandBuffers();
 		prepared = true;
-	}
-
-	virtual void render()
-	{
-		if (!prepared)
-			return;
-		draw();
 	}
 
 	virtual void update(float dt)
@@ -367,19 +358,10 @@ public:
 		updateUniformBuffers();
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{		
 		//updateUniformBuffers();		
 		
-	}
-
-	virtual void windowResized()
-	{
-		if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
-		{
-			drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
-			drawComputeCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
-		}
 	}
 
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)

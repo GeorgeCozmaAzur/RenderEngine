@@ -11,13 +11,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
 
 using namespace engine;
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -60,7 +60,7 @@ public:
 
 	bool textured = false;
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -197,25 +197,25 @@ public:
 
 	
 
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 
 			//draw here
-			textured ? basicModelTextured.Draw(drawCmdBuffers[i]) : basicModel.Draw(drawCmdBuffers[i]);
+			textured ? basicModelTextured.Draw(drawCommandBuffers[i]) : basicModel.Draw(drawCommandBuffers[i]);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
@@ -242,32 +242,14 @@ public:
 
 	}
 
-	void draw()
+	void Prepare()
 	{
-		VulkanExampleBase::prepareFrame();
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-	}
-
-	void prepare()
-	{
-		VulkanExampleBase::prepare();
+		
 		init();
 		
-		prepareUI();
-		buildCommandBuffers();
+		PrepareUI();
+		BuildCommandBuffers();
 		prepared = true;
-	}
-
-	virtual void render()
-	{
-		if (!prepared)
-			return;
-		draw();
 	}
 
 	virtual void update(float dt)
@@ -275,7 +257,7 @@ public:
 
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{
 		updateUniformBuffers();
 	}
@@ -292,7 +274,7 @@ public:
 				updateUniformBuffers();
 			}
 			if (overlay->checkBox("Textured", &textured)) {
-				buildCommandBuffers();
+				BuildCommandBuffers();
 			}
 		}
 	}

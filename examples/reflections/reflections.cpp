@@ -12,14 +12,14 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include <vulkan/vulkan.h>
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 
 #define FB_DIM 512
 
 using namespace engine;
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -79,7 +79,7 @@ public:
 
 	render::VulkanRenderPass* offscreenRenderPass;
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -282,71 +282,52 @@ public:
 		models.plane->AddPipeline(pipelines.mirror);	
 	}
 
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
-			offscreenRenderPass->Begin(drawCmdBuffers[i], 0);
-			models.exampleoffscreen->Draw(drawCmdBuffers[i]);
-			offscreenRenderPass->End(drawCmdBuffers[i]);
+			offscreenRenderPass->Begin(drawCommandBuffers[i], 0);
+			models.exampleoffscreen->Draw(drawCommandBuffers[i]);
+			offscreenRenderPass->End(drawCommandBuffers[i]);
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 			//draw here
-			models.example->Draw(drawCmdBuffers[i]);
-			models.plane->Draw(drawCmdBuffers[i]);
+			models.example->Draw(drawCommandBuffers[i]);
+			models.plane->Draw(drawCommandBuffers[i]);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
-	void prepare()
+	void Prepare()
 	{
-		VulkanExampleBase::prepare();
+		
 		init();
 		setupDescriptorPool();
-		prepareUI();
+		PrepareUI();
 		prepareUniformBuffers();
 		setupDescriptors();
 		setupPipelines();
-		buildCommandBuffers();
+		BuildCommandBuffers();
 		prepared = true;
-	}
-
-	void draw()
-	{
-		VulkanExampleBase::prepareFrame();
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-	}
-
-	virtual void render()
-	{
-		if (!prepared)
-			return;
-		updateUniformBuffers();
-		updateUniformBufferOffscreen();
-		draw();
 	}
 
 	virtual void update(float dt)
 	{
-
+		updateUniformBuffers();
+		updateUniformBufferOffscreen();
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{
 		updateUniformBuffers();
 	}

@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
 #include "ClothCompute.h"
@@ -21,7 +21,7 @@
 
 using namespace engine;
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -63,7 +63,7 @@ public:
 	glm::vec4 light_pos = glm::vec4(0.0f, -5.0f, 5.0f, 1.0f);
 	glm::vec4 depthProjectionStart = glm::vec4(0.0f, -5.0f, 0.0f, 1.0f);
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -271,6 +271,22 @@ public:
 		clothcompute._pipeline = vulkanDevice->GetComputePipeline(fileName, device, clothcompute._descriptorLayout->m_descriptorSetLayout, pipelineCache, 0);
 	}
 
+	virtual void CreateCommandBuffers()
+	{
+		if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
+			return;
+		// Create one command buffer for each swap chain image and reuse for rendering
+
+		drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+		clothcompute.commandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+		drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+
+		allDrawCommandBuffers.push_back(drawShadowCmdBuffers);
+		allDrawCommandBuffers.push_back(clothcompute.commandBuffers);
+		allDrawCommandBuffers.push_back(drawCommandBuffers);
+
+	}
+
 	void init()
 	{	
 		prepareOffscreenRenderpass();
@@ -309,10 +325,6 @@ public:
 
 	void buildShadowCommandBuffers()
 	{
-		if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
-		{
-			drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);//TODO george carefull
-		}
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		for (int32_t i = 0; i < drawShadowCmdBuffers.size(); ++i)
@@ -338,10 +350,6 @@ public:
 
 	void buildComputeCommandBuffers()
 	{
-		if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
-		{
-			clothcompute.commandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
-		}
 
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -366,28 +374,28 @@ public:
 		}
 	}
 
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
 			//addComputeToGraphicsBarriers(drawCmdBuffers[i]);
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 
-			models.Draw(drawCmdBuffers[i]);
+			models.Draw(drawCommandBuffers[i]);
 		
-			clothobject.Draw(drawCmdBuffers[i]);
+			clothobject.Draw(drawCommandBuffers[i]);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
@@ -422,38 +430,18 @@ public:
 		uniform_manager.Update();
 	}
 
-	void draw()
+	void Prepare()
 	{
-		VulkanExampleBase::prepareFrame();
-
-		std::vector<VkCommandBuffer> cmdBuffers = { drawShadowCmdBuffers[currentBuffer], clothcompute.commandBuffers[currentBuffer],  drawCmdBuffers[currentBuffer] };
-
-		submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
-		submitInfo.pCommandBuffers = cmdBuffers.data();
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-	}
-
-	void prepare()
-	{
-		VulkanExampleBase::prepare();
+		
 		init();
 		
-		prepareUI();
+		PrepareUI();
 
 		buildShadowCommandBuffers();
 		buildComputeCommandBuffers();
-		buildCommandBuffers();
+		BuildCommandBuffers();
 		
 		prepared = true;
-	}
-
-	virtual void render()
-	{
-		if (!prepared)
-			return;
-		draw();
 	}
 
 	virtual void update(float dt)
@@ -461,7 +449,7 @@ public:
 		updateComputeUBO();
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{
 		updateUniformBuffers();
 	}

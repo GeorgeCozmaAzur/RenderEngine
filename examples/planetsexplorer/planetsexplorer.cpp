@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
 #include "scene/TerrainSphere.h"
@@ -23,7 +23,7 @@ using namespace engine;
 
 #define SHADOWMAP_DIM 2048
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -125,7 +125,7 @@ public:
 
 	float farplane = 300000.0f;
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -394,47 +394,47 @@ public:
 		setupSphere();
 	}
 
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
-			offscreenPass->Begin(drawCmdBuffers[i], 0);
+			offscreenPass->Begin(drawCommandBuffers[i], 0);
 
 			vkCmdSetDepthBias(
-				drawCmdBuffers[i],
+				drawCommandBuffers[i],
 				depthBiasConstant,
 				0.0f,
 				depthBiasSlope);
 
-			shadowobjects.Draw(drawCmdBuffers[i]);
+			shadowobjects.Draw(drawCommandBuffers[i]);
 
-			offscreenPass->End(drawCmdBuffers[i]);
+			offscreenPass->End(drawCommandBuffers[i]);
 
-			scenepass->Begin(drawCmdBuffers[i], 0);
+			scenepass->Begin(drawCommandBuffers[i], 0);
 
-			sun.Draw(drawCmdBuffers[i]);
-			saturn.Draw(drawCmdBuffers[i]);
-			rings.Draw(drawCmdBuffers[i]);
-			myplanet.Draw(drawCmdBuffers[i]);
+			sun.Draw(drawCommandBuffers[i]);
+			saturn.Draw(drawCommandBuffers[i]);
+			rings.Draw(drawCommandBuffers[i]);
+			myplanet.Draw(drawCommandBuffers[i]);
 
-			scenepass->End(drawCmdBuffers[i]);
+			scenepass->End(drawCommandBuffers[i]);
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 
-			peffpipeline->Draw(drawCmdBuffers[i]);
-			peffdesc->Draw(drawCmdBuffers[i], peffpipeline->getPipelineLayout(), 0);
-			vkCmdDraw(drawCmdBuffers[i], 3, 1, 0, 0);
+			peffpipeline->Draw(drawCommandBuffers[i]);
+			peffdesc->Draw(drawCommandBuffers[i], peffpipeline->getPipelineLayout(), 0);
+			vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
@@ -530,32 +530,14 @@ public:
 		uniform_manager.Update();
 	}
 
-	void draw()
+	void Prepare()
 	{
-		VulkanExampleBase::prepareFrame();
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-	}
-
-	void prepare()
-	{
-		VulkanExampleBase::prepare();
+		
 		init();
 		
-		prepareUI();
-		buildCommandBuffers();
+		PrepareUI();
+		BuildCommandBuffers();
 		prepared = true;
-	}
-
-	virtual void render()
-	{
-		if (!prepared)
-			return;
-		draw();
 	}
 
 	virtual void update(float dt)
@@ -566,7 +548,7 @@ public:
 		updateUniformBuffers();
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{
 		updateUniformBuffers();
 	}

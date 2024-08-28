@@ -81,9 +81,9 @@ namespace engine
 
                         i++;
                     }
-                    queueFamilyIndices.presentFamily = queueFamilyIndices.graphicsFamily;//TODO HARDCODE FOR NOW
-                   // if (!queueFamilyIndices.isComplete())
-                   //     continue;
+                   // queueFamilyIndices.presentFamily = queueFamilyIndices.graphicsFamily;//TODO HARDCODE FOR NOW
+                    if (!queueFamilyIndices.isComplete())
+                        continue;
 
                     vkGetPhysicalDeviceMemoryProperties(device, &memoryProperties);
 
@@ -719,13 +719,15 @@ namespace engine
 
             drawCommandBuffersPoolIndex = queueFamilyIndex;
 
-            drawCommandBuffers.resize(size);
+            std::vector<VkCommandBuffer> newCommandBuffers(size);
 
-            VkCommandBufferAllocateInfo cmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(drawCommandBuffers.size()) };// = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(drawCommandBuffers.size()));
+            VkCommandBufferAllocateInfo cmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(newCommandBuffers.size()) };// = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(drawCommandBuffers.size()));
 
-            VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, drawCommandBuffers.data()));
+            VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, newCommandBuffers.data()));
 
-            return drawCommandBuffers;
+            drawCommandBuffers.insert(drawCommandBuffers.end(), newCommandBuffers.begin(), newCommandBuffers.end());
+
+            return newCommandBuffers;
         }
 
         void VulkanDevice::FreeDrawCommandBuffers()

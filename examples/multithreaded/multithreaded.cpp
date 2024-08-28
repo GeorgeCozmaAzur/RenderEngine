@@ -14,7 +14,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
 #include "threadpool.hpp"
@@ -32,7 +32,7 @@ float randomFloatRange(float min, float max)
 	return randomFloat() * max + min;
 }
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -111,7 +111,7 @@ public:
 
 	scene::DrawDebugBBs dbgbb;
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -305,29 +305,29 @@ public:
 	}
 
 	//just a testing function
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 
 			//draw here
 			for (int j = 0;j < objectsNo;j++)
 			{
-				objects[j].Draw(drawCmdBuffers[i]);
+				objects[j].Draw(drawCommandBuffers[i]);
 			}
-			dbgbb.Draw(drawCmdBuffers[i]);
+			dbgbb.Draw(drawCommandBuffers[i]);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
@@ -419,7 +419,7 @@ public:
 
 		VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo));
 
-		drawUI(cmdBuffer);
+		DrawUI(cmdBuffer);
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
 	}
@@ -429,9 +429,9 @@ public:
 		VkCommandBufferBeginInfo commandBufferBeginInfo{};
 		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[0], &commandBufferBeginInfo));
+		VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[0], &commandBufferBeginInfo));
 
-		mainRenderPass->Begin(drawCmdBuffers[0], i, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		mainRenderPass->Begin(drawCommandBuffers[0], i, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// Contains the list of secondary command buffers to be submitted
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -507,11 +507,11 @@ public:
 		commandBuffers.push_back(threadUIData.commandBuffer[0]);
 
 		// Execute render commands from the secondary command buffer
-		vkCmdExecuteCommands(drawCmdBuffers[0], static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+		vkCmdExecuteCommands(drawCommandBuffers[0], static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-		mainRenderPass->End(drawCmdBuffers[0]);
+		mainRenderPass->End(drawCommandBuffers[0]);
 
-		VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[0]));
+		VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[0]));
 	}
 	void updateglobalUniformBuffers()
 	{
@@ -548,7 +548,7 @@ public:
 	bool multithreaded = true;
 	void draw()
 	{
-		VulkanExampleBase::prepareFrame();
+		VulkanApplication::PrepareFrame();
 
 		//TODO add fences
 		timer.start();
@@ -556,7 +556,7 @@ public:
 			updateCommandBuffers(currentBuffer);
 		else
 		{
-			buildCommandBuffers();
+			BuildCommandBuffers();
 			updateUniformBuffers();
 		}
 		memcpy(dbgbb._geometriesPushConstants, constants.data(), constants.size()*sizeof(float));
@@ -565,27 +565,27 @@ public:
 		timerender = timer.elapsedMicroseconds();
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[multithreaded? 0 : currentBuffer];
+		submitInfo.pCommandBuffers = &drawCommandBuffers[multithreaded? 0 : currentBuffer];
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 
-		VulkanExampleBase::submitFrame();
+		VulkanApplication::PresentFrame();
 	}
 
-	void prepare()
+	void Prepare()
 	{
-		VulkanExampleBase::prepare();
+		
 		init();
 		
-		prepareUI();
+		PrepareUI();
 		if (multithreaded)
 			prepareMultiThreadedRenderer();
 		else
-			buildCommandBuffers();
+			BuildCommandBuffers();
 		
 		prepared = true;
 	}
 
-	virtual void render()
+	virtual void Render()
 	{
 		if (!prepared)
 			return;
@@ -668,7 +668,7 @@ public:
 		timeupdate = timer.elapsedMicroseconds();
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{
 		updateglobalUniformBuffers();
 	}

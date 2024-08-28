@@ -12,12 +12,12 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include <vulkan/vulkan.h>
-#include "vulkanexamplebase.h"
+#include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 
 using namespace engine;
 
-class VulkanExample : public VulkanExampleBase
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -103,7 +103,7 @@ public:
 	glm::vec3 light_positions[LIGHTS_NO];
 	glm::vec3 light_colors[LIGHTS_NO];
 
-	VulkanExample() : VulkanExampleBase(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -6.75f;
 		rotationSpeed = 0.5f;
@@ -309,64 +309,45 @@ public:
 			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	}
 
-	void buildCommandBuffers()
+	void BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
-			scenepass->Begin(drawCmdBuffers[i], 0);
-			models.example.Draw(drawCmdBuffers[i]);
-			models.plane.Draw(drawCmdBuffers[i]);
-			scenepass->End(drawCmdBuffers[i]);
+			scenepass->Begin(drawCommandBuffers[i], 0);
+			models.example.Draw(drawCommandBuffers[i]);
+			models.plane.Draw(drawCommandBuffers[i]);
+			scenepass->End(drawCommandBuffers[i]);
 
-			mainRenderPass->Begin(drawCmdBuffers[i], i);
+			mainRenderPass->Begin(drawCommandBuffers[i], i);
 			//draw here
-			pipelines.deferred->Draw(drawCmdBuffers[i]);
-			descriptorSets.deferred->Draw(drawCmdBuffers[i], pipelines.deferred->getPipelineLayout(), 0);
-			vkCmdDraw(drawCmdBuffers[i], 3, 1, 0, 0);
+			pipelines.deferred->Draw(drawCommandBuffers[i]);
+			descriptorSets.deferred->Draw(drawCommandBuffers[i], pipelines.deferred->getPipelineLayout(), 0);
+			vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
 
-			drawUI(drawCmdBuffers[i]);
+			DrawUI(drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCmdBuffers[i]);
+			mainRenderPass->End(drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 
-	void prepare()
+	void Prepare()
 	{
-		VulkanExampleBase::prepare();
+		
 		init();
 		setupDescriptorPool();
-		prepareUI();
+		PrepareUI();
 		prepareUniformBuffers();
 		setupDescriptors();
 		setupPipelines();
-		buildCommandBuffers();
+		BuildCommandBuffers();
 		prepared = true;
-	}
-
-	void draw()
-	{
-		VulkanExampleBase::prepareFrame();
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
-	}
-
-	virtual void render()
-	{
-		if (!prepared)
-			return;
-		updateUniformBuffers();
-		draw();
 	}
 
 	virtual void update(float dt)
@@ -381,9 +362,10 @@ public:
 			uboDeferred.lights[i].color.y = light_colors[i].y;
 			uboDeferred.lights[i].color.z = light_colors[i].z;
 		}
+		updateUniformBuffers();
 	}
 
-	virtual void viewChanged()
+	virtual void ViewChanged()
 	{
 		updateUniformBuffers();
 	}
