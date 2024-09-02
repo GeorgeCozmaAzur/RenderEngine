@@ -53,6 +53,7 @@ namespace engine
 			std::vector<VulkanRenderPass*> m_renderPasses;  // Graphical resources - render passes
 			std::vector<VulkanFrameBuffer*> m_frameBuffers;  // Graphical resources - frame buffers
 			std::vector<VkSemaphore> m_semaphores;  // Semaphores
+			std::vector<VkFence> m_fences;  // Fences
 
 			// Typecast to VkDevice
 			operator VkDevice() { return logicalDevice; }
@@ -221,6 +222,12 @@ namespace engine
 
 			// Destroys a semaphore
 			void DestroySemaphore(VkSemaphore semaphore);
+
+			// Gets a fence that is already signaled
+			VkFence GetSignaledFence();
+
+			// Destroys a fence
+			void DestroyFence(VkFence fence);
 
 			// Destructor
 			~VulkanDevice();

@@ -118,6 +118,8 @@ protected:
 		VkSemaphore renderComplete;
 	} semaphores;
 
+	std::vector<VkFence> submitFences;
+
 	struct
 	{
 		bool n = false;

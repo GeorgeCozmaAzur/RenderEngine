@@ -556,6 +556,12 @@ bool VulkanApplication::InitVulkan()
 	CreatePipelineCache();
 	SetupFrameBuffer();
 
+	submitFences.resize(swapChain.swapChainImageViews.size());
+	for (int i = 0; i < submitFences.size(); i++)
+	{
+		submitFences[i] = vulkanDevice->GetSignaledFence();
+	}
+
 	return true;
 }
 
@@ -672,7 +678,10 @@ void VulkanApplication::UpdateOverlay()
 	ImGui::PopStyleVar();
 	ImGui::Render();
 
-	if (UIOverlay.update() || UIOverlay.m_updated) {
+	if(UIOverlay.shouldRecreateBuffers())
+		vkWaitForFences(device, submitFences.size(), submitFences.data(), VK_TRUE, UINT64_MAX);
+
+	if (UIOverlay.update() || UIOverlay.m_updated) {		
 		BuildCommandBuffers();
 		UIOverlay.m_updated = false;
 	}
@@ -724,38 +733,23 @@ void VulkanApplication::Render()
 	if (!prepared)
 		return;
 
-	// Acquire the next image from the swap chain
-	VkResult result = swapChain.acquireNextImage(semaphores.presentComplete, &currentBuffer);
-	// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or no longer optimal for presentation (SUBOPTIMAL)
-	if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {
-		WindowResize();
-	}
-	else {
-		VK_CHECK_RESULT(result);
-	}
+	vkWaitForFences(device, 1, &submitFences[currentBuffer], VK_TRUE, UINT64_MAX);
+
+	VulkanApplication::PrepareFrame();
+
+	vkResetFences(device, 1, &submitFences[currentBuffer]);
 
 	std::vector<VkCommandBuffer> submitCommandBuffers(allDrawCommandBuffers.size());
-	for (int i=0;i<allDrawCommandBuffers.size();i++)
+	for (int i = 0; i < allDrawCommandBuffers.size(); i++)
 	{
 		submitCommandBuffers[i] = allDrawCommandBuffers[i][currentBuffer];
 	}
 
 	submitInfo.commandBufferCount = submitCommandBuffers.size();
-	submitInfo.pCommandBuffers = submitCommandBuffers.data();//&drawCommandBuffers[currentBuffer];
-	VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+	submitInfo.pCommandBuffers = submitCommandBuffers.data();
+	VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, submitFences[currentBuffer]));
 
-	result = swapChain.queuePresent(presentationQueue, currentBuffer, semaphores.renderComplete);
-	if (!((result == VK_SUCCESS) || (result == VK_SUBOPTIMAL_KHR))) {
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			// Swap chain is no longer compatible with the surface and needs to be recreated
-			WindowResize();
-			return;
-		}
-		else {
-			VK_CHECK_RESULT(result);
-		}
-	}
-	VK_CHECK_RESULT(vkQueueWaitIdle(presentationQueue));
+	VulkanApplication::PresentFrame();
 }
 
 void VulkanApplication::ViewChanged() {}

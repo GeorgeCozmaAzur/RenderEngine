@@ -56,6 +56,8 @@ namespace engine
 			void preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass);
 			void prepareResources();
 
+			bool shouldRecreateBuffers();
+
 			bool update();
 			void draw(const VkCommandBuffer commandBuffer);
 			void resize(uint32_t width, uint32_t height);

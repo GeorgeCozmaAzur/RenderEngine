@@ -548,7 +548,11 @@ public:
 	bool multithreaded = true;
 	void draw()
 	{
+		vkWaitForFences(device, 1, &submitFences[multithreaded ? 0 : currentBuffer], VK_TRUE, UINT64_MAX);
+
 		VulkanApplication::PrepareFrame();
+
+		vkResetFences(device, 1, &submitFences[multithreaded ? 0 : currentBuffer]);
 
 		//TODO add fences
 		timer.start();
@@ -566,7 +570,7 @@ public:
 
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &drawCommandBuffers[multithreaded? 0 : currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, submitFences[multithreaded ? 0 : currentBuffer]));
 
 		VulkanApplication::PresentFrame();
 	}

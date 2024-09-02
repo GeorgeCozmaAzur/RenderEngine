@@ -81,7 +81,7 @@ namespace engine
 
                         i++;
                     }
-                   // queueFamilyIndices.presentFamily = queueFamilyIndices.graphicsFamily;//TODO HARDCODE FOR NOW
+
                     if (!queueFamilyIndices.isComplete())
                         continue;
 
@@ -817,6 +817,30 @@ namespace engine
                 return;
             }
         }
+
+        VkFence VulkanDevice::GetSignaledFence()
+        {
+            VkFence outFence = VK_NULL_HANDLE;
+            VkFenceCreateInfo fenceInfo{};
+            fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+            fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+            VK_CHECK_RESULT(vkCreateFence(logicalDevice, &fenceInfo, nullptr, &outFence));
+            m_fences.push_back(outFence);
+            return outFence;
+        }
+
+        void VulkanDevice::DestroyFence(VkFence fence)
+        {
+            std::vector<VkFence>::iterator it;
+            it = find(m_fences.begin(), m_fences.end(), fence);
+            if (it != m_fences.end())
+            {
+                vkDestroyFence(logicalDevice, fence, nullptr);
+                m_fences.erase(it);
+                return;
+            }
+        }
+
         VulkanDevice::~VulkanDevice()
         {
             FreeDrawCommandBuffers();
@@ -845,6 +869,8 @@ namespace engine
                 delete fb;
             for (auto sm : m_semaphores)
                 vkDestroySemaphore(logicalDevice, sm, nullptr);
+            for (auto fence : m_fences)
+                vkDestroyFence(logicalDevice, fence, nullptr);
 
             if (m_descriptorPool != VK_NULL_HANDLE)
             {

@@ -168,6 +168,27 @@ namespace engine
 				engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", renderPass, pipelineCache, true, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, sizeof(pushConstBlock));
 		}
 
+		bool UIOverlay::shouldRecreateBuffers()
+		{
+			ImDrawData* imDrawData = ImGui::GetDrawData();
+			bool updateCmdBuffers = false;
+
+			if (!imDrawData) { return false; };
+
+			// Note: Alignment is done inside buffer creation
+			VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);
+			VkDeviceSize indexBufferSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
+
+			// Update buffers only if vertex or index count has been changed compared to current buffer size
+			if ((vertexBufferSize == 0) || (indexBufferSize == 0)) {
+				return false;
+			}
+
+			// Vertex buffer
+			return  (m_geometries[0]->m_vertexCount != imDrawData->TotalVtxCount
+				|| m_geometries[0]->m_indexCount < touint(imDrawData->TotalIdxCount));
+		}
+
 		/** Update vertex and index buffer containing the imGui elements when required */
 		bool UIOverlay::update()
 		{
@@ -186,7 +207,8 @@ namespace engine
 			}
 
 			// Vertex buffer
-			if (m_geometries[0]->m_vertexCount != imDrawData->TotalVtxCount) {
+			if (m_geometries[0]->m_vertexCount != imDrawData->TotalVtxCount) 
+			{
 				if (m_geometries[0]->_vertexBuffer)
 				{
 					m_geometries[0]->_vertexBuffer->Unmap();
@@ -202,7 +224,8 @@ namespace engine
 
 			// Index buffer
 			VkDeviceSize indexSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
-			if (m_geometries[0]->m_indexCount < touint(imDrawData->TotalIdxCount)) {
+			if (m_geometries[0]->m_indexCount < touint(imDrawData->TotalIdxCount)) 
+			{
 				if (m_geometries[0]->_indexBuffer)
 				{
 					m_geometries[0]->_indexBuffer->Unmap();
@@ -219,7 +242,8 @@ namespace engine
 			int vtxOffset = 0;
 			int idxOffset = 0;
 
-			for (int n = 0; n < imDrawData->CmdListsCount; n++) {
+			for (int n = 0; n < imDrawData->CmdListsCount; n++) 
+			{
 				const ImDrawList* cmd_list = imDrawData->CmdLists[n];
 				m_geometries[0]->_vertexBuffer->MemCopy(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), vtxOffset);
 				m_geometries[0]->_indexBuffer->MemCopy(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), idxOffset);
