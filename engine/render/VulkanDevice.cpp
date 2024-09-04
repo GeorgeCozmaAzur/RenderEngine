@@ -82,6 +82,8 @@ namespace engine
                         i++;
                     }
 
+                    queueFamilyIndices.presentFamily = queueFamilyIndices.graphicsFamily;//George - for now it's faster on the gpu to use only one queue
+
                     if (!queueFamilyIndices.isComplete())
                         continue;
 
