@@ -238,17 +238,14 @@ public:
 		cucu.y = -cucu.y;
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.GetPosition()));
 
-		uniform_manager.Update();
+		modelUniformVS.wind = glm::vec4(1.0f, 0.0f, 0.0f, 0.5f);
 
-		//modelUniformVS.wind = glm::vec4(0.0f, 0.0f, 1.0f, 0.5f);
-		//modelVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
+		uniform_manager.Update();
 	}
 
 	void Prepare()
-	{
-		
+	{	
 		init();
-		
 		PrepareUI();
 		BuildCommandBuffers();
 		prepared = true;
@@ -257,7 +254,6 @@ public:
 	virtual void update(float dt)
 	{
 		modelUniformVS.advance += dt;
-		modelUniformVS.wind = glm::vec4(1.0f, 0.0f, 0.0f, 0.1f);
 		modelVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
 
 		modelUniformFS.advance += dt;
@@ -271,8 +267,18 @@ public:
 
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
+		float v[3] = { modelUniformVS.wind.x, modelUniformVS.wind.y, modelUniformVS.wind.z};
 		if (overlay->header("Settings")) {
+			if (ImGui::SliderFloat3("Wind direction", v, 0.0f, 1.0f))
+			{
+				modelUniformVS.wind.x = v[0];
+				modelUniformVS.wind.y = v[1];
+				modelUniformVS.wind.z = v[2];
+			}
+			if (ImGui::SliderFloat("Wind intensity", &modelUniformVS.wind.w, 0.0f, 1.0f))
+			{
 
+			}
 		}
 	}
 
