@@ -22,7 +22,7 @@
 
 using namespace engine;
 
-#define OBJECT_INSTANCES 1000
+#define OBJECT_INSTANCES 1600
 #define THREADS_NO 10
 
 // Wrapper functions for aligned memory allocation
@@ -99,7 +99,7 @@ public:
 	glm::vec3 directions[OBJECT_INSTANCES];
 	glm::vec3 rotationSpeeds[OBJECT_INSTANCES];
 	glm::vec3 translations[OBJECT_INSTANCES];
-
+	float timeOffsets[OBJECT_INSTANCES];
 	
 
 	// One big uniform buffer that contains all matrices
@@ -134,9 +134,9 @@ public:
 		rotation = glm::vec3(15.0f, 0.f, 0.0f);
 		title = "Render Engine Empty Scene";
 		settings.overlay = true;
-		camera.movementSpeed = 5.0f;
+		camera.movementSpeed = 20.0f;
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
-		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera.SetRotation(glm::vec3(0.0f, 90.0f, 0.0f));
 		camera.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	}
 
@@ -169,7 +169,7 @@ public:
 					plane.LoadGeometry(engine::tools::getAssetPath() + objectName, &vertexLayout, 0.001f, 1, glm::vec3(0.0,0.0,0.0), glm::vec3(1.0f,1.0f,1.0f));
 				else
 					//plane.LoadGeometry(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish12.obj", &vertexLayout, 0.001f, 1);
-					plane.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 0.01f, 1);
+					plane.LoadGeometry(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish01.obj", &vertexLayout, 0.001f, 1);
 
 				if (tools::fileExists(engine::tools::getAssetPath() + textureName))
 					textureNames.push_back(engine::tools::getAssetPath() + textureName);
@@ -235,6 +235,9 @@ public:
 			rotationSpeeds[i] = glm::vec3(rndDistpi(rndEngine), rndDistpi(rndEngine), rndDistpi(rndEngine));
 		}
 
+		float splineLength = 2 * M_PI * 10.0f;//(glm::length(splinepoints[1] - splinepoints[2]) + glm::length(splinepoints[2] - splinepoints[3]) + glm::length(splinepoints[3] - splinepoints[4]))/2.0f;
+
+
 		float radiusX = 3.5f; // Radius along the x-axis
 		float radiusY = 2.5f; // Radius along the y-axis
 		float radiusZ = 5.0f; // Radius along the z-axis
@@ -245,6 +248,15 @@ public:
 			fish.x += randomFloat(-0.1f, 0.1f);
 			fish.y += randomFloat(-0.1f, 0.1f);
 			fish.z += randomFloat(-0.1f, 0.1f);
+
+			if (fish.z >= 0)
+			{
+				timeOffsets[i] = fish.z / splineLength;
+			}
+			else
+			{
+				timeOffsets[i] = (splineLength + fish.z) / splineLength;
+			}
 
 			translations[i] = fish;
 		}
@@ -306,16 +318,14 @@ public:
 		animationTimer += frameTimer;
 		timer.start();
 		
-		float normframetime = animationTimer / swimduration;
-		float intpart;
-		normframetime = modf(normframetime, &intpart);
+		
 
-		groupPosition = bezierInterpolate(splinepoints, normframetime)[0];
-		groupDirection = glm::normalize(groupPosition - oldtrans);
-		glm::quat rotationQuat = glm::rotation(defaultDirection, groupDirection);
-		groupRotationMatrix = glm::toMat4(rotationQuat);
+		//std::cout << normframetime << "\n";
 
-		int objectsPerThread = OBJECT_INSTANCES / THREADS_NO;
+		//groupPosition = bezierInterpolate(splinepoints, normframetime)[0];
+		
+		
+		//int objectsPerThread = OBJECT_INSTANCES / THREADS_NO;
 		/*for (uint32_t t = 0; t < THREADS_NO; t++)
 		{
 			int from = t * objectsPerThread;
@@ -331,15 +341,26 @@ public:
 		//glm::vec3 dir(0.5f, 0.5f, 0.0f);
 		for (uint32_t i = 0; i < OBJECT_INSTANCES; i++) 
 		{
+			float normframetime = animationTimer / swimduration + timeOffsets[i];
+			float intpart;
+			normframetime = modf(normframetime, &intpart);
+			int objectsPerThread = OBJECT_INSTANCES / THREADS_NO;
+
+			groupPosition.x = sin(normframetime * M_PI * 2.0) * (20.0f + translations[i].x);
+			groupPosition.z = cos(normframetime * M_PI * 2.0) * (20.0f + translations[i].x);
+			groupPosition.y = translations[i].y;
+			groupDirection = glm::normalize(glm::vec3(groupPosition.z, 0.0f,-groupPosition.x));//glm::normalize(groupPosition - oldtrans);
+			glm::quat rotationQuat = glm::rotation(defaultDirection, groupDirection);
+			groupRotationMatrix = glm::toMat4(rotationQuat);
+
 			rotations[i] = cos(animationTimer * rotationSpeeds[i]) * 0.3f;
 
 			glm::mat4* modelMat = (glm::mat4*)(((uint64_t)uboDataDynamic.model + (i * dynamicAlignment)));
-			glm::vec3 finalTranslation = groupRotationMatrix * glm::vec4(translations[i], 1.0f);
-			*modelMat = glm::translate(glm::mat4(1.0f), finalTranslation + groupPosition);
+			*modelMat = glm::translate(glm::mat4(1.0f), groupPosition);
 
 			*modelMat = *modelMat * groupRotationMatrix;
 
-			*modelMat = *modelMat * glm::rotate(glm::mat4(1.0f), rotations[i].y, glm::vec3(0.0f, 1.0f, 0.0f));
+			//*modelMat = *modelMat * glm::rotate(glm::mat4(1.0f), rotations[i].y, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 		threadPool.wait();
 		oldtrans = groupPosition;
