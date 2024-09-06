@@ -22,7 +22,7 @@
 
 using namespace engine;
 
-#define OBJECT_INSTANCES 1600
+#define OBJECT_INSTANCES 16000
 #define THREADS_NO 10
 
 // Wrapper functions for aligned memory allocation
@@ -83,30 +83,34 @@ public:
 		
 		}, {});
 
-	engine::scene::SimpleModel plane;
+	engine::scene::SimpleModel allfish;
 	//render::VulkanTexture* colorMap;
 	std::vector<std::string> textureNames;
 	render::VulkanTexture* textures;
 
 	render::VulkanBuffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
-	render::VulkanBuffer* dynamic;
+	render::VulkanBuffer* dynamicBuffer;
 
 	glm::vec4 light_pos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// Store random per-object rotations
-	glm::vec3 rotations[OBJECT_INSTANCES];
-	glm::vec3 directions[OBJECT_INSTANCES];
+	//glm::vec3 rotations[OBJECT_INSTANCES];
+	//glm::vec3 directions[OBJECT_INSTANCES];
 	glm::vec3 rotationSpeeds[OBJECT_INSTANCES];
 	glm::vec3 translations[OBJECT_INSTANCES];
+	glm::vec3 scales[OBJECT_INSTANCES];
 	float timeOffsets[OBJECT_INSTANCES];
 	
 
 	// One big uniform buffer that contains all matrices
 	// Note that we need to manually allocate the data to cope for GPU-specific uniform buffer offset alignments
 	struct UboDataDynamic {
-		glm::mat4* model{ nullptr };
-	} uboDataDynamic;
+		//glm::mat4 model;// { nullptr };
+		glm::vec4 position;
+		glm::vec4 scale;
+	};
+	UboDataDynamic *uboDataDynamic = nullptr;
 
 	float animationTimer{ 0.0f };
 
@@ -117,13 +121,8 @@ public:
 	uint64_t timerender = 0;
 	uint64_t timewaitforgpu = 0;
 
-	float swimduration = 10.0f;
+	float swimduration = 100.0f;
 	glm::vec3 defaultDirection = glm::vec3(0.0f, 0.0f, 1.0f);
-	std::vector<glm::vec3> splinepoints{ glm::vec3(0.0,0.0,-10.0), glm::vec3(0.0,0.0,0.0), glm::vec3(20.0,0.0,0.0), glm::vec3(0.0,0.0,-20.0), glm::vec3(0.0,0.0,-20.0), glm::vec3(0.0,0.0,-10.0) };
-	glm::vec3 oldtrans;
-	glm::vec3 groupPosition;
-	glm::vec3 groupDirection;
-	glm::mat4 groupRotationMatrix;
 
 	engine::ThreadPool threadPool;
 
@@ -136,7 +135,7 @@ public:
 		settings.overlay = true;
 		camera.movementSpeed = 20.0f;
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
-		camera.SetRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+		camera.SetRotation(glm::vec3(0.0f, 180.0f, 0.0f));
 		camera.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	}
 
@@ -166,17 +165,17 @@ public:
 				std::string textureName = "models/TropicalFish_obj/TropicalFish" + objectNumber + ".jpg";
 				//plane.LoadGeometry(engine::tools::getAssetPath() + "models/torusknot.obj", &vertexLayout, 0.001f, 1);	
 				if (tools::fileExists(engine::tools::getAssetPath() + objectName))
-					plane.LoadGeometry(engine::tools::getAssetPath() + objectName, &vertexLayout, 0.001f, 1, glm::vec3(0.0,0.0,0.0), glm::vec3(1.0f,1.0f,1.0f));
+					allfish.LoadGeometry(engine::tools::getAssetPath() + objectName, &vertexLayout, 0.001f, 1, glm::vec3(0.0,0.0,0.0), glm::vec3(1.0f,1.0f,1.0f));
 				else
 					//plane.LoadGeometry(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish12.obj", &vertexLayout, 0.001f, 1);
-					plane.LoadGeometry(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish01.obj", &vertexLayout, 0.001f, 1);
+					allfish.LoadGeometry(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish01.obj", &vertexLayout, 0.001f, 1);
 
 				if (tools::fileExists(engine::tools::getAssetPath() + textureName))
 					textureNames.push_back(engine::tools::getAssetPath() + textureName);
 				else
 					textureNames.push_back(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish01.jpg");
 
-				scene::Geometry* geo = plane.m_geometries.back();
+				scene::Geometry* geo = allfish.m_geometries.back();
 				geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 				geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 
@@ -185,13 +184,13 @@ public:
 			else
 			{
 				scene::Geometry* geo = new scene::Geometry();
-				*geo = *plane.m_geometries[plane.m_geometries.size()-1];
-				plane.AddGeometry(geo);
+				*geo = *allfish.m_geometries[allfish.m_geometries.size()-1];
+				allfish.AddGeometry(geo);
 			}
 			constants.push_back(geoindex);
 		}
-		plane.InitGeometriesPushConstants(sizeof(uint32_t), constants.size(), constants.data());
-		plane.PopulateDynamicUniformBufferIndices();
+		allfish.InitGeometriesPushConstants(sizeof(uint32_t), constants.size(), constants.data());
+		allfish.PopulateDynamicUniformBufferIndices();
 	}
 
 	void SetupTextures()
@@ -211,31 +210,33 @@ public:
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
 		size_t minUboAlignment = vulkanDevice->m_properties.limits.minUniformBufferOffsetAlignment;
-		dynamicAlignment = sizeof(glm::mat4);
+		dynamicAlignment = sizeof(UboDataDynamic);
 		if (minUboAlignment > 0) {
 			dynamicAlignment = (dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
 		}
 
 		size_t bufferSize = OBJECT_INSTANCES * dynamicAlignment;
 
-		uboDataDynamic.model = (glm::mat4*)alignedAlloc(bufferSize, dynamicAlignment);
-		assert(uboDataDynamic.model);
+		uboDataDynamic = (UboDataDynamic*)alignedAlloc(bufferSize, dynamicAlignment);
+		assert(uboDataDynamic);
 
 		std::cout << "minUniformBufferOffsetAlignment = " << minUboAlignment << std::endl;
 		std::cout << "dynamicAlignment = " << dynamicAlignment << std::endl;
 
-		dynamic = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufferSize);
-		dynamic->m_descriptor.range = dynamicAlignment;
-		dynamic->Map();
+		dynamicBuffer = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufferSize);
+		dynamicBuffer->m_descriptor.range = dynamicAlignment;
+		dynamicBuffer->Map();
 
 		// Prepare per-object matrices with offsets and random rotations
 		std::default_random_engine rndEngine(0); //benchmark.active ? 0 : (unsigned)time(nullptr));
 		std::normal_distribution<float> rndDistpi(1.0, 5.0);
+		std::normal_distribution<float> rndDistScale(0.01, 1.0);
 		for (uint32_t i = 0; i < OBJECT_INSTANCES; i++) {
 			rotationSpeeds[i] = glm::vec3(rndDistpi(rndEngine), rndDistpi(rndEngine), rndDistpi(rndEngine));
+			scales[i] = glm::vec3(randomFloat(0.2f,0.5f), randomFloat(0.2f, 0.5f), randomFloat(0.2f, 0.5f));
 		}
 
-		float splineLength = 2 * M_PI * 10.0f;//(glm::length(splinepoints[1] - splinepoints[2]) + glm::length(splinepoints[2] - splinepoints[3]) + glm::length(splinepoints[3] - splinepoints[4]))/2.0f;
+		float tripLength = 2 * M_PI * 10.0f;//(glm::length(splinepoints[1] - splinepoints[2]) + glm::length(splinepoints[2] - splinepoints[3]) + glm::length(splinepoints[3] - splinepoints[4]))/2.0f;
 
 
 		float radiusX = 3.5f; // Radius along the x-axis
@@ -251,20 +252,18 @@ public:
 
 			if (fish.z >= 0)
 			{
-				timeOffsets[i] = fish.z / splineLength;
+				timeOffsets[i] = fish.z / tripLength;
 			}
 			else
 			{
-				timeOffsets[i] = (splineLength + fish.z) / splineLength;
+				timeOffsets[i] = (tripLength + fish.z) / tripLength;
 			}
 
 			translations[i] = fish;
 		}
 
-		oldtrans = splinepoints[0];
-
 		updateUniformBuffers();
-		updateDynamicUniformBuffer();
+		initializeDynamicUniformBuffer();
 	}
 
 	void updateUniformBuffers()
@@ -301,11 +300,11 @@ public:
 	{
 		for (uint32_t i = fromIndex; i <= toIndex; i++)
 		{
-			rotations[i] = cos(animationTimer * rotationSpeeds[i]) * 0.3f;
+			//rotations[i] = cos(animationTimer * rotationSpeeds[i]) * 0.3f;
 
-			glm::mat4* modelMat = (glm::mat4*)(((uint64_t)uboDataDynamic.model + (i * dynamicAlignment)));
-			glm::vec3 finalTranslation = translations[i];//glm::vec4(translations[i], 1.0f) * groupRotationMatrix;
-			*modelMat = glm::translate(glm::mat4(1.0f), finalTranslation + groupPosition);
+			//glm::mat4* modelMat = &((UboDataDynamic*)(((uint64_t)uboDataDynamic + (i * dynamicAlignment))))->model;
+			//glm::vec3 finalTranslation = translations[i];//glm::vec4(translations[i], 1.0f) * groupRotationMatrix;
+			//*modelMat = glm::translate(glm::mat4(1.0f), finalTranslation + groupPosition);
 
 			//*modelMat = *modelMat * groupRotationMatrix;
 
@@ -313,17 +312,22 @@ public:
 		}
 	}
 
+	void initializeDynamicUniformBuffer()
+	{
+		for (uint32_t i = 0; i < OBJECT_INSTANCES; i++)
+		{
+			UboDataDynamic* ubodata = (UboDataDynamic*)(((uint64_t)uboDataDynamic + (i * dynamicAlignment)));		
+			ubodata->position = glm::vec4(translations[i], 0.0f);
+			ubodata->scale = glm::vec4(scales[i], 0.0f);
+		}
+		dynamicBuffer->MemCopy(uboDataDynamic, dynamicBuffer->GetSize());
+		dynamicBuffer->Flush(dynamicBuffer->GetSize(), 0);
+	}
+
 	void updateDynamicUniformBuffer()
 	{
 		animationTimer += frameTimer;
 		timer.start();
-		
-		
-
-		//std::cout << normframetime << "\n";
-
-		//groupPosition = bezierInterpolate(splinepoints, normframetime)[0];
-		
 		
 		//int objectsPerThread = OBJECT_INSTANCES / THREADS_NO;
 		/*for (uint32_t t = 0; t < THREADS_NO; t++)
@@ -337,8 +341,8 @@ public:
 			threadPool.threads[t]->addJob([=] { updateDynamicUniformBufferThreaded(from, to); });
 		}*/
 
-		//glm::vec3 currentDirection = glm::vec3(0.0f, 0.0f, 1.0f);
-		//glm::vec3 dir(0.5f, 0.5f, 0.0f);
+		
+		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 0.5f,glm::vec3(0.0,1.0,0.0));
 		for (uint32_t i = 0; i < OBJECT_INSTANCES; i++) 
 		{
 			float normframetime = animationTimer / swimduration + timeOffsets[i];
@@ -346,27 +350,16 @@ public:
 			normframetime = modf(normframetime, &intpart);
 			int objectsPerThread = OBJECT_INSTANCES / THREADS_NO;
 
-			groupPosition.x = sin(normframetime * M_PI * 2.0) * (20.0f + translations[i].x);
-			groupPosition.z = cos(normframetime * M_PI * 2.0) * (20.0f + translations[i].x);
-			groupPosition.y = translations[i].y;
-			groupDirection = glm::normalize(glm::vec3(groupPosition.z, 0.0f,-groupPosition.x));//glm::normalize(groupPosition - oldtrans);
-			glm::quat rotationQuat = glm::rotation(defaultDirection, groupDirection);
-			groupRotationMatrix = glm::toMat4(rotationQuat);
+			UboDataDynamic* ubodata = (UboDataDynamic*)(((uint64_t)uboDataDynamic + (i * dynamicAlignment)));
 
-			rotations[i] = cos(animationTimer * rotationSpeeds[i]) * 0.3f;
+			ubodata->position.w = normframetime * M_PI * 2.0;
+			ubodata->scale.w = cos(animationTimer * rotationSpeeds[i].y) * 0.1f;
 
-			glm::mat4* modelMat = (glm::mat4*)(((uint64_t)uboDataDynamic.model + (i * dynamicAlignment)));
-			*modelMat = glm::translate(glm::mat4(1.0f), groupPosition);
-
-			*modelMat = *modelMat * groupRotationMatrix;
-
-			//*modelMat = *modelMat * glm::rotate(glm::mat4(1.0f), rotations[i].y, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
-		threadPool.wait();
-		oldtrans = groupPosition;
+		//threadPool.wait();
 
-		dynamic->MemCopy(uboDataDynamic.model, dynamic->GetSize());
-		dynamic->Flush(dynamic->GetSize(), 0);
+		dynamicBuffer->MemCopy(uboDataDynamic, dynamicBuffer->GetSize());
+		dynamicBuffer->Flush(dynamicBuffer->GetSize(), 0);
 		
 		timer.stop();
 		timeupdate = timer.elapsedMicroseconds();
@@ -391,15 +384,15 @@ public:
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
-		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
+		allfish.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &dynamic->m_descriptor }, { &textures->m_descriptor },
-			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings, dynamicAlignment));
+		allfish.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &dynamicBuffer->m_descriptor }, { &textures->m_descriptor },
+			allfish._descriptorLayout->m_descriptorSetLayout, allfish._descriptorLayout->m_setLayoutBindings, dynamicAlignment));
 	}
 
 	void setupPipelines()
 	{
-		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+		allfish.AddPipeline(vulkanDevice->GetPipeline(allfish._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/fishes/phongmodel.vert.spv", engine::tools::getAssetPath() + "shaders/fishes/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, sizeof(int)));
 	}
 
@@ -426,7 +419,7 @@ public:
 			mainRenderPass->Begin(drawCommandBuffers[i], i);
 
 			//draw here
-			plane.Draw(drawCommandBuffers[i]);
+			allfish.Draw(drawCommandBuffers[i]);
 
 			DrawUI(drawCommandBuffers[i]);
 
