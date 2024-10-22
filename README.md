@@ -1,7 +1,8 @@
 # Render Engine
 
 A small engine that renders stuff. 
-It is written in vulkan for now. It started from https://github.com/SaschaWillems/Vulkan and evolved.
+It is written in vulkan for now and contains several projects that showcases popular render techniques. 
+Some of the utility files are from https://github.com/SaschaWillems/Vulkan .
 
 ## Setup
 ```
@@ -18,7 +19,7 @@ The data is not uploaded here in order to keep the storage low.
 
 Download the asset pack from [here](https://drive.google.com/file/d/1n3LUgbks31gyGP_Spv43xJXuw8tGFrUO/view) and extract it in the ```data``` directory.
 
-### Compile shaders
+### Compile shaders(optional, if you want to modify the code)
 
 Call ```compilesAllShaders.py``` to compile all shaders into spirv format. You need to install the vulkan sdk for this.
 
@@ -34,8 +35,6 @@ The basic environment that contains a camera and basic ui.
 Loads a model with all the necessary render elements to render it on the screen.
 
 ### clothsimulation
-![alt text](https://drive.google.com/file/d/1HQwFS0zcJkC3yW0mL-VESfTajOA0QTh8/view?usp=drive_link)
-
 Basic cloth simulation using mass-spring system and euler integration
 
 ### deferred
