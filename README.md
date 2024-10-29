@@ -44,15 +44,19 @@ Basic cloth simulation using mass-spring system and euler integration
 Deferred lighting technique that iterates through all lights in the fragment shader to calculate light values.
 
 ### deferredlights
+<img src="https://i.imgur.com/T7Z8jWM.png" width="600" />
 Deferred lighting technique that renders a sphere for all lights in the scene to calculate the ligthing on.
 
 ### normalparallax
+<img src="https://i.imgur.com/UoKKl4A.png" width="600" />
 Normal mapping and parallax mapping in one shader.
 
 ### pbr pbribl pbribltextured
+<img src="https://i.imgur.com/UbP0TeJ.png" width="600" />
 PBR techniques.
 
 ### planetsexplorer
+<img src="https://i.imgur.com/3E8kJrw.png" width="600" />
 Reads a heightmap and maps it on sphere to simulate the planet's topography. Camera moves on it surface while the planet is spining around another one. It also contains atmospheric scattering.
 
 ### reflections
