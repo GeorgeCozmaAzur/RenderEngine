@@ -57,6 +57,7 @@ set(EXAMPLES
 	planetsexplorer
 	raytracingscene
 	reflections
+	scene
 	shadowmapping
 	simplemodel
 	simpleposteffect
