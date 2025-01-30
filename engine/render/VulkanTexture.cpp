@@ -176,6 +176,25 @@ namespace engine
 #endif
 		}
 
+		void Texture2DData::CreateFromBuffer(unsigned char* buffer, VkDeviceSize bufferSize, uint32_t width, uint32_t height)
+		{
+			owndata = false;
+			m_width = width;
+			m_height = height;
+			m_imageSize = bufferSize;
+			m_mips_no = 1;
+			m_layers_no = 1;
+			m_ram_data = (char*)buffer;
+
+			m_extents = new TextureExtent * [1];
+			m_extents[0] = new TextureExtent[1];
+			{
+				m_extents[0][0].width = m_width;
+				m_extents[0][0].height = m_height;
+				m_extents[0][0].size = m_imageSize;
+			}
+		}
+
 		void TextureCubeMapData::LoadFromFile(
 			std::string filename,
 			VkFormat format
@@ -273,6 +292,7 @@ namespace engine
 			}
 			delete[]m_extents;
 
+			if(owndata)
 			delete[] m_ram_data;
 
 			// Clean up staging resources

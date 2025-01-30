@@ -23,6 +23,7 @@ namespace engine
 		struct TextureData
 		{
 			char* m_ram_data = nullptr;
+			bool owndata = true;
 			VkDeviceSize m_imageSize;
 			VkFormat m_format;
 			uint32_t m_width, m_height;
@@ -41,6 +42,7 @@ namespace engine
 		{
 			virtual void LoadFromFile(std::string filename, VkFormat format);
 			virtual void LoadFromFiles(std::vector<std::string> filenames, VkFormat format);
+			void CreateFromBuffer(unsigned char* buffer, VkDeviceSize bufferSize, uint32_t width, uint32_t height);
 		};
 
 		struct TextureCubeMapData : TextureData

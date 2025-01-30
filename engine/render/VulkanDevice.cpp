@@ -336,6 +336,40 @@ namespace engine
             return tex;
         }
 
+        VulkanTexture* VulkanDevice::GetTexture(unsigned char* buffer, VkDeviceSize bufferSize, uint32_t width, uint32_t height, VkFormat format, VkQueue copyQueue,
+            VkImageUsageFlags imageUsageFlags,
+            VkImageLayout imageLayout,
+            bool generateMipmaps)
+        {
+            VulkanTexture* tex = new VulkanTexture;
+            Texture2DData data;
+            data.CreateFromBuffer(buffer,bufferSize,width,height);
+            data.CreateStagingBuffer(logicalDevice, &memoryProperties);
+            data.m_format = format;
+
+            uint32_t mipsNo = generateMipmaps ? (static_cast<uint32_t>(std::floor(std::log2(std::max(data.m_width, data.m_height)))) + 1) : data.m_mips_no;
+
+            tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
+                imageLayout,
+                VK_IMAGE_ASPECT_COLOR_BIT,
+                mipsNo);
+
+            VkCommandBuffer copyCmd = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+            if (!generateMipmaps)
+                tex->Update(&data, copyCmd, copyQueue);
+            else
+                tex->UpdateGeneratingMipmaps(&data, copyCmd, copyQueue);
+            FlushCommandBuffer(copyCmd, copyQueue);
+
+            tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
+
+            data.Destroy(logicalDevice);
+
+            m_textures.push_back(tex);
+
+            return tex;
+        }
+
         VulkanTexture* VulkanDevice::GetTextureArray(std::vector<std::string> filenames, VkFormat format, VkQueue copyQueue,
             VkImageUsageFlags imageUsageFlags,
             VkImageLayout imageLayout,

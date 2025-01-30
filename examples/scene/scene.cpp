@@ -13,7 +13,7 @@
 
 #include <vulkan/vulkan.h>
 #include "VulkanApplication.h"
-#include "scene/SceneLoader.h"
+#include "scene/SceneLoaderGltf.h"
 
 #define FB_COLOR_HDR_FORMAT VK_FORMAT_R32G32B32A32_SFLOAT
 
@@ -24,7 +24,7 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	scene::SceneLoader scene;
+	scene::SceneLoaderGltf scene;
 	std::vector<scene::RenderObject*> scene_render_objects;
 
 	render::VulkanRenderPass* scenepass = nullptr;
@@ -43,7 +43,7 @@ public:
 		camera.movementSpeed = 20.5f;
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, 10.0f, -5.0f));
+		camera.SetPosition(glm::vec3(0.0f, 0.0f, -5.0f));
 	}
 
 	~VulkanExample()
@@ -62,7 +62,7 @@ public:
 		render::VulkanTexture* scenedepth = vulkanDevice->GetDepthRenderTarget(width, height, false);
 
 		scenepass = vulkanDevice->GetRenderPass({ scenecolor , scenedepth }, {});
-		VulkanFrameBuffer* fb = vulkanDevice->GetFrameBuffer(scenepass->GetRenderPass(), width, height, { scenecolor->m_descriptor.imageView, scenedepth->m_descriptor.imageView }, { { 30.8f, 100.95f, 300.f, 1.0f } });
+		VulkanFrameBuffer* fb = vulkanDevice->GetFrameBuffer(scenepass->GetRenderPass(), width, height, { scenecolor->m_descriptor.imageView, scenedepth->m_descriptor.imageView }, { { 0.8f, 0.8f, 0.8f, 1.0f } });
 		scenepass->AddFrameBuffer(fb);
 
 		scene.normalmapVS = "normalmapshadowmap.vert.spv";
@@ -75,11 +75,11 @@ public:
 		scene.CreateShadow(queue);
 		scene.globalTextures.push_back(scene.shadowmap);
 
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/", "tavern.obj", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/flighthelmet/", "FlightHelmet.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
 		scene.light_pos = glm::vec4(34.0f, -50.0f, 190.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
-		scene.CreateShadowObjects(pipelineCache);
+		//scene.CreateShadowObjects(pipelineCache);
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> blurbindings
 		{
@@ -102,7 +102,7 @@ public:
 		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
 		{
 			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
-			scene.DrawShadowsInSeparatePass(drawCommandBuffers[i]);
+			//scene.DrawShadowsInSeparatePass(drawCommandBuffers[i]);
 
 			scenepass->Begin(drawCommandBuffers[i], 0);
 
