@@ -216,9 +216,13 @@ namespace engine
 					aiString texturefile;
 					aiString texturefilen;
 					aiString texturefiled;
+					aiString texturefileRough;
+					aiString texturefileMetal;
 					pScene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &texturefile);
 					pScene->mMaterials[i]->GetTexture(aiTextureType_NORMALS, 0, &texturefilen);
 					pScene->mMaterials[i]->GetTexture(aiTextureType_DISPLACEMENT, 0, &texturefiled);
+					pScene->mMaterials[i]->GetTexture(aiTextureType_SPECULAR, 0, &texturefileRough);
+					pScene->mMaterials[i]->GetTexture(aiTextureType_REFLECTION, 0, &texturefileMetal);
 
 					std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
 					buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
@@ -247,14 +251,16 @@ namespace engine
 							texFormat = VK_FORMAT_R8G8B8A8_UNORM;//TODO make format more flexible
 						}
 
-						render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue);
+						render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+							VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);
 						
 						texturesDescriptors.push_back(&tex->m_descriptor);
 
 						if (pScene->mMaterials[i]->GetTextureCount(aiTextureType_NORMALS) > 0)
 						{
 							std::string texfilenamen = std::string(texturefilen.C_Str());
-							tex = device->GetTexture(foldername + texfilenamen, texFormat, copyQueue);
+							tex = device->GetTexture(foldername + texfilenamen, texFormat, copyQueue, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+								VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);
 							texturesDescriptors.push_back(&tex->m_descriptor);
 							for(auto tex : globalTextures)
 								texturesDescriptors.push_back(&tex->m_descriptor);
@@ -547,7 +553,7 @@ namespace engine
 		std::vector<RenderObject*> SceneLoader::LoadFromFile(const std::string& foldername, const std::string& filename, float scale, engine::render::VulkanDevice* device, VkQueue copyQueue
 			, VkRenderPass renderPass, VkPipelineCache pipelineCache, bool deferred)
 		{
-			ModelCreateInfo2 modelCreateInfo(scale, 1.0f, 0.0f);
+			ModelCreateInfo2 modelCreateInfo(glm::vec3(1.0f), glm::vec2(1.0, -1.0), glm::vec3(1.0f));
 			return LoadFromFile2(foldername, filename, &modelCreateInfo, device, copyQueue, renderPass, pipelineCache, deferred);
 		}
 

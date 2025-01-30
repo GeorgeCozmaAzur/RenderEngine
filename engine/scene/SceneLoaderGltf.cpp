@@ -57,7 +57,7 @@ namespace engine
 			m_placeholder = _device->GetTexture(engine::tools::getAssetPath() + "textures/white_placeholder.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		}
 
-		void SceneLoaderGltf::LoadMaterials(tinygltf::Model& input, bool deferred)
+		void SceneLoaderGltf::LoadMaterials(tinygltf::Model& input, VkQueue queue, bool deferred)
 		{
 			render::VertexLayout* vertex_layout = nullptr;
 
@@ -99,6 +99,7 @@ namespace engine
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
 			{
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 			};
@@ -111,15 +112,33 @@ namespace engine
 				engine::tools::getAssetPath() + "shaders/scene/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/scene/pbrtextured.frag.spv", modelsVkRenderPass, vKpipelineCache,
 				props);
 
-			std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
-			buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
+			
+			individualFragmentUniformBuffers.resize(input.materials.size());
+			std::fill(individualFragmentUniformBuffers.begin(), individualFragmentUniformBuffers.end(), nullptr);
+
+			struct frag_data
+			{
+				float baseColorFactor = 1.0f;
+				float metallicFactor = 1.0f;
+				float roughnessFactor = 1.0f;
+				float aoFactor = 0.01f;
+				void Reset() { 
+					baseColorFactor = 1.0f; metallicFactor = 1.0f; roughnessFactor = 1.0f; aoFactor = 0.03f;
+				}
+			} fdata;
 
 			for (size_t i = 0; i < input.materials.size(); i++) {
 				render_objects[i] = new RenderObject;
 				std::vector<VkDescriptorImageInfo*> texturesDescriptors;
+				std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
+				buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
 				tinygltf::Material glTFMaterial = input.materials[i];
+				fdata.Reset();
 				if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
-					//materials[i].baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
+					//fdata.baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
+				}
+				if (glTFMaterial.values.find("metallicFactor") != glTFMaterial.values.end()) {
+					fdata.metallicFactor = glTFMaterial.values["metallicFactor"].Factor();
 				}
 				if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
 					texturesDescriptors.push_back(&modelsTextures[glTFMaterial.values["baseColorTexture"].TextureIndex()]->m_descriptor);
@@ -135,6 +154,9 @@ namespace engine
 				{
 					texturesDescriptors.push_back(&m_placeholder->m_descriptor);
 				}
+
+				individualFragmentUniformBuffers[i] = _device->GetUniformBuffer(sizeof(fdata), false, queue, &fdata);
+				buffersDescriptors.push_back(&individualFragmentUniformBuffers[i]->m_descriptor);
 ;
 				render_objects[i]->SetDescriptorSetLayout(currentDesclayout);
 				render_objects[i]->_vertexLayout = &vslayout;
@@ -189,7 +211,8 @@ namespace engine
 					{
 						const float* positionBuffer = nullptr;
 						const float* normalsBuffer = nullptr;
-						const float* texCoordsBuffer = nullptr;						
+						const float* texCoordsBuffer = nullptr;	
+						const float* tangentsBuffer = nullptr;
 
 						// Get buffer data for vertex positions
 						if (glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end()) {
@@ -211,6 +234,11 @@ namespace engine
 							const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
 							texCoordsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
 						}
+						if (glTFPrimitive.attributes.find("TANGENT") != glTFPrimitive.attributes.end()) {
+							const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("TANGENT")->second];
+							const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+							tangentsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+						}
 
 						geometry->m_vertexCount = vertexCount;
 						geometry->m_verticesSize = geometry->m_vertexCount * vlayout.GetVertexSize(0) / sizeof(float);
@@ -224,17 +252,52 @@ namespace engine
 							glm::vec3 pNormal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
 							pNormal = glm::vec3(mymatrix * glm::vec4(pNormal, 0.0));
 							glm::vec2 pTexCoord = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
+							glm::vec3 tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
 
-							geometry->m_vertices[vertex_index++] = pPos.x ;
-							geometry->m_vertices[vertex_index++] = -pPos.y ;
-							geometry->m_vertices[vertex_index++] = pPos.z ;
-
-							geometry->m_vertices[vertex_index++] = pNormal.x;
-							geometry->m_vertices[vertex_index++] = -pNormal.y;
-							geometry->m_vertices[vertex_index++] = pNormal.z;
-
-							geometry->m_vertices[vertex_index++] = pTexCoord.x;
-							geometry->m_vertices[vertex_index++] = pTexCoord.y;
+							for (auto& component : vlayout.m_components[0])
+							{
+								switch (component) {
+								case render::VERTEX_COMPONENT_POSITION:
+									geometry->m_vertices[vertex_index++] = pPos.x;
+									geometry->m_vertices[vertex_index++] = -pPos.y;
+									geometry->m_vertices[vertex_index++] = pPos.z;
+									break;
+								case render::VERTEX_COMPONENT_NORMAL:
+									geometry->m_vertices[vertex_index++] = pNormal.x;
+									geometry->m_vertices[vertex_index++] = -pNormal.y;
+									geometry->m_vertices[vertex_index++] = pNormal.z;
+									break;
+								case render::VERTEX_COMPONENT_UV:
+									geometry->m_vertices[vertex_index++] = pTexCoord.x;
+									geometry->m_vertices[vertex_index++] = pTexCoord.y;
+									break;
+								case render::VERTEX_COMPONENT_COLOR:
+									/*geometry->m_vertices[vertex_index++] = pColor->r;
+									geometry->m_vertices[vertex_index++] = pColor->g;
+									geometry->m_vertices[vertex_index++] = pColor->b;*/
+									break;
+								case render::VERTEX_COMPONENT_TANGENT:
+									geometry->m_vertices[vertex_index++] = tangent.x;
+									geometry->m_vertices[vertex_index++] = tangent.y;
+									geometry->m_vertices[vertex_index++] = tangent.z;
+									break;
+								case render::VERTEX_COMPONENT_BITANGENT:
+									/*geometry->m_vertices[vertex_index++] = pBiTangent->x;
+									geometry->m_vertices[vertex_index++] = pBiTangent->y;
+									geometry->m_vertices[vertex_index++] = pBiTangent->z;*/
+									break;
+									// Dummy components for padding
+								case render::VERTEX_COMPONENT_DUMMY_FLOAT:
+									geometry->m_vertices[vertex_index++] = 0.0f;
+									break;
+								case render::VERTEX_COMPONENT_DUMMY_VEC4:
+									geometry->m_vertices[vertex_index++] = 0.0f;
+									geometry->m_vertices[vertex_index++] = 0.0f;
+									geometry->m_vertices[vertex_index++] = 0.0f;
+									geometry->m_vertices[vertex_index++] = 0.0f;
+									break;
+								};
+							}
 						}
 					}
 					
@@ -302,7 +365,7 @@ namespace engine
 				return render_objects;
 			}
 			LoadImages(glTFInput, copyQueue);
-			LoadMaterials(glTFInput);
+			LoadMaterials(glTFInput, copyQueue);
 		
 			const tinygltf::Scene& scene = glTFInput.scenes[0];
 			for (size_t i = 0; i < scene.nodes.size(); i++) {

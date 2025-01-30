@@ -146,7 +146,7 @@ namespace engine
 
 			void LoadImages(tinygltf::Model& input, VkQueue queue);
 
-			void LoadMaterials(tinygltf::Model& input, bool deferred = false);
+			void LoadMaterials(tinygltf::Model& input, VkQueue queue, bool deferred = false);
 
 			void LoadNode(const tinygltf::Node& inputNode, glm::mat4 parentMatrix, const tinygltf::Model& input);
 
