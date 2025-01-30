@@ -75,8 +75,8 @@ public:
 		scene.CreateShadow(queue);
 		scene.globalTextures.push_back(scene.shadowmap);
 
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/flighthelmet/", "FlightHelmet.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
-		scene.light_pos = glm::vec4(34.0f, -50.0f, 190.0f, 1.0f);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/myproj/", "myproj.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
+		//scene.light_pos = glm::vec4(34.0f, -50.0f, 190.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
 		//scene.CreateShadowObjects(pipelineCache);
