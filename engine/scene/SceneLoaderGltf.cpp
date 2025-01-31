@@ -20,7 +20,7 @@ namespace engine
 {
 	namespace scene
 	{
-		#define SHADOWMAP_DIM 1024
+#define SHADOWMAP_DIM 1024
 
 		void SceneLoaderGltf::LoadImages(tinygltf::Model& input, VkQueue queue)
 		{
@@ -48,7 +48,9 @@ namespace engine
 					bufferSize = glTFImage.image.size();
 				}
 
-				modelsTextures[i] = _device->GetTexture(buffer, bufferSize, glTFImage.width, glTFImage.height, VK_FORMAT_R8G8B8A8_UNORM, queue);
+				modelsTextures[i] = _device->GetTexture(buffer, bufferSize, glTFImage.width, glTFImage.height, VK_FORMAT_R8G8B8A8_UNORM, queue,
+					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);
 
 				if (deleteBuffer) {
 					delete[] buffer;
@@ -103,16 +105,31 @@ namespace engine
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 			};
-			render::VulkanDescriptorSetLayout* currentDesclayout = _device->GetDescriptorSetLayout(modelbindings);
+			render::VulkanDescriptorSetLayout* currentDesclayoutSimple = _device->GetDescriptorSetLayout(modelbindings);
+			render::VulkanDescriptorSetLayout* currentDesclayoutNormalmap = nullptr;
 
+			std::string shaderfolder = engine::tools::getAssetPath() + "shaders/" + (deferred ? deferredShadersFolder : forwardShadersFolder) + "/";
 			render::PipelineProperties props;
-			props.cullMode = VK_CULL_MODE_NONE;//TODO why tf
+			props.cullMode = VK_CULL_MODE_FRONT_BIT;
 			props.pAttachments = blendAttachmentStates.data();
-			render::VulkanPipeline* currentPipeline = _device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/scene/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/scene/pbrtextured.frag.spv", modelsVkRenderPass, vKpipelineCache,
-				props);
+			render::VulkanPipeline* currentPipeline = _device->GetPipeline(currentDesclayoutSimple->m_descriptorSetLayout, vertexlayout.m_vertexInputBindings, vertexlayout.m_vertexInputAttributes,
+				shaderfolder + lightingVS, shaderfolder + lightingFS, modelsVkRenderPass, vKpipelineCache, props);
 
-			
+			render::VulkanPipeline* currentPipelineNormalmap = nullptr;
+			bool hasNormalmap = false;
+			for (size_t i = 0; i < input.materials.size(); i++)
+			{
+				if (input.materials[i].additionalValues.find("normalTexture") != input.materials[i].additionalValues.end())
+				{
+					hasNormalmap = true;
+					modelbindings.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT });
+					currentDesclayoutNormalmap = _device->GetDescriptorSetLayout(modelbindings);
+					currentPipelineNormalmap = _device->GetPipeline(currentDesclayoutNormalmap->m_descriptorSetLayout, vertexlayoutNormalmap.m_vertexInputBindings, vertexlayoutNormalmap.m_vertexInputAttributes,
+						shaderfolder + normalmapVS, shaderfolder + normalmapFS, modelsVkRenderPass, vKpipelineCache, props);
+					break;
+				}
+			}
+
 			individualFragmentUniformBuffers.resize(input.materials.size());
 			std::fill(individualFragmentUniformBuffers.begin(), individualFragmentUniformBuffers.end(), nullptr);
 
@@ -122,7 +139,7 @@ namespace engine
 				float metallicFactor = 1.0f;
 				float roughnessFactor = 1.0f;
 				float aoFactor = 0.01f;
-				void Reset() { 
+				void Reset() {
 					baseColorFactor = 1.0f; metallicFactor = 1.0f; roughnessFactor = 1.0f; aoFactor = 0.03f;
 				}
 			} fdata;
@@ -134,6 +151,7 @@ namespace engine
 				buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
 				tinygltf::Material glTFMaterial = input.materials[i];
 				fdata.Reset();
+				hasNormalmap = false;
 				if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
 					//fdata.baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
 				}
@@ -154,13 +172,19 @@ namespace engine
 				{
 					texturesDescriptors.push_back(&m_placeholder->m_descriptor);
 				}
+				if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) {
+					texturesDescriptors.push_back(&modelsTextures[glTFMaterial.additionalValues["normalTexture"].TextureIndex()]->m_descriptor);
+					hasNormalmap = true;
+				}
 
 				individualFragmentUniformBuffers[i] = _device->GetUniformBuffer(sizeof(fdata), false, queue, &fdata);
 				buffersDescriptors.push_back(&individualFragmentUniformBuffers[i]->m_descriptor);
-;
+
+				render::VulkanDescriptorSetLayout* currentDesclayout = hasNormalmap ? currentDesclayoutNormalmap : currentDesclayoutSimple;
+
 				render_objects[i]->SetDescriptorSetLayout(currentDesclayout);
-				render_objects[i]->_vertexLayout = &vslayout;
-				render_objects[i]->AddPipeline(currentPipeline);
+				render_objects[i]->_vertexLayout = hasNormalmap ? &vertexlayoutNormalmap : &vertexlayout;
+				render_objects[i]->AddPipeline(hasNormalmap ? currentPipelineNormalmap : currentPipeline);
 				render::VulkanDescriptorSet* desc = _device->GetDescriptorSet(buffersDescriptors, texturesDescriptors,
 					currentDesclayout->m_descriptorSetLayout, currentDesclayout->m_setLayoutBindings);
 				render_objects[i]->AddDescriptor(desc);
@@ -211,7 +235,7 @@ namespace engine
 					{
 						const float* positionBuffer = nullptr;
 						const float* normalsBuffer = nullptr;
-						const float* texCoordsBuffer = nullptr;	
+						const float* texCoordsBuffer = nullptr;
 						const float* tangentsBuffer = nullptr;
 
 						// Get buffer data for vertex positions
@@ -240,6 +264,13 @@ namespace engine
 							tangentsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
 						}
 
+						bool hasNormalmap = false;
+						if (input.materials[glTFPrimitive.material].additionalValues.find("normalTexture") != input.materials[glTFPrimitive.material].additionalValues.end())
+						{
+							hasNormalmap = true;
+						}
+						render::VertexLayout vlayout = hasNormalmap ? vertexlayoutNormalmap : vertexlayout;
+
 						geometry->m_vertexCount = vertexCount;
 						geometry->m_verticesSize = geometry->m_vertexCount * vlayout.GetVertexSize(0) / sizeof(float);
 						geometry->m_vertices = new float[geometry->m_verticesSize];
@@ -247,44 +278,37 @@ namespace engine
 						int vertex_index = 0;
 						// Append data to model's vertex buffer
 						for (size_t v = 0; v < vertexCount; v++) {
-							
-							glm::vec4 pPos = mymatrix * glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f) ;
-							glm::vec3 pNormal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
+
+							glm::vec3 pPos = mymatrix * glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f); pPos.y = -pPos.y;
+							glm::vec3 pNormal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f))); pNormal.y = -pNormal.y;
 							pNormal = glm::vec3(mymatrix * glm::vec4(pNormal, 0.0));
 							glm::vec2 pTexCoord = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
-							glm::vec3 tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
+							glm::vec4 tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
 
 							for (auto& component : vlayout.m_components[0])
 							{
 								switch (component) {
 								case render::VERTEX_COMPONENT_POSITION:
-									geometry->m_vertices[vertex_index++] = pPos.x;
-									geometry->m_vertices[vertex_index++] = -pPos.y;
-									geometry->m_vertices[vertex_index++] = pPos.z;
+									memcpy(geometry->m_vertices + vertex_index, &pPos, sizeof(pPos)); vertex_index += 3;								
 									break;
 								case render::VERTEX_COMPONENT_NORMAL:
-									geometry->m_vertices[vertex_index++] = pNormal.x;
-									geometry->m_vertices[vertex_index++] = -pNormal.y;
-									geometry->m_vertices[vertex_index++] = pNormal.z;
+									memcpy(geometry->m_vertices + vertex_index, &pNormal, sizeof(pNormal)); vertex_index += 3;
 									break;
 								case render::VERTEX_COMPONENT_UV:
-									geometry->m_vertices[vertex_index++] = pTexCoord.x;
-									geometry->m_vertices[vertex_index++] = pTexCoord.y;
+									memcpy(geometry->m_vertices + vertex_index, &pTexCoord, sizeof(pTexCoord)); vertex_index += 2;
 									break;
 								case render::VERTEX_COMPONENT_COLOR:
-									/*geometry->m_vertices[vertex_index++] = pColor->r;
-									geometry->m_vertices[vertex_index++] = pColor->g;
-									geometry->m_vertices[vertex_index++] = pColor->b;*/
+									geometry->m_vertices[vertex_index++] = 1.0f;
+									geometry->m_vertices[vertex_index++] = 1.0f;
+									geometry->m_vertices[vertex_index++] = 1.0f;
 									break;
-								case render::VERTEX_COMPONENT_TANGENT:
-									geometry->m_vertices[vertex_index++] = tangent.x;
-									geometry->m_vertices[vertex_index++] = tangent.y;
-									geometry->m_vertices[vertex_index++] = tangent.z;
+								case render::VERTEX_COMPONENT_TANGENT4:
+									memcpy(geometry->m_vertices + vertex_index, &tangent, sizeof(tangent)); vertex_index += 4;
 									break;
 								case render::VERTEX_COMPONENT_BITANGENT:
-									/*geometry->m_vertices[vertex_index++] = pBiTangent->x;
-									geometry->m_vertices[vertex_index++] = pBiTangent->y;
-									geometry->m_vertices[vertex_index++] = pBiTangent->z;*/
+									geometry->m_vertices[vertex_index++] = 0.0f;
+									geometry->m_vertices[vertex_index++] = 0.0f;
+									geometry->m_vertices[vertex_index++] = 0.0f;
 									break;
 									// Dummy components for padding
 								case render::VERTEX_COMPONENT_DUMMY_FLOAT:
@@ -300,17 +324,17 @@ namespace engine
 							}
 						}
 					}
-					
+
 					// Indices
 					{
 						const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.indices];
 						const tinygltf::BufferView& bufferView = input.bufferViews[accessor.bufferView];
 						const tinygltf::Buffer& buffer = input.buffers[bufferView.buffer];
-						
+
 
 						geometry->m_indexCount += static_cast<uint32_t>(accessor.count);
 						geometry->m_indices = new uint32_t[geometry->m_indexCount];
-						
+
 						int index_index = 0;
 						switch (accessor.componentType) {
 						case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
@@ -338,18 +362,15 @@ namespace engine
 							std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
 							return;
 						}
-						
+
 					}
 					render_objects[glTFPrimitive.material]->AddGeometry(geometry);
 				}
-				
-				
 			}
 		}
 
-		std::vector<RenderObject*> SceneLoaderGltf::LoadFromFile2(const std::string& foldername, const std::string& filename, ModelCreateInfo2* createInfo,
-			render::VulkanDevice* device,
-			VkQueue copyQueue, VkRenderPass renderPass, VkPipelineCache pipelineCache, bool deferred)
+		std::vector<RenderObject*> SceneLoaderGltf::LoadFromFile(const std::string& foldername, const std::string& filename, float scale, engine::render::VulkanDevice* device, VkQueue copyQueue
+			, VkRenderPass renderPass, VkPipelineCache pipelineCache, bool deferred)
 		{
 			_device = device;
 			modelsVkRenderPass = renderPass;
@@ -366,7 +387,7 @@ namespace engine
 			}
 			LoadImages(glTFInput, copyQueue);
 			LoadMaterials(glTFInput, copyQueue);
-		
+
 			const tinygltf::Scene& scene = glTFInput.scenes[0];
 			for (size_t i = 0; i < scene.nodes.size(); i++) {
 				const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
@@ -385,13 +406,6 @@ namespace engine
 
 			return render_objects;
 		};
-
-		std::vector<RenderObject*> SceneLoaderGltf::LoadFromFile(const std::string& foldername, const std::string& filename, float scale, engine::render::VulkanDevice* device, VkQueue copyQueue
-			, VkRenderPass renderPass, VkPipelineCache pipelineCache, bool deferred)
-		{
-			ModelCreateInfo2 modelCreateInfo(glm::vec3(1.0f), glm::vec2(1.0, -1.0), glm::vec3(1.0f));
-			return LoadFromFile2(foldername, filename, &modelCreateInfo, device, copyQueue, renderPass, pipelineCache, deferred);
-		}
 
 		void SceneLoaderGltf::CreateShadow(VkQueue copyQueue)
 		{
@@ -421,7 +435,7 @@ namespace engine
 
 			std::vector<render::VertexLayout*> vlayouts;
 
-			for (int ro_index=0;ro_index<render_objects.size();ro_index++)
+			for (int ro_index = 0; ro_index < render_objects.size(); ro_index++)
 			{
 				RenderObject* ro = render_objects[ro_index];
 				if (!ro)
@@ -444,7 +458,7 @@ namespace engine
 				{
 					RenderObject* sro = new RenderObject;
 					sro->_vertexLayout = l;
-					
+
 
 					//sro->m_geometries.insert(sro->m_geometries.end(), ro->m_geometries.begin(), ro->m_geometries.end());
 					sro->AdoptGeometriesFrom(*ro);
@@ -463,7 +477,7 @@ namespace engine
 					sro->SetDescriptorSetLayout(currentdescayout);
 
 					std::string sm_vertex_file(engine::tools::getAssetPath() + std::string("shaders/shadowmapping/offscreen.vert.spv"));
-					std::string sm_fragment_file(engine::tools::getAssetPath() + ((individualFragmentUniformBuffers[ro_index] == nullptr) ? std::string("shaders/shadowmapping/offscreen.frag.spv") : std::string("shaders/shadowmapping/offscreencolor.frag.spv")) );
+					std::string sm_fragment_file(engine::tools::getAssetPath() + ((individualFragmentUniformBuffers[ro_index] == nullptr) ? std::string("shaders/shadowmapping/offscreen.frag.spv") : std::string("shaders/shadowmapping/offscreencolor.frag.spv")));
 
 					bool blendenable = areTransparents[ro_index];
 
@@ -479,7 +493,7 @@ namespace engine
 					props.depthBias = true;
 					props.cullMode = VK_CULL_MODE_NONE;
 					props.depthTestEnable = true;
-					
+
 
 					if (blendenable)
 					{
@@ -489,7 +503,7 @@ namespace engine
 
 					render::VulkanPipeline* p = _device->GetPipeline(currentdescayout->m_descriptorSetLayout, l->m_vertexInputBindings, l->m_vertexInputAttributes,
 						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache, props);
-					sro->AddPipeline(p);			
+					sro->AddPipeline(p);
 
 					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(buffersDescriptors, {},
 						currentdescayout->m_descriptorSetLayout, currentdescayout->m_setLayoutBindings);
@@ -529,9 +543,9 @@ namespace engine
 			{
 				if (dl->m_setLayoutBindings.size() != layoutBindigs.size())
 					continue;
-				
+
 				bool match = true;
-				for (uint32_t i=0; i<dl->m_setLayoutBindings.size();i++)
+				for (uint32_t i = 0; i < dl->m_setLayoutBindings.size(); i++)
 				{
 					if (dl->m_setLayoutBindings[i].descriptorType != layoutBindigs[i].first || dl->m_setLayoutBindings[i].stageFlags != layoutBindigs[i].second)
 					{

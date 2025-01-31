@@ -14,10 +14,11 @@ namespace engine
 			VERTEX_COMPONENT_COLOR = 0x2,
 			VERTEX_COMPONENT_UV = 0x3,
 			VERTEX_COMPONENT_TANGENT = 0x4,
-			VERTEX_COMPONENT_BITANGENT = 0x5,
-			VERTEX_COMPONENT_DUMMY_FLOAT = 0x6,
-			VERTEX_COMPONENT_DUMMY_INT = 0x7,
-			VERTEX_COMPONENT_DUMMY_VEC4 = 0x8
+			VERTEX_COMPONENT_TANGENT4 = 0x5,
+			VERTEX_COMPONENT_BITANGENT = 0x6,
+			VERTEX_COMPONENT_DUMMY_FLOAT = 0x7,
+			VERTEX_COMPONENT_DUMMY_INT = 0x8,
+			VERTEX_COMPONENT_DUMMY_VEC4 = 0x9
 		} Component;
 
 		/** @brief Stores vertex layout components for model loading and Vulkan vertex input and atribute bindings  */
@@ -54,6 +55,8 @@ namespace engine
 
 				case VERTEX_COMPONENT_DUMMY_INT:	return sizeof(int);
 
+				case VERTEX_COMPONENT_TANGENT4:		return 4 * sizeof(float);
+
 				case VERTEX_COMPONENT_DUMMY_VEC4:	return 4 * sizeof(float);
 
 				default:							return 3 * sizeof(float);
@@ -69,6 +72,8 @@ namespace engine
 				case VERTEX_COMPONENT_DUMMY_FLOAT:	return VK_FORMAT_R32_SFLOAT;
 
 				case VERTEX_COMPONENT_DUMMY_INT:	return VK_FORMAT_R32_SFLOAT;
+
+				case VERTEX_COMPONENT_TANGENT4:		return VK_FORMAT_R32G32B32A32_SFLOAT;
 
 				case VERTEX_COMPONENT_DUMMY_VEC4:	return VK_FORMAT_R32G32B32A32_SFLOAT;
 

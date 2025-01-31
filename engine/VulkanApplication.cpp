@@ -610,6 +610,11 @@ void VulkanApplication::UpdateFrame()
 	if (fpsTimer > 1000.0f)
 	{
 		lastFPS = static_cast<uint32_t>((float)frameCounter * (1000.0f / fpsTimer));
+		if (!settings.overlay)
+		{
+			std::string windowTitle = title + " - " + std::to_string(frameCounter) + " fps";
+			SetWindowText(window, windowTitle.c_str());
+		}
 		frameCounter = 0;
 		lastTimestamp = tEnd;
 	}
