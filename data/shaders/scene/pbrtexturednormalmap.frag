@@ -3,16 +3,20 @@
 #extension GL_GOOGLE_include_directive : enable
 #include "../pbr/common.glsl"
 
-layout(set = 0, binding = 1) uniform FragUniformBufferObject {
+layout(set = 0, binding = 1) uniform GlobalFragUniformBufferObject {
+	vec4 light0Color;
+} global_frag_ubo;
+
+layout(set = 0, binding = 2) uniform FragUniformBufferObject {
 	float baseColorFactor;
 	float metallicFactor;
 	float roughnessFactor;
 	float aoFactor;
 } frag_ubo;
 
-layout (binding = 2) uniform sampler2D albedoSampler;
-layout (binding = 3) uniform sampler2D roughnessMetalicSampler;
-layout (binding = 4) uniform sampler2D normalsSampler;
+layout (binding = 3) uniform sampler2D albedoSampler;
+layout (binding = 4) uniform sampler2D roughnessMetalicSampler;
+layout (binding = 5) uniform sampler2D normalsSampler;
 
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec4 inTangent;
@@ -29,7 +33,7 @@ vec3 calculateNormal()
 
 	vec3 N = normalize(inNormal);
 	vec3 T = normalize(inTangent.xyz);
-	vec3 B = cross(N, T) * inTangent.w;//normalize(cross(N, T));//cross(N, T) * inTangent.w;//normalize(cross(N, T));
+	vec3 B = normalize(cross(N, T));//cross(N, T) * inTangent.w;//normalize(cross(N, T));
 	mat3 TBN = mat3(T, B, N);
 	return normalize(TBN * tangentNormal);
 }
@@ -50,7 +54,7 @@ void main()
 	vec3 lightDir = normalize(inLightPos - inPosition);  
 	float distance = length(inLightPos - inPosition);
 	float attenuation = 1.0 / (distance * distance);
-    vec3 radiance = vec3(3.0,3.0,3.0) * attenuation;
+    vec3 radiance = global_frag_ubo.light0Color.rgb * attenuation;
 	Lo += BRDF(lightDir, viewDir, N, albedo, metallic, roughness) * radiance;
 	
 	//ambient

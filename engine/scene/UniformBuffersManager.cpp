@@ -17,6 +17,7 @@ namespace engine
 			case UNIFORM_LIGHT0_SPACE:			return sizeof(float) * 16;
 			case UNIFORM_LIGHT0_SPACE_BIASED:	return sizeof(float) * 16;
 			case UNIFORM_LIGHT0_POSITION:		return sizeof(float) * 4;
+			case UNIFORM_LIGHT0_COLOR:			return sizeof(float) * 4;
 			default:							return 0;
 			}
 		}

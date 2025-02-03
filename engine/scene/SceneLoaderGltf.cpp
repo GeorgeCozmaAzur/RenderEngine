@@ -66,6 +66,7 @@ namespace engine
 			uniform_manager.SetDevice(_device->logicalDevice);
 			uniform_manager.SetEngineDevice(_device);
 			sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION });
+			sceneFragmentUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_COLOR });
 			shadow_uniform_buffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_SPACE });
 
 			render_objects.resize(input.materials.size());
@@ -101,6 +102,7 @@ namespace engine
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
 			{
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
@@ -149,6 +151,7 @@ namespace engine
 				std::vector<VkDescriptorImageInfo*> texturesDescriptors;
 				std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
 				buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
+				buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
 				tinygltf::Material glTFMaterial = input.materials[i];
 				fdata.Reset();
 				hasNormalmap = false;
@@ -280,8 +283,8 @@ namespace engine
 						for (size_t v = 0; v < vertexCount; v++) {
 
 							glm::vec3 pPos = mymatrix * glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f); pPos.y = -pPos.y;
-							glm::vec3 pNormal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f))); pNormal.y = -pNormal.y;
-							pNormal = glm::vec3(mymatrix * glm::vec4(pNormal, 0.0));
+							glm::vec3 pNormal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f))); 
+							pNormal = glm::vec3(mymatrix * glm::vec4(pNormal, 0.0)); pNormal.y = -pNormal.y;
 							glm::vec2 pTexCoord = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
 							glm::vec4 tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
 
@@ -562,14 +565,26 @@ namespace engine
 			descriptorSetlayouts.push_back(dsl);
 			return dsl;
 		}
-
+		float time = 0.0f;
 		void SceneLoaderGltf::Update(float timer)
 		{
+			time += timer;
+			float flicker = 0.8 + 0.2 * sin(3.0 * time) + 0.1 * glm::fract(sin(time * 12.9898) * 43758.5453);
+
+			glm::vec3 ll = light_pos;
 			float zNear = 10.0f;
 			float zFar = 906.0f;
+
+			glm::vec3 offset = glm::vec3(
+				0.1 * sin(time * 2.0) + 0.05 * glm::fract(sin(time * 5.0) * 100.0),
+				0.1 * sin(time * 3.5) + 0.05 * glm::fract(sin(time * 7.0) * 100.0),
+				0.1 * sin(time * 1.8) + 0.05 * glm::fract(sin(time * 6.0) * 100.0)
+			);
+			ll += offset;
+
 			// Matrix from light's point of view
 			glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-			glm::mat4 depthViewMatrix = glm::lookAt(glm::vec3(light_pos), glm::vec3(0.0f), glm::vec3(0, 1, 0));
+			glm::mat4 depthViewMatrix = glm::lookAt(glm::vec3(ll), glm::vec3(0.0f), glm::vec3(0, 1, 0));
 			glm::mat4 depthModelMatrix = glm::mat4(1.0f);
 
 			uboShadowOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
@@ -590,7 +605,9 @@ namespace engine
 			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION, &perspectiveMatrix, 0, sizeof(perspectiveMatrix));
 			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &biasedDepthMVP, 0, sizeof(biasedDepthMVP));
-			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
+			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_POSITION, &ll, 0, sizeof(ll));
+			glm::vec4 lcolor = glm::vec4(flicker, flicker, flicker, 1.0f);
+			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_COLOR, &lcolor, 0, sizeof(lcolor));
 			glm::vec3 cucu = m_camera->GetPosition();
 			cucu.y = -cucu.y;
 			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->GetPosition()));
