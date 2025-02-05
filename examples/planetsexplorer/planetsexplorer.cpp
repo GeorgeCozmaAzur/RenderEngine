@@ -528,7 +528,7 @@ public:
 		glm::mat4 lightspace = depthProjectionMatrix * depthViewMatrix;
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_SPACE, &lightspace, 0, sizeof(lightspace));
 
-		uniform_manager.Update();
+		uniform_manager.Update(queue);
 	}
 
 	void Prepare()

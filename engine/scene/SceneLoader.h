@@ -135,9 +135,9 @@ namespace engine
 				, bool deferred = false
 			);
 
-			void Update(float timer);
+			void Update(float timer, VkQueue copyQueue);
 
-			void UpdateView(float timer);
+			void UpdateView(float timer, VkQueue copyQueue);
 
 			void destroy()
 			{

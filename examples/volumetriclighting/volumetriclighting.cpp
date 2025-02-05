@@ -187,7 +187,7 @@ public:
 		// Check if requested image format supports image storage operations
 		assert(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT);
 		
-		scene.Update(timer * 0.05f);
+		scene.Update(timer * 0.05f, queue);
 
 		dbgtex.Init(vulkanDevice, scene.shadowmapColor, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 
@@ -296,7 +296,7 @@ public:
 
 	void updateUniformBuffers()
 	{
-		scene.Update(timer * 0.05f);		
+		scene.Update(timer * 0.05f, queue);		
 	}
 
 	void Prepare()

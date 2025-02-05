@@ -216,13 +216,9 @@ namespace engine
 					aiString texturefile;
 					aiString texturefilen;
 					aiString texturefiled;
-					aiString texturefileRough;
-					aiString texturefileMetal;
 					pScene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &texturefile);
 					pScene->mMaterials[i]->GetTexture(aiTextureType_NORMALS, 0, &texturefilen);
 					pScene->mMaterials[i]->GetTexture(aiTextureType_DISPLACEMENT, 0, &texturefiled);
-					pScene->mMaterials[i]->GetTexture(aiTextureType_SPECULAR, 0, &texturefileRough);
-					pScene->mMaterials[i]->GetTexture(aiTextureType_REFLECTION, 0, &texturefileMetal);
 
 					std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
 					buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
@@ -251,16 +247,14 @@ namespace engine
 							texFormat = VK_FORMAT_R8G8B8A8_UNORM;//TODO make format more flexible
 						}
 
-						render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-							VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);
-						
+						render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue);//TODO mipmaps for every format
+
 						texturesDescriptors.push_back(&tex->m_descriptor);
 
 						if (pScene->mMaterials[i]->GetTextureCount(aiTextureType_NORMALS) > 0)
 						{
 							std::string texfilenamen = std::string(texturefilen.C_Str());
-							tex = device->GetTexture(foldername + texfilenamen, texFormat, copyQueue, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-								VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);
+							tex = device->GetTexture(foldername + texfilenamen, texFormat, copyQueue);
 							texturesDescriptors.push_back(&tex->m_descriptor);
 							for(auto tex : globalTextures)
 								texturesDescriptors.push_back(&tex->m_descriptor);
@@ -713,7 +707,7 @@ namespace engine
 			return dsl;
 		}
 
-		void SceneLoader::Update(float timer)
+		void SceneLoader::Update(float timer, VkQueue copyQueue)
 		{
 			//light_pos.x = cos(glm::radians(timer * 360.0f)) * 40.0f;
 			//light_pos.y = -165.0f + sin(glm::radians(timer * 360.0f)) * 20.0f;
@@ -753,10 +747,10 @@ namespace engine
 			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION_VIEW, &viewproj, 0, sizeof(viewproj));
 			glm::vec4 bias_near_far_pow = glm::vec4(0.002f, m_camera->getNearClip(), m_camera->getFarClip(), 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &bias_near_far_pow, 0, sizeof(bias_near_far_pow));*/
-			uniform_manager.Update();
+			uniform_manager.Update(copyQueue);
 		}
 
-		void SceneLoader::UpdateView(float timer)
+		void SceneLoader::UpdateView(float timer, VkQueue copyQueue)
 		{
 			glm::mat4 viewMatrix = m_camera->GetViewMatrix();
 			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
@@ -769,7 +763,7 @@ namespace engine
 			glm::vec4 bias_near_far_pow = glm::vec4(0.002f, m_camera->getNearClip(), m_camera->getFarClip(), 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &bias_near_far_pow, 0, sizeof(bias_near_far_pow));*/
 
-			uniform_manager.Update();
+			uniform_manager.Update(copyQueue);
 		}
 
 		SceneLoader::~SceneLoader()

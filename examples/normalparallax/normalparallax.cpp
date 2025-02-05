@@ -211,7 +211,7 @@ public:
 		glm::vec3 cucu = -camera.GetPosition();
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.GetPosition()));
 
-		uniform_manager.Update();
+		uniform_manager.Update(queue);
 
 		modelUniform.model = glm::rotate(glm::mat4(1.0f), ModelAngle, glm::vec3(1.0, 0.0, 0.0));
 		modelVertexUniformBuffer->MemCopy(&modelUniform, sizeof(modelUniform));

@@ -130,7 +130,7 @@ public:
 
 	void updateUniformBuffers()
 	{
-		scene.Update(timer * 0.05f);
+		scene.Update(timer * 0.05f, queue);
 	}
 
 	void Prepare()
@@ -152,7 +152,7 @@ public:
 	virtual void ViewChanged()
 	{
 		//updateUniformBuffers();
-		scene.UpdateView(timer * 0.05f);
+		scene.UpdateView(timer * 0.05f, queue);
 	}
 
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
@@ -160,15 +160,15 @@ public:
 		if (overlay->header("Settings")) {
 			if (ImGui::SliderFloat("Light position x", &scene.light_pos.x, -10.0f, 10.0f))
 			{
-				scene.Update(0.0f);
+				scene.Update(0.0f, queue);
 			}
 			if (ImGui::SliderFloat("Light position y", &scene.light_pos.y, -10.0f, 10.0f))
 			{
-				scene.Update(0.0f);
+				scene.Update(0.0f, queue);
 			}
 			if (ImGui::SliderFloat("Light position z", &scene.light_pos.z, -10.0f, 10.0f))
 			{
-				scene.Update(0.0f);
+				scene.Update(0.0f, queue);
 			}
 		}
 	}

@@ -169,7 +169,7 @@ public:
 		glm::vec3 cucu = -camera.GetPosition();
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(cucu));
 
-		uniform_manager.Update();
+		uniform_manager.Update(queue);
 	}
 
 	void Prepare()

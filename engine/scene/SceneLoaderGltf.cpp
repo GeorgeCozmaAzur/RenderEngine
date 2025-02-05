@@ -142,7 +142,7 @@ namespace engine
 				float roughnessFactor = 1.0f;
 				float aoFactor = 0.01f;
 				void Reset() {
-					baseColorFactor = 1.0f; metallicFactor = 1.0f; roughnessFactor = 1.0f; aoFactor = 0.03f;
+					baseColorFactor = 1.0f; metallicFactor = 1.0f; roughnessFactor = 1.0f; aoFactor = 0.01f;
 				}
 			} fdata;
 
@@ -566,7 +566,7 @@ namespace engine
 			return dsl;
 		}
 		float time = 0.0f;
-		void SceneLoaderGltf::Update(float timer)
+		void SceneLoaderGltf::Update(float timer, VkQueue queue)
 		{
 			time += timer;
 			float flicker = 0.8 + 0.2 * sin(3.0 * time) + 0.1 * glm::fract(sin(time * 12.9898) * 43758.5453);
@@ -612,10 +612,10 @@ namespace engine
 			cucu.y = -cucu.y;
 			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->GetPosition()));
 
-			uniform_manager.Update();
+			uniform_manager.Update(queue);
 		}
 
-		void SceneLoaderGltf::UpdateView(float timer)
+		void SceneLoaderGltf::UpdateView(float timer, VkQueue queue)
 		{
 			glm::mat4 viewMatrix = m_camera->GetViewMatrix();
 			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
@@ -628,7 +628,7 @@ namespace engine
 			glm::vec4 bias_near_far_pow = glm::vec4(0.002f, m_camera->getNearClip(), m_camera->getFarClip(), 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &bias_near_far_pow, 0, sizeof(bias_near_far_pow));*/
 
-			uniform_manager.Update();
+			uniform_manager.Update(queue);
 		}
 
 		SceneLoaderGltf::~SceneLoaderGltf()

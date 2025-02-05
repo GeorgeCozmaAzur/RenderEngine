@@ -108,9 +108,9 @@ namespace engine
 				, bool deferred = false
 			);
 
-			void Update(float timer);
+			void Update(float timer, VkQueue queue);
 
-			void UpdateView(float timer);
+			void UpdateView(float timer, VkQueue queue);
 		};
 	}
 }

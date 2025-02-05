@@ -5,13 +5,6 @@
 #include <assert.h>
 #include <vector>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtx/string_cast.hpp>
-
 #include "VulkanApplication.h"
 
 using namespace engine;
@@ -42,13 +35,7 @@ public:
 
 	void init()
 	{	
-		//some example to show how to print a vector or a matrix
-		glm::mat4 mat = glm::mat4(1.0f);
-		mat = glm::translate(mat, glm::vec3(-10.0f, 0.0f, 0.0f));
-		mat = glm::transpose(mat);
-		glm::vec4 v = glm::vec4(1,1,1,1);
-		glm::vec4 v1 = v * mat;
-		std::cout << glm::to_string(v1);
+
 	}
 
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs

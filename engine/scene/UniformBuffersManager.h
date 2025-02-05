@@ -56,7 +56,7 @@ namespace engine
 			void SetEngineDevice(render::VulkanDevice* device);
 			render::VulkanBuffer* GetGlobalUniformBuffer(std::vector<UniformKey>);
 			void UpdateGlobalParams(UniformKey, void* value, size_t offset, size_t size);
-			void Update(VkQueue queue = VK_NULL_HANDLE);
+			void Update(VkQueue queue);
 			void Destroy();
 			~UniformBuffersManager() { Destroy(); }
 		};

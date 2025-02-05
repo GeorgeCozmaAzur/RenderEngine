@@ -129,7 +129,7 @@ public:
 
 	void updateUniformBuffers()
 	{
-		scene.Update(timer * 0.05f);
+		scene.Update(timer * 0.05f, queue);
 	}
 
 	void Prepare()
@@ -151,7 +151,7 @@ public:
 	virtual void ViewChanged()
 	{
 		//updateUniformBuffers();
-		scene.UpdateView(timer * 0.05f);
+		scene.UpdateView(timer * 0.05f, queue);
 	}
 
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)

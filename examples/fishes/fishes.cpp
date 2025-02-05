@@ -5,14 +5,6 @@
 #include <assert.h>
 #include <vector>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtc/random.hpp>
-
 #include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
@@ -277,7 +269,7 @@ public:
 		glm::vec3 cucu = -camera.GetPosition();
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.GetPosition()));
 
-		uniform_manager.Update();
+		uniform_manager.Update(queue);
 	}
 	
 	std::vector<glm::vec3> bezierInterpolate(std::vector<glm::vec3> points, float time)
