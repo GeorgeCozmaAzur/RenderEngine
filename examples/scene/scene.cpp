@@ -75,7 +75,7 @@ public:
 		scene.CreateShadow(queue);
 		scene.globalTextures.push_back(scene.shadowmap);
 
-		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/upnor_castle_gltf/", "scene.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
+		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/dragon/", "chinesedragon.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
 		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
 		scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
@@ -146,7 +146,7 @@ public:
 
 	virtual void update(float dt)
 	{
-		scene.Update(dt);
+		//scene.Update(dt);
 	}
 
 	virtual void ViewChanged()

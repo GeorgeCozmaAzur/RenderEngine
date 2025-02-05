@@ -730,7 +730,7 @@ void VulkanApplication::PresentFrame()
 			VK_CHECK_RESULT(result);
 		}
 	}
-	VK_CHECK_RESULT(vkQueueWaitIdle(presentationQueue));
+	//VK_CHECK_RESULT(vkQueueWaitIdle(presentationQueue));
 }
 
 void VulkanApplication::Render()
