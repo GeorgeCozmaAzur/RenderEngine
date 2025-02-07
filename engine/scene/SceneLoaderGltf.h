@@ -61,6 +61,7 @@ namespace engine
 			render::VulkanTexture* m_placeholder;
 			std::vector<render::VulkanTexture*> globalTextures;
 			std::vector<render::VulkanTexture*> modelsTextures;
+			std::vector<int> modelsTexturesIds;
 			VkPipelineCache vKpipelineCache;
 
 			render::VulkanBuffer* sceneVertexUniformBuffer;

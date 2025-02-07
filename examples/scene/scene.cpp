@@ -59,7 +59,7 @@ public:
 		scene.SetCamera(&camera);
 		scene.uniform_manager.SetEngineDevice(vulkanDevice);	
 
-		render::VulkanTexture* scenecolor = vulkanDevice->GetColorRenderTarget(width, height, FB_COLOR_HDR_FORMAT);
+		render::VulkanTexture* scenecolor = vulkanDevice->GetColorRenderTarget(width, height, swapChain.m_surfaceFormat.format);
 		render::VulkanTexture* scenedepth = vulkanDevice->GetDepthRenderTarget(width, height, false);
 
 		scenepass = vulkanDevice->GetRenderPass({ scenecolor , scenedepth }, {});
@@ -75,9 +75,9 @@ public:
 		scene.CreateShadow(queue);
 		scene.globalTextures.push_back(scene.shadowmap);
 
-		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/dragon/", "chinesedragon.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
+		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "untitled.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
 		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
-		scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
+		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
 		//scene.CreateShadowObjects(pipelineCache);
@@ -146,7 +146,7 @@ public:
 
 	virtual void update(float dt)
 	{
-		//scene.Update(dt);
+		scene.Update(dt,queue);
 	}
 
 	virtual void ViewChanged()

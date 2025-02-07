@@ -52,11 +52,21 @@ namespace engine
 					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);
 
+				/*modelsTextures[i] = _device->GetTexture(engine::tools::getAssetPath() + "models/castle2/" + glTFImage.uri, VK_FORMAT_R8G8B8A8_UNORM, queue,
+					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);*/
+				
+
 				if (deleteBuffer) {
 					delete[] buffer;
 				}
 			}
 			m_placeholder = _device->GetTexture(engine::tools::getAssetPath() + "textures/white_placeholder.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
+
+			modelsTexturesIds.resize(input.textures.size());
+			for (size_t i = 0; i < input.textures.size(); i++) {
+				modelsTexturesIds[i] = input.textures[i].source;
+			}
 		}
 
 		void SceneLoaderGltf::LoadMaterials(tinygltf::Model& input, VkQueue queue, bool deferred)
@@ -162,21 +172,22 @@ namespace engine
 					fdata.metallicFactor = glTFMaterial.values["metallicFactor"].Factor();
 				}
 				if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
-					texturesDescriptors.push_back(&modelsTextures[glTFMaterial.values["baseColorTexture"].TextureIndex()]->m_descriptor);
+					int texIndex = modelsTexturesIds[glTFMaterial.values["baseColorTexture"].TextureIndex()];
+					texturesDescriptors.push_back(&modelsTextures[texIndex]->m_descriptor);
 				}
 				else
 				{
 					texturesDescriptors.push_back(&m_placeholder->m_descriptor);
 				}
 				if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) {
-					texturesDescriptors.push_back(&modelsTextures[glTFMaterial.values["metallicRoughnessTexture"].TextureIndex()]->m_descriptor);
+					texturesDescriptors.push_back(&modelsTextures[modelsTexturesIds[glTFMaterial.values["metallicRoughnessTexture"].TextureIndex()]]->m_descriptor);
 				}
 				else
 				{
 					texturesDescriptors.push_back(&m_placeholder->m_descriptor);
 				}
 				if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) {
-					texturesDescriptors.push_back(&modelsTextures[glTFMaterial.additionalValues["normalTexture"].TextureIndex()]->m_descriptor);
+					texturesDescriptors.push_back(&modelsTextures[modelsTexturesIds[glTFMaterial.additionalValues["normalTexture"].TextureIndex()]]->m_descriptor);
 					hasNormalmap = true;
 				}
 
@@ -368,6 +379,18 @@ namespace engine
 
 					}
 					render_objects[glTFPrimitive.material]->AddGeometry(geometry);
+				}
+			}
+			else
+			{
+				if (inputNode.extensions.find("KHR_lights_punctual") != (inputNode.extensions.end()))
+				{
+					//light_pos = glm::vec4(0.0f,0.0f,0.0f,1.0f) * mymatrix;
+					light_pos = glm::vec4(glm::vec3(glm::make_vec3(inputNode.translation.data())), 1.0f);
+					light_pos.y = -light_pos.y;
+					glm::quat q = glm::make_quat(inputNode.rotation.data());
+					glm::mat4 quatmat = glm::mat4(q);
+					//light_pos = quatmat * light_pos;
 				}
 			}
 		}
@@ -569,7 +592,7 @@ namespace engine
 		void SceneLoaderGltf::Update(float timer, VkQueue queue)
 		{
 			time += timer;
-			float flicker = 0.8 + 0.2 * sin(3.0 * time) + 0.1 * glm::fract(sin(time * 12.9898) * 43758.5453);
+			float flicker = 8 + 2 * sin(3.0 * time) + 1 * glm::fract(sin(time * 12.9898) * 43758.5453);
 
 			glm::vec3 ll = light_pos;
 			float zNear = 10.0f;
