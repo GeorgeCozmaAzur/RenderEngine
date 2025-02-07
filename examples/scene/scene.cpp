@@ -75,8 +75,8 @@ public:
 		scene.CreateShadow(queue);
 		scene.globalTextures.push_back(scene.shadowmap);
 
-		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "untitled.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
+		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
 		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
@@ -158,15 +158,15 @@ public:
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
 		if (overlay->header("Settings")) {
-			if (ImGui::SliderFloat("Light position x", &scene.light_pos.x, -10.0f, 10.0f))
+			if (ImGui::SliderFloat("Light position x", &scene.light_pos.x, -50.0f, 50.0f))
 			{
 				scene.Update(0.0f, queue);
 			}
-			if (ImGui::SliderFloat("Light position y", &scene.light_pos.y, -10.0f, 10.0f))
+			if (ImGui::SliderFloat("Light position y", &scene.light_pos.y, -50.0f, 50.0f))
 			{
 				scene.Update(0.0f, queue);
 			}
-			if (ImGui::SliderFloat("Light position z", &scene.light_pos.z, -10.0f, 10.0f))
+			if (ImGui::SliderFloat("Light position z", &scene.light_pos.z, -50.0f, 50.0f))
 			{
 				scene.Update(0.0f, queue);
 			}
