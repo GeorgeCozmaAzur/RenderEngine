@@ -297,11 +297,13 @@ namespace engine
 						// Append data to model's vertex buffer
 						for (size_t v = 0; v < vertexCount; v++) {
 
-							glm::vec3 pPos = mymatrix * glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f); pPos.y = -pPos.y;
+							glm::vec3 pPos = mymatrix * glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f); //pPos.y = -pPos.y;
 							glm::vec3 pNormal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f))); 
-							pNormal = glm::vec3(mymatrix * glm::vec4(pNormal, 0.0)); pNormal.y = -pNormal.y;
+							pNormal = glm::vec3(mymatrix * glm::vec4(pNormal, 0.0)); //pNormal.y = -pNormal.y;
 							glm::vec2 pTexCoord = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
-							glm::vec4 tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
+							glm::vec4 tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f); tangent.w = 0.0f;
+							tangent = mymatrix * tangent;
+							//tangent.y = -tangent.y;
 
 							for (auto& component : vlayout.m_components[0])
 							{
@@ -391,7 +393,7 @@ namespace engine
 				{
 					//light_pos = glm::vec4(0.0f,0.0f,0.0f,1.0f) * mymatrix;
 					light_pos = glm::vec4(glm::vec3(glm::make_vec3(inputNode.translation.data())), 1.0f);
-					light_pos.y = -light_pos.y;
+					//light_pos.y = -light_pos.y;
 					glm::quat q = glm::make_quat(inputNode.rotation.data());
 					glm::mat4 quatmat = glm::mat4(q);
 					//light_pos = quatmat * light_pos;

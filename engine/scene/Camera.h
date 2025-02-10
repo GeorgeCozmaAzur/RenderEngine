@@ -19,6 +19,8 @@ namespace engine
 
 			Frustum m_frustum;
 
+			float flipY = false;
+
 			glm::vec3 m_rotation = glm::vec3();
 			glm::vec3 m_position = glm::vec3();
 			glm::vec3 m_direction;
@@ -75,6 +77,11 @@ namespace engine
 			const glm::mat4 GetPerspectiveMatrix() const { return matrices.perspective; }
 
 			Frustum* GetFrustum();
+
+			void SetFlipY(float value)
+			{
+				flipY = value;
+			}
 
 			void SetPerspective(float fov, float aspect, float znear, float zfar);
 			void UpdateAspectRatio(float aspect);

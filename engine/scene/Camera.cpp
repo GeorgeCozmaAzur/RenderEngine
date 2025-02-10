@@ -16,11 +16,14 @@ namespace engine
 			m_znear = znear;
 			m_zfar = zfar;
 			matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+			if (flipY) {
+				matrices.perspective[1][1] *= -1.0f;
+			}
 		};
 
 		void Camera::UpdateAspectRatio(float aspect)
 		{
-			matrices.perspective = glm::perspective(glm::radians(m_fov), aspect, m_znear, m_zfar);
+			SetPerspective(m_fov, aspect, m_znear, m_zfar);
 		}
 
 		void Camera::UpdateViewMatrix(glm::mat4 externalmat)
@@ -34,10 +37,14 @@ namespace engine
 
 			if (type == Camera::normal)
 			{
-				rotM = glm::rotate(rotM, glm::radians(m_rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+				rotM = glm::rotate(rotM, glm::radians(m_rotation.x * (flipY ? -1.0f : 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
 				rotM = glm::rotate(rotM, glm::radians(m_rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
 				rotM = glm::rotate(rotM, glm::radians(m_rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-				transM = glm::translate(glm::mat4(1.0f), m_position);
+				glm::vec3 translation = m_position;
+				if (flipY) {
+					translation.y *= -1.0f;
+				}
+				transM = glm::translate(glm::mat4(1.0f), translation);
 
 				matrices.view = rotM * transM;
 			}
