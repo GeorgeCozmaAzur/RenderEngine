@@ -19,7 +19,8 @@ namespace engine
 		public:
 			std::vector<glm::vec4> m_pointLights;
 
-			void Init(render::VulkanBuffer *ub, render::VulkanDevice *device, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture *positions, render::VulkanTexture* normals);
+			void Init(render::VulkanBuffer *ub, render::VulkanDevice *device, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, int lightsNumber, 
+				render::VulkanTexture *positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic = nullptr, render::VulkanTexture* albedo = nullptr);
 			void Update();
 			~DeferredLights();
 		};

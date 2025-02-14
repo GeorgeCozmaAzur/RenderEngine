@@ -41,7 +41,7 @@ namespace engine
 			std::vector<RenderObject*> render_objects;
 
 			std::string forwardShadersFolder = "scene";
-			std::string deferredShadersFolder = "basicdeferred";
+			std::string deferredShadersFolder = "scenedeferred";
 			std::string lightingVS = "pbr.vert.spv";
 			std::string lightingFS = "pbrtextured.frag.spv";
 			std::string normalmapVS = "pbrnormalmap.vert.spv";
@@ -71,7 +71,7 @@ namespace engine
 			std::vector<bool> areTransparents;//TODO store all uniform data in an array because maybe we want to modify it at runtime
 
 			float lightFOV = 45.0f;
-			glm::vec4 light_pos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			std::vector<glm::vec4> lightPositions;// = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 			render::VertexLayout vertexlayout = render::VertexLayout({
 			render::VERTEX_COMPONENT_POSITION,

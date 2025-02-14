@@ -79,8 +79,9 @@ namespace engine
 
 			uniform_manager.SetDevice(_device->logicalDevice);
 			uniform_manager.SetEngineDevice(_device);
-			sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION });
-			sceneFragmentUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_COLOR });
+			sceneVertexUniformBuffer = deferred == false ? uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION }) :
+				uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_CAMERA_POSITION });
+			sceneFragmentUniformBuffer = deferred == false ? uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_COLOR }) : nullptr;
 			shadow_uniform_buffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_SPACE });
 
 			render_objects.resize(input.materials.size());
@@ -88,9 +89,11 @@ namespace engine
 			opaqueState.blendEnable = VK_FALSE;
 			opaqueState.colorWriteMask = 0xf;
 			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-			blendAttachmentStates.push_back(opaqueState);
+			
 			if (deferred)
-				blendAttachmentStates.push_back(opaqueState);
+				blendAttachmentStates = { opaqueState, opaqueState, opaqueState, opaqueState };
+			else
+				blendAttachmentStates = { opaqueState };
 
 			VkPipelineColorBlendAttachmentState transparentState{
 				VK_TRUE,
@@ -117,16 +120,19 @@ namespace engine
 			{
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT},
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 			};
+			if(deferred == false)
+				modelbindings.insert(modelbindings.begin()+2, { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
+
 			render::VulkanDescriptorSetLayout* currentDesclayoutSimple = _device->GetDescriptorSetLayout(modelbindings);
 			render::VulkanDescriptorSetLayout* currentDesclayoutNormalmap = nullptr;
 
 			std::string shaderfolder = engine::tools::getAssetPath() + "shaders/" + (deferred ? deferredShadersFolder : forwardShadersFolder) + "/";
 			render::PipelineProperties props;
 			props.cullMode = VK_CULL_MODE_FRONT_BIT;
+			props.attachmentCount = blendAttachmentStates.size();
 			props.pAttachments = blendAttachmentStates.data();
 			render::VulkanPipeline* currentPipeline = _device->GetPipeline(currentDesclayoutSimple->m_descriptorSetLayout, vertexlayout.m_vertexInputBindings, vertexlayout.m_vertexInputAttributes,
 				shaderfolder + lightingVS, shaderfolder + lightingFS, modelsVkRenderPass, vKpipelineCache, props);
@@ -165,6 +171,7 @@ namespace engine
 				std::vector<VkDescriptorImageInfo*> texturesDescriptors;
 				std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
 				buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
+				if(sceneFragmentUniformBuffer)
 				buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
 				tinygltf::Material glTFMaterial = input.materials[i];
 				fdata.Reset();
@@ -392,10 +399,10 @@ namespace engine
 				if (inputNode.extensions.find("KHR_lights_punctual") != (inputNode.extensions.end()))
 				{
 					//light_pos = glm::vec4(0.0f,0.0f,0.0f,1.0f) * mymatrix;
-					light_pos = glm::vec4(glm::vec3(glm::make_vec3(inputNode.translation.data())), 1.0f);
+					lightPositions.push_back(glm::vec4(glm::vec3(glm::make_vec3(inputNode.translation.data())), 1.0f));
 					//light_pos.y = -light_pos.y;
-					glm::quat q = glm::make_quat(inputNode.rotation.data());
-					glm::mat4 quatmat = glm::mat4(q);
+					//glm::quat q = glm::make_quat(inputNode.rotation.data());
+					//glm::mat4 quatmat = glm::mat4(q);
 					//light_pos = quatmat * light_pos;
 				}
 			}
@@ -418,7 +425,7 @@ namespace engine
 				return render_objects;
 			}
 			LoadImages(glTFInput, copyQueue);
-			LoadMaterials(glTFInput, copyQueue);
+			LoadMaterials(glTFInput, copyQueue, deferred);
 
 			const tinygltf::Scene& scene = glTFInput.scenes[0];
 			for (size_t i = 0; i < scene.nodes.size(); i++) {
@@ -600,7 +607,7 @@ namespace engine
 			time += timer;
 			float flicker = 8 + 2 * sin(3.0 * time) + 1 * glm::fract(sin(time * 12.9898) * 43758.5453);
 
-			glm::vec3 ll = light_pos;
+			glm::vec3 ll = lightPositions.size() > 0 ? lightPositions[0] : glm::vec4(0.0f,1.0f,0.0f,1.0f);
 			float zNear = 10.0f;
 			float zFar = 906.0f;
 

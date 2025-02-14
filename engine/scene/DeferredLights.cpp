@@ -8,7 +8,7 @@ namespace engine
 			return (float)rand() / ((float)RAND_MAX + 1);
 		}
 
-		void DeferredLights::Init(render::VulkanBuffer* ub, render::VulkanDevice* device, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture* positions, render::VulkanTexture* normals)
+		void DeferredLights::Init(render::VulkanBuffer* ub, render::VulkanDevice* device, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture* positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic, render::VulkanTexture* albedo)
 		{
 			vulkanDevice = device;
 			_vertexLayout = new render::VertexLayout(
@@ -22,15 +22,16 @@ namespace engine
 
 			LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", _vertexLayout, 0.05f, lightsNumber, glm::vec3(0.0, 0.0, 0.0));
 
+			std::string shaderVertexName = "shaders/basicdeferred/deferredlights.vert.spv";
+			std::string shaderFragmentName = "shaders/basicdeferred/deferredlights.frag.spv";
+
 			
 			m_pointLights.resize(lightsNumber * 2);
 			for (int i=0;i< m_pointLights.size();i++)
 			{
-				m_pointLights[i] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);;
+				m_pointLights[i] = glm::vec4(0.0f, 0.5f, 0.0f, 3.0f);;
 				m_pointLights[++i] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 			}
-
-			glm::vec4 PositionAndRadius = glm::vec4(0.0f, 0.0f, 0.0f, 10.0f);;
 
 			for (auto geo : m_geometries)
 			{
@@ -47,9 +48,21 @@ namespace engine
 				{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT}
 			};
-			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(modelbindings);
+			std::vector<VkDescriptorImageInfo*> texturesDescriptors = { &positions->m_descriptor, &normals->m_descriptor };
 
-			m_descriptorSets.push_back( vulkanDevice->GetDescriptorSet({ &ub->m_descriptor }, { &positions->m_descriptor, &normals->m_descriptor},
+			//we have a pbr lighting system
+			if (roughnessMetallic && albedo)
+			{
+				modelbindings.push_back({ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT });
+				modelbindings.push_back({ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT });
+				texturesDescriptors.insert(texturesDescriptors.begin(), &albedo->m_descriptor);
+				texturesDescriptors.push_back(&roughnessMetallic->m_descriptor);	
+				shaderVertexName = "shaders/basicdeferred/deferredlightspbr.vert.spv";
+				shaderFragmentName = "shaders/basicdeferred/deferredlightspbr.frag.spv";
+			}
+
+			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(modelbindings);
+			m_descriptorSets.push_back( vulkanDevice->GetDescriptorSet({ &ub->m_descriptor }, texturesDescriptors,
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ {VK_TRUE, 
@@ -60,9 +73,19 @@ namespace engine
 				0xf
 				} };
 
+			render::PipelineProperties props;
+			props.blendEnable = true;
+			props.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
+			props.pAttachments = blendAttachmentStates.data();
+			props.depthTestEnable = true;
+			props.depthWriteEnable = false;
+			props.subpass = 1U;
+			props.cullMode = VK_CULL_MODE_NONE;
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/basicdeferred/deferredlights.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/deferredlights.frag.spv",
-				renderPass, pipelineCache, true, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data(),false,true,false,1U);
+				engine::tools::getAssetPath() + shaderVertexName, engine::tools::getAssetPath() + shaderFragmentName,
+				renderPass, pipelineCache, props);
+				//true, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data(),false,true,false,1U);
 		}
 
 		void DeferredLights::Update()

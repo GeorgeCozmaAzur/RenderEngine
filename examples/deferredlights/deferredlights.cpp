@@ -53,6 +53,11 @@ public:
 		glm::mat4 model;
 	} uboShared;
 
+	struct UBOLights {
+		glm::mat4 projection;
+		glm::mat4 view;
+	} uboSharedLights;
+
 	struct Light {
 		glm::vec4 position;
 		glm::vec3 color;
@@ -66,6 +71,7 @@ public:
 
 	struct {
 		render::VulkanBuffer* vsModel;
+		render::VulkanBuffer* vsModelLights;
 		render::VulkanBuffer* fsdeferred;
 	} uniformBuffers;
 
@@ -258,33 +264,39 @@ public:
 		uniformBuffers.vsModel = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboShared));
 
+		uniformBuffers.vsModelLights = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboSharedLights));
+
 		uniformBuffers.fsdeferred = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboDeferred));
 
 
 		// Map persistent
 		VK_CHECK_RESULT(uniformBuffers.vsModel->Map());
+		VK_CHECK_RESULT(uniformBuffers.vsModelLights->Map());
 		VK_CHECK_RESULT(uniformBuffers.fsdeferred->Map());
 		updateUniformBuffers();
 
-		deferredLights.Init(uniformBuffers.vsModel,vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, LIGHTS_NO, scenepositions, scenenormals);
+		deferredLights.Init(uniformBuffers.vsModelLights,vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, LIGHTS_NO, scenepositions, scenenormals);
 	}
 
 	void updateUniformBuffers()
 	{
 		// Mesh
-		uboShared.projection = glm::perspective(glm::radians(60.0f), (float)width / (float)height, 0.1f, 256.0f);
+		uboShared.projection = uboSharedLights.projection = glm::perspective(glm::radians(60.0f), (float)width / (float)height, 0.1f, 256.0f);
 		glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, zoom));
 
 		uboShared.view = viewMatrix * glm::translate(glm::mat4(1.0f), cameraPos);
 		uboShared.view = glm::rotate(uboShared.view, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
 		uboShared.view = glm::rotate(uboShared.view, glm::radians(rotation.y + meshRot.y), glm::vec3(0.0f, 1.0f, 0.0f));
 		uboShared.view = glm::rotate(uboShared.view, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		uboSharedLights.view = uboShared.view;
 
 		uboShared.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 		uboShared.model = glm::translate(uboShared.model, meshPos);
 
 		uniformBuffers.vsModel->MemCopy(&uboShared, sizeof(uboShared));
+		uniformBuffers.vsModelLights->MemCopy(&uboSharedLights, sizeof(uboSharedLights));
 
 		for (int i = 0; i < LIGHTS_NO; i++)
 		{
