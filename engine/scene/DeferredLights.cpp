@@ -66,9 +66,9 @@ namespace engine
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ {VK_TRUE, 
-				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_DST_ALPHA,
 				VK_BLEND_OP_ADD,
-				VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ZERO,
+				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_DST_ALPHA,
 				VK_BLEND_OP_ADD,
 				0xf
 				} };
@@ -81,7 +81,7 @@ namespace engine
 			props.depthTestEnable = true;
 			props.depthWriteEnable = false;
 			props.subpass = 1U;
-			props.cullMode = VK_CULL_MODE_NONE;
+			props.cullMode = VK_CULL_MODE_BACK_BIT;
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
 				engine::tools::getAssetPath() + shaderVertexName, engine::tools::getAssetPath() + shaderFragmentName,
 				renderPass, pipelineCache, props);

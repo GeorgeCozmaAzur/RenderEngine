@@ -75,7 +75,7 @@ namespace engine
 			VkPipelineRasterizationStateCreateInfo rasterizationStateCI{};
 			rasterizationStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 			rasterizationStateCI.polygonMode = VK_POLYGON_MODE_FILL;
-			rasterizationStateCI.cullMode = properties.blendEnable ? VK_CULL_MODE_NONE : properties.cullMode;
+			rasterizationStateCI.cullMode = properties.cullMode;
 			rasterizationStateCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
 			rasterizationStateCI.flags = 0;
 			rasterizationStateCI.depthClampEnable = VK_FALSE;

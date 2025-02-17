@@ -215,8 +215,10 @@ public:
 			deferredLights.m_pointLights[l].x = scene.lightPositions[i].x;
 			deferredLights.m_pointLights[l].y = scene.lightPositions[i].y;
 			deferredLights.m_pointLights[l].z = scene.lightPositions[i].z;
-			deferredLights.m_pointLights[l].w = 5.0f;
+			deferredLights.m_pointLights[l].w = 7.0f;
+			
 		}
+
 		deferredLights.Update();
 	}
 
@@ -229,33 +231,20 @@ public:
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
 	{
 		if (overlay->header("Settings")) {
-			if(scene.lightPositions.size()>1)
+			for(int i=0;i<scene.lightPositions.size();i++)
 			{
-				if (ImGui::SliderFloat("Light position x", &scene.lightPositions[0].x, -50.0f, 50.0f))
+				std::string lx = std::string("Light position x ") + std::to_string(i);
+				if (ImGui::SliderFloat(lx.c_str(), &scene.lightPositions[i].x, -50.0f, 50.0f))
 				{
 					scene.Update(0.0f, queue);
 				}
-				if (ImGui::SliderFloat("Light position y", &scene.lightPositions[0].y, -50.0f, 50.0f))
+				std::string ly = std::string("Light position y ") + std::to_string(i);
+				if (ImGui::SliderFloat(ly.c_str(), &scene.lightPositions[i].y, -50.0f, 50.0f))
 				{
 					scene.Update(0.0f, queue);
 				}
-				if (ImGui::SliderFloat("Light position z", &scene.lightPositions[0].z, -50.0f, 50.0f))
-				{
-					scene.Update(0.0f, queue);
-				}
-			}
-
-			if (scene.lightPositions.size() > 2)
-			{
-				if (ImGui::SliderFloat("Light1 position x", &scene.lightPositions[2].x, -50.0f, 50.0f))
-				{
-					scene.Update(0.0f, queue);
-				}
-				if (ImGui::SliderFloat("Light1 position y", &scene.lightPositions[2].y, -50.0f, 50.0f))
-				{
-					scene.Update(0.0f, queue);
-				}
-				if (ImGui::SliderFloat("Light1 position z", &scene.lightPositions[2].z, -50.0f, 50.0f))
+				std::string lz = std::string("Light position z ") + std::to_string(i);
+				if (ImGui::SliderFloat(lz.c_str(), &scene.lightPositions[i].z, -50.0f, 50.0f))
 				{
 					scene.Update(0.0f, queue);
 				}
