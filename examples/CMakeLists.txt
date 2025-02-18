@@ -58,6 +58,7 @@ set(EXAMPLES
 	raytracingscene
 	reflections
 	scene
+	sceneforwardrendering
 	shadowmapping
 	simplemodel
 	simpleposteffect

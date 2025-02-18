@@ -109,6 +109,8 @@ namespace engine
 				, bool deferred = false
 			);
 
+			void UpdateLights(int index, glm::vec4 position, glm::vec4 color, float timer, VkQueue queue);
+
 			void Update(float timer, VkQueue queue);
 
 			void UpdateView(float timer, VkQueue queue);

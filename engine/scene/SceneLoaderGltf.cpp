@@ -602,21 +602,31 @@ namespace engine
 			return dsl;
 		}
 		float time = 0.0f;
+		void SceneLoaderGltf::UpdateLights(int index, glm::vec4 position, glm::vec4 color, float timer, VkQueue queue)
+		{
+			glm::vec3 ll = lightPositions.size() > 0 ? lightPositions[0] : glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+			ll += position;
+			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_POSITION, &ll, 0, sizeof(ll));
+			//glm::vec4 lcolor = glm::vec4(flicker, flicker, flicker, 1.0f);
+			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_COLOR, &color, 0, sizeof(color));
+			uniform_manager.Update(queue);
+		}
+
 		void SceneLoaderGltf::Update(float timer, VkQueue queue)
 		{
 			time += timer;
-			float flicker = 8 + 2 * sin(3.0 * time) + 1 * glm::fract(sin(time * 12.9898) * 43758.5453);
+			//float flicker = 8 + 2 * sin(3.0 * time) + 1 * glm::fract(sin(time * 12.9898) * 43758.5453);
 
 			glm::vec3 ll = lightPositions.size() > 0 ? lightPositions[0] : glm::vec4(0.0f,1.0f,0.0f,1.0f);
 			float zNear = 10.0f;
 			float zFar = 906.0f;
 
-			glm::vec3 offset = glm::vec3(
+		/*	glm::vec3 offset = glm::vec3(
 				0.1 * sin(time * 2.0) + 0.05 * glm::fract(sin(time * 5.0) * 100.0),
 				0.1 * sin(time * 3.5) + 0.05 * glm::fract(sin(time * 7.0) * 100.0),
 				0.1 * sin(time * 1.8) + 0.05 * glm::fract(sin(time * 6.0) * 100.0)
 			);
-			ll += offset;
+			ll += offset;*/
 
 			// Matrix from light's point of view
 			glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
@@ -642,7 +652,7 @@ namespace engine
 			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &biasedDepthMVP, 0, sizeof(biasedDepthMVP));
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_POSITION, &ll, 0, sizeof(ll));
-			glm::vec4 lcolor = glm::vec4(flicker, flicker, flicker, 1.0f);
+			glm::vec4 lcolor = glm::vec4(1.0f);//flicker, flicker, flicker, 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_COLOR, &lcolor, 0, sizeof(lcolor));
 			glm::vec3 cucu = m_camera->GetPosition();
 			cucu.y = -cucu.y;

@@ -40,7 +40,7 @@ void main()
 	//vec3 light = inColor.rgb * intensity;
 	
 	float attenuation = 1.0 / (dist * dist);
-    vec3 radiance = vec3(30.0,30.0,30.0) * attenuation;
+    vec3 radiance = inColor.rgb * attenuation;
 	vec3 light = BRDF(L, viewDir, N, albedo, metallic, roughness) * radiance;
 	
 	 // HDR tonemapping

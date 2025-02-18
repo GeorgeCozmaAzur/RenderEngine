@@ -76,10 +76,10 @@ public:
 		scenepositions =			vulkanDevice->GetRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		scenenormals =			vulkanDevice->GetRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+		scenenormals =			vulkanDevice->GetRenderTarget(width, height, VK_FORMAT_R8G8B8A8_SNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		sceneroughnessmetallic = vulkanDevice->GetRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+		sceneroughnessmetallic = vulkanDevice->GetRenderTarget(width, height, VK_FORMAT_R8G8B8A8_SNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		sceneLightscolor =		vulkanDevice->GetRenderTarget(width, height, FB_COLOR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
@@ -106,9 +106,10 @@ public:
 		scene.CreateShadow(queue);
 		scene.globalTextures.push_back(scene.shadowmap);
 
-		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "castle.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
+		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/mypot/", "mypot.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern2/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
+		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern2/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
@@ -195,7 +196,7 @@ public:
 		initDeferredLights();
 		prepared = true;
 	}
-
+	float time = 0.0f;
 	virtual void update(float dt)
 	{
 		glm::mat4 viewMatrix = camera.GetViewMatrix();
@@ -206,20 +207,32 @@ public:
 		uboSharedLights.cameraPosition = camera.GetPosition();
 		vsdeferred->MemCopy(&uboSharedLights, sizeof(uboSharedLights));
 
-		scene.Update(dt,queue);
+		time += dt;
+		float flicker = 8 + 2 * sin(3.0 * time) + 1 * glm::fract(sin(time * 12.9898) * 43758.5453);
+		glm::vec3 offset = glm::vec3(
+			0.1 * sin(time * 2.0) + 0.05 * glm::fract(sin(time * 5.0) * 100.0),
+			0.1 * sin(time * 3.5) + 0.05 * glm::fract(sin(time * 7.0) * 100.0),
+			0.1 * sin(time * 1.8) + 0.05 * glm::fract(sin(time * 6.0) * 100.0)
+		);
 
 		int l = 0;
 		for (int i = 0; i < scene.lightPositions.size(); i++)
 		{
 			l = i * 2;
-			deferredLights.m_pointLights[l].x = scene.lightPositions[i].x;
-			deferredLights.m_pointLights[l].y = scene.lightPositions[i].y;
-			deferredLights.m_pointLights[l].z = scene.lightPositions[i].z;
-			deferredLights.m_pointLights[l].w = 7.0f;
+			deferredLights.m_pointLights[l].x = scene.lightPositions[i].x + offset.x;
+			deferredLights.m_pointLights[l].y = scene.lightPositions[i].y + offset.y;
+			deferredLights.m_pointLights[l].z = scene.lightPositions[i].z + offset.z;
+			deferredLights.m_pointLights[l].w = flicker;
+
+			deferredLights.m_pointLights[l+1].x = flicker;
+			deferredLights.m_pointLights[l+1].y = flicker;
+			deferredLights.m_pointLights[l+1].z = 3;
 			
 		}
 
 		deferredLights.Update();
+
+		//scene.Update(dt,queue);
 	}
 
 	virtual void ViewChanged()
