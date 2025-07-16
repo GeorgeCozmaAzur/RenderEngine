@@ -119,10 +119,10 @@ public:
 
 	void init()
 	{
-		models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.05f, 1);
+		models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 0.05f, 1);
 		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayout, 0.1f, 1, glm::vec3(0.0, -0.25, -1.5));
 		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/oak_trunk.dae", &vertexLayout, 2.0f, 1, glm::vec3(-2.0, -0.5, 0.0));
-		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/rock01.obj", &vertexLayout, 2.0f, 1, glm::vec3(0.0, -0.5, 1.5));
+		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", &vertexLayout, 2.0f, 1, glm::vec3(0.0, -0.5, 1.5));
 		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/torusknot.obj", &vertexLayout, 0.02f, 1, glm::vec3(2.0,-0.5,0.0));
 
 		// Textures
