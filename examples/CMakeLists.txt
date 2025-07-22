@@ -46,6 +46,7 @@ endfunction(buildExamples)
 set(EXAMPLES
 	deferred
 	deferredlights
+	dfs
 	clothsimulation
 	emptyproject
 	fishes

@@ -664,7 +664,7 @@ namespace engine
 			samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 			samplerCreateInfo.minLod = 0.0f;
 			samplerCreateInfo.maxLod = (float)m_mipLevelsCount;
-			samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+			samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 			VK_CHECK_RESULT(vkCreateSampler(_device, &samplerCreateInfo, nullptr, &m_descriptor.sampler));
 
 			// Create image view

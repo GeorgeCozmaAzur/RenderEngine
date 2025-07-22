@@ -102,7 +102,7 @@ namespace engine
 			// Gets a texture from a file
 			VulkanTexture* GetTexture(std::string filename, VkFormat format, VkQueue copyQueue,
 				VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-				VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, bool generateMipmaps = false);
+				VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, bool generateMipmaps = false, VkSamplerAddressMode sampleAdressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
 			VulkanTexture* GetTexture(unsigned char* buffer, VkDeviceSize bufferSize, uint32_t width, uint32_t height, VkFormat format, VkQueue copyQueue,
 				VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,

@@ -306,7 +306,8 @@ namespace engine
         VulkanTexture* VulkanDevice::GetTexture(std::string filename, VkFormat format, VkQueue copyQueue,
             VkImageUsageFlags imageUsageFlags,
             VkImageLayout imageLayout, 
-            bool generateMipmaps)
+            bool generateMipmaps,
+            VkSamplerAddressMode sampleAdressMode)
         {
             VulkanTexture* tex = new VulkanTexture;
             Texture2DData data;
@@ -327,7 +328,7 @@ namespace engine
                 tex->UpdateGeneratingMipmaps(&data, copyCmd, copyQueue);
             FlushCommandBuffer(copyCmd, copyQueue);
 
-            tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
+            tex->CreateDescriptor(sampleAdressMode, VK_IMAGE_VIEW_TYPE_2D, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
 
             data.Destroy(logicalDevice);
 
