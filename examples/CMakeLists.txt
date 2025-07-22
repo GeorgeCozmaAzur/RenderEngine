@@ -52,6 +52,7 @@ set(EXAMPLES
 	fishes
 	multithreaded
 	normalparallax
+	paraboloidreflections
 	pbr
 	pbribl
 	pbribltextured
