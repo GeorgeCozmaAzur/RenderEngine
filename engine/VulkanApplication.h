@@ -111,12 +111,12 @@ protected:
 	// Wraps the swap chain to present images (framebuffers) to the windowing system
 	render::VulkanSwapChain swapChain;
 	// Synchronization semaphores
-	struct {
+	//struct {
 		// Swap chain image presentation
-		VkSemaphore presentComplete;
+	std::vector < VkSemaphore> presentCompleteSemaphores;
 		// Command buffer submission and execution
-		VkSemaphore renderComplete;
-	} semaphores;
+	std::vector < VkSemaphore> renderCompleteSemaphores;
+	//} semaphores;
 
 	std::vector<VkFence> submitFences;
 

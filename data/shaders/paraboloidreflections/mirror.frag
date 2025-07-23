@@ -43,10 +43,10 @@ void main()
 	float f = step(R.z+zBias, 0.0);
 	
 	vec4 color1 =mix(colorb, colorf, f);
-	//vec4 testcolor1 =mix(vec4(1.0,0.0,0.0,1.0), vec4(0.0,1.0,0.0,1.0), f);
+	vec4 testcolor1 =mix(vec4(1.0,0.0,0.0,1.0), vec4(0.0,1.0,0.0,1.0), f);
 
-	//vec4 color1 = texture(envMap, R);
-	outFragColor = color * 0.25 + color1 * 0.75;
+	color1 += texture(envMap, R);
+	outFragColor = color * 0.25 + color1  * 0.75;
 
 	
 }

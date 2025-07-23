@@ -527,10 +527,12 @@ bool VulkanApplication::InitVulkan()
 	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 	// Create a semaphore used to synchronize image presentation
 	// Ensures that the image is displayed before we start submitting new commands to the queue
-	semaphores.presentComplete = vulkanDevice->GetSemaphore();
+	//semaphores.presentComplete = vulkanDevice->GetSemaphore();
 	// Create a semaphore used to synchronize command submission
 	// Ensures that the image is not presented until all commands have been sumbitted and executed
-	semaphores.renderComplete = vulkanDevice->GetSemaphore();
+	//semaphores.renderComplete = vulkanDevice->GetSemaphore();
+
+	
 
 	// Set up submit info structure
 	// Semaphores will stay the same during application lifetime
@@ -539,9 +541,9 @@ bool VulkanApplication::InitVulkan()
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.pWaitDstStageMask = &submitPipelineStages;
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &semaphores.presentComplete;
+	//submitInfo.pWaitSemaphores = &semaphores.presentComplete;
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &semaphores.renderComplete;
+	//submitInfo.pSignalSemaphores = &semaphores.renderComplete;
 
 	if (vulkanDevice->enableDebugMarkers) {
 		engine::debugmarker::setup(device);
@@ -555,6 +557,14 @@ bool VulkanApplication::InitVulkan()
 	SetupRenderPass();
 	CreatePipelineCache();
 	SetupFrameBuffer();
+
+	presentCompleteSemaphores.resize(swapChain.swapChainImageViews.size());
+	renderCompleteSemaphores.resize(swapChain.swapChainImageViews.size());
+	for (int i = 0; i < swapChain.swapChainImageViews.size(); i++)
+	{
+		presentCompleteSemaphores[i] = vulkanDevice->GetSemaphore();
+		renderCompleteSemaphores[i] = vulkanDevice->GetSemaphore();
+	}
 
 	submitFences.resize(swapChain.swapChainImageViews.size());
 	for (int i = 0; i < submitFences.size(); i++)
@@ -707,7 +717,7 @@ void VulkanApplication::DrawUI(const VkCommandBuffer commandBuffer)
 void VulkanApplication::PrepareFrame()
 {
 	// Acquire the next image from the swap chain
-	VkResult result = swapChain.acquireNextImage(semaphores.presentComplete, &currentBuffer);
+	VkResult result = swapChain.acquireNextImage(presentCompleteSemaphores[currentBuffer], &currentBuffer);
 	// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or no longer optimal for presentation (SUBOPTIMAL)
 	if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {
 		WindowResize();
@@ -719,7 +729,7 @@ void VulkanApplication::PrepareFrame()
 
 void VulkanApplication::PresentFrame()
 {
-	VkResult result = swapChain.queuePresent(presentationQueue, currentBuffer, semaphores.renderComplete);
+	VkResult result = swapChain.queuePresent(presentationQueue, currentBuffer, renderCompleteSemaphores[currentBuffer]);
 	if (!((result == VK_SUCCESS) || (result == VK_SUBOPTIMAL_KHR))) {
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			// Swap chain is no longer compatible with the surface and needs to be recreated
@@ -750,11 +760,14 @@ void VulkanApplication::Render()
 		submitCommandBuffers[i] = allDrawCommandBuffers[i][currentBuffer];
 	}
 
+	submitInfo.pWaitSemaphores = &presentCompleteSemaphores[currentBuffer];
+	submitInfo.pSignalSemaphores = &renderCompleteSemaphores[currentBuffer];
 	submitInfo.commandBufferCount = submitCommandBuffers.size();
 	submitInfo.pCommandBuffers = submitCommandBuffers.data();
 	VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, submitFences[currentBuffer]));
 
 	VulkanApplication::PresentFrame();
+	currentBuffer = (currentBuffer + 1) % swapChain.swapChainImageViews.size();
 }
 
 void VulkanApplication::ViewChanged() {}
@@ -866,8 +879,10 @@ VulkanApplication::~VulkanApplication()
 	swapChain.CleanUp();
 	DestroyCommandBuffers();
 	vulkanDevice->DestroyPipelineCache();
-	vulkanDevice->DestroySemaphore(semaphores.presentComplete);
-	vulkanDevice->DestroySemaphore(semaphores.renderComplete);
+	for(int i=0;i<presentCompleteSemaphores.size();i++)
+	vulkanDevice->DestroySemaphore(presentCompleteSemaphores[i]);
+	for (int i = 0; i < renderCompleteSemaphores.size(); i++)
+	vulkanDevice->DestroySemaphore(renderCompleteSemaphores[i]);
 
 	if (settings.overlay) {
 		UIOverlay.freeResources();

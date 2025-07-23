@@ -8,6 +8,7 @@ layout (location = 3) in vec3 inNormal;
 layout (binding = 0) uniform UBO 
 {
 	mat4 projection;
+	mat4 view;
 	mat4 model;
 	vec4 lightPos;
 	vec4 camPos;
@@ -24,5 +25,5 @@ void main()
 	outPos = vec4(inPos.xyz, 1.0);
 	outEyePos = ubo.camPos;
 	outNormal = inNormal;
-	gl_Position = ubo.projection *ubo.model* outPos;		
+	gl_Position = ubo.projection *ubo.view*ubo.model* outPos;		
 }

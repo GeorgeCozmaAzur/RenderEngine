@@ -41,6 +41,7 @@ public:
 
 	struct UBO {
 		glm::mat4 projection;
+		glm::mat4 view;
 		glm::mat4 model;
 		glm::vec4 lightPos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec4 camPos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -119,7 +120,7 @@ public:
 
 	void init()
 	{
-		models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 0.05f, 1);
+		models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/audi/Audi_r8.obj", &vertexLayout, 0.0005f, 1);
 		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayout, 0.1f, 1, glm::vec3(0.0, -0.25, -1.5));
 		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/oak_trunk.dae", &vertexLayout, 2.0f, 1, glm::vec3(-2.0, -0.5, 0.0));
 		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", &vertexLayout, 2.0f, 1, glm::vec3(0.0, -0.5, 1.5));
@@ -182,7 +183,6 @@ public:
 
 		models.example->SetDescriptorSetLayout(layouts.model);
 		models.plane->SetDescriptorSetLayout(layouts.mirror);
-
 	}
 
 	void setupDescriptorPool()
@@ -219,19 +219,31 @@ public:
 		VK_CHECK_RESULT(uniformBuffers.vsOffScreen->Map());
 		VK_CHECK_RESULT(uniformBuffers.vsOffScreenBack->Map());
 		VK_CHECK_RESULT(uniformBuffers.vsDebugQuad->Map());
+		updateModelsMatrix();
 		updateUniformBuffers();
 		updateUniformBufferOffscreen();
+	}
+
+	void updateModelsMatrix()
+	{
+		glm::mat4 modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(-30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		uboShared.model = modelMatrix;
 	}
 
 	void updateUniformBufferOffscreen()
 	{
 		uboShared.projection = glm::perspective(glm::radians(60.0f), (float)width / (float)height, 0.1f, 256.0f);
 		glm::mat4 viewMatrix = glm::mat4(1.0f);
+		
 
-		uboShared.model = viewMatrix;
+		//uboShared.model = glm::rotate(viewMatrix, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		uboShared.view = viewMatrix;
+		
 		uniformBuffers.vsOffScreen->MemCopy(&uboShared, sizeof(uboShared));
 
-		uboShared.model = glm::rotate(uboShared.model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		//uboShared.model = glm::rotate(viewMatrix, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		uboShared.view = glm::rotate(viewMatrix, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		
 		uniformBuffers.vsOffScreenBack->MemCopy(&uboShared, sizeof(uboShared));
 	}
@@ -246,18 +258,20 @@ public:
 		glm::vec4 testvec(0.0,0.0,3.0,1.0);
 		testvec = uboShared.projection * testvec;
 
-		uboShared.model = camera.GetViewMatrix();
+		uboShared.view = camera.GetViewMatrix();
+		//uboShared.model = glm::mat4(1.0f);
 		uboShared.camPos = -glm::vec4(camera.GetPosition(), -1.0);
 
 		uniformBuffers.vsModel->MemCopy(&uboShared, sizeof(uboShared));
 
+		uboShared.model = glm::mat4(1.0f);
 		uniformBuffers.vsMirror->MemCopy(&uboShared, sizeof(uboShared));
 
 		// Debug quad
-		uboShared.projection = glm::ortho(4.0f, 0.0f, 0.0f, 4.0f * (float)height / (float)width, -1.0f, 1.0f);
+		/*uboShared.projection = glm::ortho(4.0f, 0.0f, 0.0f, 4.0f * (float)height / (float)width, -1.0f, 1.0f);
 		uboShared.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
-		uniformBuffers.vsDebugQuad->MemCopy(&uboShared, sizeof(uboShared));
+		uniformBuffers.vsDebugQuad->MemCopy(&uboShared, sizeof(uboShared));*/
 	}
 
 	void setupDescriptors()
@@ -366,13 +380,14 @@ public:
 
 	virtual void update(float dt)
 	{
+		updateModelsMatrix();
 		updateUniformBuffers();
 		updateUniformBufferOffscreen();
 	}
 
 	virtual void ViewChanged()
 	{
-		updateUniformBuffers();
+		//updateUniformBuffers();
 	}
 
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay* overlay)

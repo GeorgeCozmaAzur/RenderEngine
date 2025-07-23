@@ -7,6 +7,7 @@ layout (location = 3) in vec3 inNormal;
 layout (binding = 0) uniform UBO 
 {
 	mat4 projection;
+	mat4 view;
 	mat4 model;
 	vec4 lightPos;
 	vec4 camPos;
@@ -21,7 +22,7 @@ void main()
 {
 	outNormal = inNormal;
 	outColor = inColor;
-	vec4 pos =  ubo.model * inPos;
+	vec4 pos =  ubo.view * ubo.model * inPos;
 	float d = length(pos.xyz);
 	
 	pos = normalize(pos);
