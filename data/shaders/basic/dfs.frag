@@ -49,21 +49,21 @@ float computeShadow(vec3 fragPos)
 		vec3 curPos = fragPos + rayDir * travelDist;
 		vec3 texCoord = worldToUV(curPos);
 		float dist = texture(s_VoxelGrid, texCoord).r;
-		if(dist < minStep)
-			return 0.0;
+		//if(dist < minStep)
+		//	return 0.0;
 		//res = min(res, dist);//50 * dist/travelDist);
-		//res = min(res, 40 * (dist/travelDist));
+		res = min(res, 50 * (dist/travelDist));
 		travelDist += dist;
 		if(travelDist >= maxRayLength || travelDist >= maxDist)
 			break;
 	}
-	//return clamp(res, 0.0,1.0);
-	return 1.0;
+	return clamp(res, 0.0,1.0);
+	//return 1.0;
 }
 
 void main() 
 {
 	vec4 vcolor = vec4(1.0,0.0,0.0,1.0);//texture(s_VoxelGrid, worldToUV(inPosition));//vec3(inUV, 0.5));
-	float s= computeShadow(inPosition);
+	float s= computeShadow(inPosition + inNormal * 0.02);
 	outFragColor = vcolor * s;
 }

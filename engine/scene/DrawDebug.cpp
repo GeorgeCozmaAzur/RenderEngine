@@ -47,7 +47,7 @@ namespace engine
 
 			VkDeviceSize bufferSize = m_hasDepth ? sizeof(uboVSdepth) : sizeof(uboVS);
 			uniformBufferVS = vulkanDevice->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboVS));
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, bufferSize);
 			VK_CHECK_RESULT(uniformBufferVS->Map());
 
 			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &uniformBufferVS->m_descriptor }, { &m_texture ->m_descriptor },
