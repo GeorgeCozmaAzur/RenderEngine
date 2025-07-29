@@ -159,10 +159,12 @@ public:
 		raymarchpipeline = vulkanDevice->GetComputePipeline(fileName, device, raymarchdescriptorSetLayout->m_descriptorSetLayout, pipelineCache);*/
 	}
 
-	void generateSSOs(scene::Geometry* geo)
+	void generateSSOs(std::vector<scene::Geometry*> geos)
 	{
 		std::vector<glm::vec4> vertexBuffer;
+		std::vector<uint32_t> indexBuffer;
 		int vertexSize = vertexLayout.GetVertexSize(0)/sizeof(float);
+		for(auto geo : geos)
 		for (int i = 0; i < geo->m_verticesSize; i += vertexSize)
 		{
 			vertexBuffer.push_back(glm::vec4(geo->m_vertices[i], geo->m_vertices[i+1], geo->m_vertices[i+2], 1.0));
@@ -174,9 +176,19 @@ public:
 		vertexStorageBuffer = vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 			, queue, vertexStorageBufferSize, nullptr);
 
-		VkDeviceSize indexStorageBufferSize = geo->m_indexCount * sizeof(uint32_t);
+		int indexOffset = 0;
+		for (auto geo : geos)
+		{
+			for (int i = 0; i < geo->m_indexCount; i++)
+			{
+				indexBuffer.push_back(geo->m_indices[i] + indexOffset);
+			}
+			indexOffset += geo->m_indexCount;
+		}
+
+		VkDeviceSize indexStorageBufferSize = indexBuffer.size() * sizeof(uint32_t);
 		render::VulkanBuffer* istagingBuffer;
-		istagingBuffer = vulkanDevice->CreateStagingBuffer(indexStorageBufferSize, geo->m_indices);
+		istagingBuffer = vulkanDevice->CreateStagingBuffer(indexStorageBufferSize, indexBuffer.data());
 		indexStorageBuffer = vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 			, queue, indexStorageBufferSize, nullptr);
 
@@ -207,7 +219,10 @@ public:
 	{	
 		setupDescriptorPool();
 		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 1.1f, 1, glm::vec3(0.0f, 1.0f,0.0f));
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/teapot.dae", &vertexLayout, 0.08f, 1);
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.02f, 1, glm::vec3(-0.7f, 0.0f, 0.0f));
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", &vertexLayout, 0.1f, 1, glm::vec3(0.7f, 1.0f, 0.0f));
+		//plane.LoadGeometry(engine::tools::getAssetPath() + "models/teapot.dae", &vertexLayout, 0.05f, 1, glm::vec3(0.7f, 0.0f, 0.0f));
+
 		for (auto geo : plane.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices),true);
@@ -224,7 +239,8 @@ public:
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices),true);
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices),true);
 		}*/
-		generateSSOs(plane.m_geometries[1]);
+		std::vector<scene::Geometry*> geos(plane.m_geometries.begin()+1, plane.m_geometries.end());
+		generateSSOs(geos);
 
 		textureDFS = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
 
@@ -415,7 +431,11 @@ public:
 
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &perspectiveMatrix, 0, sizeof(perspectiveMatrix));
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
-		//uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
+		glm::vec4 light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
+		light_pos.x = light_pos.x + cos(glm::radians(timer * 360.0f)) * 5.0f;
+		light_pos.z = light_pos.z + sin(glm::radians(timer * 360.0f)) * 5.0f;
+
+		uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_POSITION, &light_pos, 0, sizeof(light_pos));
 		glm::vec3 cucu = -camera.GetPosition();
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(cucu));
 
@@ -459,7 +479,7 @@ public:
 		//uboCompute.light_view_proj = scene.uboShadowOffscreenVS.depthMVP;
 		//uboCompute.camera_position = glm::vec4(-camera.GetPosition(), 1.0f);
 		//uboCompute.time = depth;
-		uboCompute.triangleCount = plane.m_geometries[1]->m_indexCount;//m_currentNoiseIndex;
+		uboCompute.triangleCount = plane.m_geometries[1]->m_indexCount + plane.m_geometries[2]->m_indexCount;//m_currentNoiseIndex;
 		computeUniformBuffer->MemCopy(&uboCompute, sizeof(uboCompute));
 
 		previous_view_proj = perspectiveMatrix * viewMatrix;
@@ -468,10 +488,10 @@ public:
 		uboFSscene.bias_near_far_pow = glm::vec4(0.002f, scene.m_camera->getNearClip(), scene.m_camera->getFarClip(), 1.0f);
 		scene.sceneFragmentUniformBuffer->MemCopy(&uboFSscene, sizeof(uboFSscene));*/
 
-		dbgtex.UpdateUniformBuffers(perspectiveMatrix, viewMatrix, 0.5);
+		dbgtex.UpdateUniformBuffers(perspectiveMatrix, viewMatrix, depth);
 
-		uint32_t read_idx = static_cast<uint32_t>(m_ct_ping_pong);
-		uint32_t write_idx = static_cast<uint32_t>(!m_ct_ping_pong);
+		//uint32_t read_idx = static_cast<uint32_t>(m_ct_ping_pong);
+		//uint32_t write_idx = static_cast<uint32_t>(!m_ct_ping_pong);
 
 		//vkWaitForFences(device, submitFences.size(), submitFences.data(), VK_TRUE, UINT64_MAX);
 
@@ -479,7 +499,7 @@ public:
 		//lightinjectiondescriptorSet->Update(5, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, nullptr, &textureCompute3dTargets[write_idx]->m_descriptor);
 		//raymarchdescriptorSet->Update(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, nullptr, &textureCompute3dTargets[write_idx]->m_descriptor);
 		//buildComputeCommandBuffers();
-		m_ct_ping_pong = !m_ct_ping_pong;
+		//m_ct_ping_pong = !m_ct_ping_pong;
 
 		updateUniformBuffers();
 	}

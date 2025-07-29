@@ -25,7 +25,7 @@ float computeShadow(vec3 fragPos)
 {
 	float maxDist = 30.0;
 	float minStep = 0.0;
-	vec3 lightPos = vec3(4.0,-3.0,4.0);
+	vec3 lightPos = inLightPos;//vec3(4.0,-3.0,4.0);
 	vec3 rayDir = normalize(lightPos - fragPos);
 	float maxRayLength = length(lightPos - fragPos);
 	float travelDist = 0.0;
@@ -50,6 +50,8 @@ float computeShadow(vec3 fragPos)
 void main() 
 {
 	vec4 vcolor = vec4(1.0,0.0,0.0,1.0);//texture(s_VoxelGrid, worldToUV(inPosition));//vec3(inUV, 0.5));
+	vec3 lightDir = normalize(inLightPos - inPosition);  
+	float diff = max(dot(normalize(inNormal), lightDir), 0.0);
 	float s= computeShadow(inPosition + inNormal * 0.05);
-	outFragColor = vcolor * s;
+	outFragColor = vcolor * s * diff;
 }

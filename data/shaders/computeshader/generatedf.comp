@@ -31,7 +31,7 @@ layout (binding = 2) uniform UBO
 		int triangleCount;
 } ubo;
 
-layout (binding = 3, rgba16) uniform image3D resultImage;
+layout (binding = 3, rgba16f) uniform image3D resultImage;
 
 vec3 UVToWorld(vec3 p)
 {
