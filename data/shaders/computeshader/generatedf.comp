@@ -25,17 +25,10 @@ layout(std430, binding = 1) buffer IndexBuffer {
 
 layout (binding = 2) uniform UBO 
 {
-	mat4  view;
-    mat4  projection;
-	mat4  inv_view_proj;
-	mat4  prev_view_proj;
-	mat4  light_view_proj;
-	vec4  camera_position;
-	vec4  bias_near_far_pow;
-	vec4  light_color;
-	float time;
-	//int noise_index;
-	int triangleCount;
+	float textureWidth;
+		float textureHeight;
+		float textureDepth ;
+		int triangleCount;
 } ubo;
 
 layout (binding = 3, rgba16) uniform image3D resultImage;
@@ -128,7 +121,6 @@ float map(vec3 p) {
 
         float d = pointToTriangleDist(p, a, b, c);
         minDist = min(minDist, d);
-		
 		
     }
 	
