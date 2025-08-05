@@ -207,7 +207,7 @@ namespace engine
 					VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 				};
 
-				device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);
+				descriptorPool = device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);
 
 				for (size_t i = 0; i < render_objects.size(); i++)
 				{
@@ -371,7 +371,7 @@ namespace engine
 						render_objects[i]->SetDescriptorSetLayout(currentDesclayout);
 						render_objects[i]->_vertexLayout = currentVertexLayout;
 						render_objects[i]->AddPipeline(currentPipeline);
-						render::VulkanDescriptorSet* desc = device->GetDescriptorSet(buffersDescriptors, texturesDescriptors,
+						render::VulkanDescriptorSet* desc = device->GetDescriptorSet(descriptorPool, buffersDescriptors, texturesDescriptors,
 							currentDesclayout->m_descriptorSetLayout, currentDesclayout->m_setLayoutBindings);
 						render_objects[i]->AddDescriptor(desc);
 					}
@@ -649,7 +649,7 @@ namespace engine
 						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache, props);
 					sro->AddPipeline(p);			
 
-					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(buffersDescriptors, {},
+					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, {},
 						currentdescayout->m_descriptorSetLayout, currentdescayout->m_setLayoutBindings);
 					sro->AddDescriptor(set);
 

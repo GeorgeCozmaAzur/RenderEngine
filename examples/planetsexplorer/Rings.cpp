@@ -49,7 +49,7 @@ namespace engine
 			return indices;
 		}
 
-		void Rings::Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue)
+		void Rings::Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue)
 		{
 			_vertexLayout = vertex_layout;
 
@@ -158,7 +158,7 @@ namespace engine
 
 			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(bindings);
 
-			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &globalUniformBufferVS->m_descriptor, &uniformBufferVS->m_descriptor }, texturesDescriptors,
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &globalUniformBufferVS->m_descriptor, &uniformBufferVS->m_descriptor }, texturesDescriptors,
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,

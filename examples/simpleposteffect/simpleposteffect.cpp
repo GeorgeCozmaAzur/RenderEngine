@@ -29,6 +29,8 @@ public:
 
 	render::VulkanRenderPass* scenepass = nullptr;
 
+	VkDescriptorPool descriptorPoolPostEffects;
+
 	render::VulkanPipeline* blackandwhitepipeline = nullptr;
 
 	VulkanDescriptorSet* pfdesc = nullptr;
@@ -53,8 +55,17 @@ public:
 		
 	}
 
+	void setupDescriptorPool()
+	{
+		std::vector<VkDescriptorPoolSize> poolSizes = {
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
+		};
+		descriptorPoolPostEffects = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 1);
+	}
+
 	void init()
 	{
+		setupDescriptorPool();
 		scene.SetCamera(&camera);
 		scene.uniform_manager.SetEngineDevice(vulkanDevice);	
 
@@ -91,7 +102,7 @@ public:
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/posteffects/blackandwhite.frag.spv",
 			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-		pfdesc = vulkanDevice->GetDescriptorSet({}, { &scenecolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
+		pfdesc = vulkanDevice->GetDescriptorSet(descriptorPoolPostEffects, {}, { &scenecolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
 	}
 
 	void BuildCommandBuffers()

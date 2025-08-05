@@ -40,6 +40,8 @@ public:
 		},
 		{ render::VERTEX_COMPONENT_POSITION });
 
+	VkDescriptorPool descriptorPool;
+
 	struct {
 		scene::SimpleModel example;
 		scene::SimpleModel quad;
@@ -256,7 +258,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
 	}
 
 	void prepareUniformBuffers()
@@ -277,7 +279,7 @@ public:
 		VK_CHECK_RESULT(uniformBuffers.fsdeferred->Map());
 		updateUniformBuffers();
 
-		deferredLights.Init(uniformBuffers.vsModelLights,vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, LIGHTS_NO, scenepositions, scenenormals);
+		deferredLights.Init(uniformBuffers.vsModelLights,vulkanDevice, descriptorPool, queue, scenepass->GetRenderPass(), pipelineCache, LIGHTS_NO, scenepositions, scenenormals);
 	}
 
 	void updateUniformBuffers()
@@ -308,19 +310,19 @@ public:
 
 	void setupDescriptors()
 	{
-		descriptorSets.plane = vulkanDevice->GetDescriptorSet({ &uniformBuffers.vsModel->m_descriptor }, {&colorMap->m_descriptor},
+		descriptorSets.plane = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.vsModel->m_descriptor }, {&colorMap->m_descriptor},
 			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
 
-		descriptorSets.model = vulkanDevice->GetDescriptorSet({ &uniformBuffers.vsModel->m_descriptor }, { &colorMap2->m_descriptor },
+		descriptorSets.model = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.vsModel->m_descriptor }, { &colorMap2->m_descriptor },
 			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
 
 		models.plane.AddDescriptor(descriptorSets.plane);
 		models.example.AddDescriptor(descriptorSets.model);	
 
-		descriptorSets.deferred = vulkanDevice->GetDescriptorSet({ &uniformBuffers.fsdeferred->m_descriptor },
+		descriptorSets.deferred = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.fsdeferred->m_descriptor },
 			{ &scenecolor->m_descriptor , &scenepositions->m_descriptor, &scenenormals->m_descriptor }, layouts.deferred->m_descriptorSetLayout, layouts.deferred->m_setLayoutBindings);
 
-		descriptorSets.simpletexture = vulkanDevice->GetDescriptorSet({}, { &scenecolor->m_descriptor , &sceneLightscolor->m_descriptor }, layouts.simpletexture->m_descriptorSetLayout, layouts.simpletexture->m_setLayoutBindings);
+		descriptorSets.simpletexture = vulkanDevice->GetDescriptorSet(descriptorPool, {}, { &scenecolor->m_descriptor , &sceneLightscolor->m_descriptor }, layouts.simpletexture->m_descriptorSetLayout, layouts.simpletexture->m_setLayoutBindings);
 	}
 
 	void setupPipelines()

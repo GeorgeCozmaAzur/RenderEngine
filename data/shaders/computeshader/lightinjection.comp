@@ -28,7 +28,7 @@ layout (binding = 4) uniform UBO
 	int noise_index;
 } ubo;
 
-layout (binding = 5, rgba16) uniform image3D resultImage;
+layout (binding = 5, rgba16f) uniform image3D resultImage;
 
 
 

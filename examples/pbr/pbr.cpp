@@ -25,8 +25,9 @@ public:
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
-		
 		}, {});
+
+	VkDescriptorPool descriptorPool;
 
 	engine::scene::SimpleModel basicModel;
 	engine::scene::SimpleModel basicModelTextured;
@@ -142,7 +143,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
 	}
 
 	void SetupDescriptors()
@@ -166,11 +167,11 @@ public:
 		basicModel.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 		basicModelTextured.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindingstextured));
 
-		basicModel.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor }, 
+		basicModel.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor },
 			{  },
 			basicModel._descriptorLayout->m_descriptorSetLayout, basicModel._descriptorLayout->m_setLayoutBindings));
 
-		basicModelTextured.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelFragmentTexturedUniformBuffer->m_descriptor },
+		basicModelTextured.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentTexturedUniformBuffer->m_descriptor },
 			{ &colorMap->m_descriptor, &roughnessMap->m_descriptor, &metallicMap->m_descriptor, &aoMap->m_descriptor },
 			basicModelTextured._descriptorLayout->m_descriptorSetLayout, basicModelTextured._descriptorLayout->m_setLayoutBindings));
 	}

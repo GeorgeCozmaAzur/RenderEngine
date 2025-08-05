@@ -24,7 +24,7 @@
 #define COMPUTE_GROUP_SIZE_Z 1
 
 #define CAMERA_NEAR_PLANE 0.1f
-#define CAMERA_FAR_PLANE 256.0f
+#define CAMERA_FAR_PLANE 128.0f
 
 #define NUM_BLUE_NOISE_TEXTURES 16
 
@@ -88,6 +88,8 @@ public:
 	std::vector<VkCommandBuffer> drawShadowCmdBuffers;
 	std::vector<VkCommandBuffer> drawComputeCmdBuffers;
 
+	VkDescriptorPool descriptorPool;
+
 	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
@@ -96,7 +98,7 @@ public:
 		title = "Vulkan Engine Empty Scene";
 		settings.overlay = true;
 		camera.movementSpeed = 20.0f;
-		camera.SetPerspective(60.0f, (float)width / (float)height, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
+		camera.SetPerspective(45.0f, (float)width / (float)height, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		camera.SetPosition(glm::vec3(0.0f, -5.0f, 0.0f));
 		//camera.setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -109,6 +111,16 @@ public:
 
 	~VulkanExample()
 	{
+	}
+
+	void setupDescriptorPool()
+	{
+		std::vector<VkDescriptorPoolSize> poolSizes = {
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
+		};
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 3);
 	}
 
 	void initComputeObjects()
@@ -130,7 +142,7 @@ public:
 			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT}
 		};
 		lightinjectiondescriptorSetLayout = vulkanDevice->GetDescriptorSetLayout(computebindings);
-		lightinjectiondescriptorSet = vulkanDevice->GetDescriptorSet({ &computeUniformBuffer->m_descriptor }, { &scene.shadowmap->m_descriptor,&scene.shadowmapColor->m_descriptor, &textureBlueNoise->m_descriptor,&textureCompute3dTargets[0]->m_descriptor, &textureCompute3dTargets[1]->m_descriptor },
+		lightinjectiondescriptorSet = vulkanDevice->GetDescriptorSet(descriptorPool, { &computeUniformBuffer->m_descriptor }, { &scene.shadowmap->m_descriptor,&scene.shadowmapColor->m_descriptor, &textureBlueNoise->m_descriptor,&textureCompute3dTargets[0]->m_descriptor, &textureCompute3dTargets[1]->m_descriptor },
 			lightinjectiondescriptorSetLayout->m_descriptorSetLayout, lightinjectiondescriptorSetLayout->m_setLayoutBindings);
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> rmbindings
@@ -140,7 +152,7 @@ public:
 			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT}
 		};
 		raymarchdescriptorSetLayout = vulkanDevice->GetDescriptorSetLayout(rmbindings);
-		raymarchdescriptorSet = vulkanDevice->GetDescriptorSet({ &computeUniformBuffer->m_descriptor }, { &textureCompute3dTargets[0]->m_descriptor, &textureCompute3dTargetRaymarch->m_descriptor },
+		raymarchdescriptorSet = vulkanDevice->GetDescriptorSet(descriptorPool, { &computeUniformBuffer->m_descriptor }, { &textureCompute3dTargets[0]->m_descriptor, &textureCompute3dTargetRaymarch->m_descriptor },
 			raymarchdescriptorSetLayout->m_descriptorSetLayout, raymarchdescriptorSetLayout->m_setLayoutBindings);
 
 		std::string fileName = engine::tools::getAssetPath() + "shaders/computeshader/" + "lightinjection" + ".comp.spv";
@@ -152,6 +164,7 @@ public:
 
 	void init()
 	{	
+		setupDescriptorPool();
 		textureCompute3dTargets[0] = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
 		textureCompute3dTargets[1] = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
 		textureCompute3dTargetRaymarch = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
@@ -189,7 +202,7 @@ public:
 		
 		scene.Update(timer * 0.05f, queue);
 
-		dbgtex.Init(vulkanDevice, scene.shadowmapColor, queue, mainRenderPass->GetRenderPass(), pipelineCache);
+		dbgtex.Init(vulkanDevice, descriptorPool, scene.shadowmapColor, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 
 		initComputeObjects();
 	}

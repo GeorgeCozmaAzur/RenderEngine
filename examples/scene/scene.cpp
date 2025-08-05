@@ -42,6 +42,8 @@ public:
 
 	scene::DeferredLights deferredLights;
 
+	VkDescriptorPool descriptorPoolPostEffects;
+
 	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
@@ -64,8 +66,20 @@ public:
 		
 	}
 
+	void setupDescriptorPool()
+	{
+		std::vector<VkDescriptorPoolSize> poolSizes = {
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2}
+		};
+		descriptorPoolPostEffects = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 1);
+	}
+
 	void init()
 	{
+		setupDescriptorPool();
+
 		scene.SetCamera(&camera);
 		scene.uniform_manager.SetEngineDevice(vulkanDevice);	
 
@@ -106,10 +120,10 @@ public:
 		scene.CreateShadow(queue);
 		scene.globalTextures.push_back(scene.shadowmap);
 
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "castle.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
+		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "castle.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/mypot/", "mypot.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
-		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern2/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern2/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
@@ -125,7 +139,7 @@ public:
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/posteffects/simpletexture.frag.spv",
 			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-		pfdesc = vulkanDevice->GetDescriptorSet({}, { &sceneLightscolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
+		pfdesc = vulkanDevice->GetDescriptorSet(descriptorPoolPostEffects, {}, { &sceneLightscolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
 	}
 
 	void BuildCommandBuffers()
@@ -182,7 +196,7 @@ public:
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboSharedLights));
 
 		VK_CHECK_RESULT(vsdeferred->Map());
-		deferredLights.Init(vsdeferred, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, scene.lightPositions.size(), scenepositions, scenenormals, sceneroughnessmetallic, scenecolor);
+		deferredLights.Init(vsdeferred, vulkanDevice, descriptorPoolPostEffects, queue, scenepass->GetRenderPass(), pipelineCache, scene.lightPositions.size(), scenepositions, scenenormals, sceneroughnessmetallic, scenecolor);
 	}
 
 	void Prepare()

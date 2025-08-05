@@ -128,6 +128,11 @@ namespace engine
 
 			m_fontTexture->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_2D, 0);
 
+			std::vector<VkDescriptorPoolSize> poolSizes = {
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
+			};
+			descriptorPool = _device->CreateDescriptorSetsPool(poolSizes, 1);
+
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> setLayoutBindings
 			{
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
@@ -140,7 +145,7 @@ namespace engine
 			fontDescriptorImageInfo.imageView = m_fontTexture->m_descriptor.imageView;
 			fontDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-			render::VulkanDescriptorSet* set = _device->GetDescriptorSet({}, { &fontDescriptorImageInfo }, _descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings);
+			render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, {}, { &fontDescriptorImageInfo }, _descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings);
 			m_descriptorSets.push_back(set);
 
 			m_geometries.push_back(new Geometry);

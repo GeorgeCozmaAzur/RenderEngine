@@ -29,6 +29,8 @@ public:
 		render::VERTEX_COMPONENT_BITANGENT
 		}, {});
 
+	VkDescriptorPool descriptorPool;
+
 	engine::scene::SimpleModel plane;
 	render::VulkanTexture* colorMap;
 	render::VulkanTexture* normalMap;
@@ -139,7 +141,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
 	}
 
 	void SetupDescriptors()
@@ -156,7 +158,7 @@ public:
 		};
 		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor, &normalMap->m_descriptor, &dispMap->m_descriptor, &glossMap->m_descriptor, },
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor, &normalMap->m_descriptor, &dispMap->m_descriptor, &glossMap->m_descriptor, },
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
 	}
 

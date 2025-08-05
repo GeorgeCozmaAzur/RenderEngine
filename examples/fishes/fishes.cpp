@@ -75,6 +75,8 @@ public:
 		
 		}, {});
 
+	VkDescriptorPool descriptorPool;
+
 	engine::scene::SimpleModel allfish;
 	//render::VulkanTexture* colorMap;
 	std::vector<std::string> textureNames;
@@ -378,7 +380,7 @@ public:
 		};
 		allfish.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		allfish.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &dynamicBuffer->m_descriptor }, { &textures->m_descriptor },
+		allfish.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &dynamicBuffer->m_descriptor }, { &textures->m_descriptor },
 			allfish._descriptorLayout->m_descriptorSetLayout, allfish._descriptorLayout->m_setLayoutBindings, dynamicAlignment));
 	}
 

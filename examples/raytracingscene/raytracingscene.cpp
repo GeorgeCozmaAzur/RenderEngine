@@ -75,6 +75,7 @@ public:
 
 	std::vector<VkShaderModule> m_shaderModules;
 
+	VkDescriptorPool descriptorPool;
 	VkPipeline pipeline;
 	VkPipelineLayout pipelineLayout;
 	VkDescriptorSet descriptorSet;
@@ -605,9 +606,9 @@ public:
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(alltextures.size()) }
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 1);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 1);
 
-		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO , nullptr, vulkanDevice->m_descriptorPool, 1, &descriptorSetLayout };
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO , nullptr, descriptorPool, 1, &descriptorSetLayout };
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
 
 		//VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = engine::initializers::writeDescriptorSetAccelerationStructureKHR();

@@ -43,7 +43,7 @@ namespace engine
 			bool enableDebugMarkers = false;  // Indicates if debug markers extension is enabled
 			VkPipelineCache pipelineCache = VK_NULL_HANDLE;  // Pipeline cache object
 
-			VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;  // Descriptor pool
+			std::vector<VkDescriptorPool> m_descriptorPools;  // Descriptor pools
 			std::vector<VulkanBuffer*> m_buffers;  // Graphical resources - buffers
 			std::vector<VulkanBuffer*> m_stagingBuffers;  // Graphical resources - staging buffers
 			std::vector<VulkanTexture*> m_textures;  // Graphical resources - textures
@@ -172,13 +172,13 @@ namespace engine
 			VulkanPipeline* GetComputePipeline(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, uint32_t constanBlockSize = 0);
 
 			// Creates a descriptor sets pool
-			void CreateDescriptorSetsPool(std::vector<VkDescriptorPoolSize> poolSizes, uint32_t maxSets);
+			VkDescriptorPool CreateDescriptorSetsPool(std::vector<VkDescriptorPoolSize> poolSizes, uint32_t maxSets);
 
 			// Gets a descriptor set layout
 			VulkanDescriptorSetLayout* GetDescriptorSetLayout(std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> layoutbindigs);
 
 			// Gets a descriptor set
-			VulkanDescriptorSet* GetDescriptorSet(std::vector<VkDescriptorBufferInfo*> buffersDescriptors,
+			VulkanDescriptorSet* GetDescriptorSet(VkDescriptorPool pool, std::vector<VkDescriptorBufferInfo*> buffersDescriptors,
 				std::vector<VkDescriptorImageInfo*> texturesDescriptors,
 				VkDescriptorSetLayout layout, std::vector<VkDescriptorSetLayoutBinding> layoutBindings, uint32_t dynamicAllingment = 0);
 
