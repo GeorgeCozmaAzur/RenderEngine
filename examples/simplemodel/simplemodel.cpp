@@ -36,6 +36,8 @@ public:
 
 	glm::vec4 light_pos = glm::vec4(0.0f, -5.0f, 0.0f, 1.0f);
 
+	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+
 	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
@@ -46,7 +48,7 @@ public:
 		camera.movementSpeed = 20.5f;
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, 5.0f, 0.0f));
+		camera.SetPosition(glm::vec3(0.0f, 0.0f, -3.0f));
 	}
 
 	~VulkanExample()
@@ -59,7 +61,7 @@ public:
 	void setupGeometry()
 	{
 		//Geometry
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 1.0f, 1);
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayout, 0.1f, 1);
 		for (auto geo : plane.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
@@ -98,9 +100,9 @@ public:
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
-			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2}
+			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 1);
 	}
 
 	void SetupDescriptors()
@@ -113,7 +115,7 @@ public:
 		};
 		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
 	}
 

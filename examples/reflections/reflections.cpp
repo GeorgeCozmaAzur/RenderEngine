@@ -38,6 +38,8 @@ public:
 		engine::scene::SimpleModel* plane = new scene::SimpleModel;
 	} models;
 
+	VkDescriptorPool descriptorPool;
+
 	struct UBO {
 		glm::mat4 projection;
 		glm::mat4 model;
@@ -170,7 +172,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
 	}
 
 	void prepareUniformBuffers()
@@ -245,13 +247,13 @@ public:
 
 	void setupDescriptors()
 	{
-		descriptorSets.model = vulkanDevice->GetDescriptorSet({ &uniformBuffers.vsModel->m_descriptor }, {},
+		descriptorSets.model = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.vsModel->m_descriptor }, {},
 			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
 
-		descriptorSets.offscreen = vulkanDevice->GetDescriptorSet({&uniformBuffers.vsOffScreen->m_descriptor }, {},
+		descriptorSets.offscreen = vulkanDevice->GetDescriptorSet(descriptorPool, {&uniformBuffers.vsOffScreen->m_descriptor }, {},
 			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
 
-		descriptorSets.mirror = vulkanDevice->GetDescriptorSet({ &uniformBuffers.vsMirror->m_descriptor }, { &colorMap->m_descriptor, &colorTex->m_descriptor },
+		descriptorSets.mirror = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.vsMirror->m_descriptor }, { &colorMap->m_descriptor, &colorTex->m_descriptor },
 			layouts.mirror->m_descriptorSetLayout, layouts.mirror->m_setLayoutBindings);
 
 

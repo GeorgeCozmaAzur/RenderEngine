@@ -51,7 +51,7 @@ namespace engine
 			return indices;
 		}
 
-		void TerrainUVSphere::Init(const std::string& filename, float radius, render::VulkanDevice* vulkanDevice, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, VkDeviceSize vertexUniformBufferSize, VkDeviceSize fragmentUniformBufferSize, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue, int fallbackRings, int fallbackSlices)
+		void TerrainUVSphere::Init(const std::string& filename, float radius, render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, VkDeviceSize vertexUniformBufferSize, VkDeviceSize fragmentUniformBufferSize, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue, int fallbackRings, int fallbackSlices)
 		{
 			_vertexLayout = vertex_layout;
 
@@ -261,7 +261,7 @@ namespace engine
 
 			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(bindings);
 
-			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(buffersDescriptors, texturesDescriptors,
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, buffersDescriptors, texturesDescriptors,
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,

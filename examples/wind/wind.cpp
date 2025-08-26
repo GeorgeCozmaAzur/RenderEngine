@@ -25,8 +25,9 @@ public:
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
-		
 		}, {});
+
+	VkDescriptorPool descriptorPool;
 
 	engine::scene::SimpleModel plane;
 	engine::scene::SimpleModel trunk;
@@ -140,7 +141,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
 	}
 
 	void SetupDescriptors()
@@ -169,11 +170,11 @@ public:
 		trunk.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(treebindings));
 		leaves.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(leavesbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
-		trunk.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor }, { &trunktex->m_descriptor },
+		trunk.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor }, { &trunktex->m_descriptor },
 			trunk._descriptorLayout->m_descriptorSetLayout, trunk._descriptorLayout->m_setLayoutBindings));
-		leaves.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor }, { &leavestex->m_descriptor, /*&perlinnoise->m_descriptor*/ },
+		leaves.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor }, { &leavestex->m_descriptor, /*&perlinnoise->m_descriptor*/ },
 			leaves._descriptorLayout->m_descriptorSetLayout, leaves._descriptorLayout->m_setLayoutBindings));
 	}
 

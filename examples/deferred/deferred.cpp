@@ -37,6 +37,8 @@ public:
 		},
 		{ render::VERTEX_COMPONENT_POSITION });
 
+	VkDescriptorPool descriptorPool;
+
 	struct {
 		scene::SimpleModel example;
 		scene::SimpleModel quad;
@@ -224,7 +226,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
 	}
 
 	void prepareUniformBuffers()
@@ -276,13 +278,13 @@ public:
 
 	void setupDescriptors()
 	{
-		descriptorSets.model = vulkanDevice->GetDescriptorSet({ &uniformBuffers.vsModel->m_descriptor }, {},
+		descriptorSets.model = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.vsModel->m_descriptor }, {},
 			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
 
 		models.example.AddDescriptor(descriptorSets.model);
 		models.plane.AddDescriptor(descriptorSets.model);
 
-		descriptorSets.deferred = vulkanDevice->GetDescriptorSet({ &uniformBuffers.fsdeferred->m_descriptor },
+		descriptorSets.deferred = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.fsdeferred->m_descriptor },
 			{ &scenecolor->m_descriptor , &scenepositions->m_descriptor, &scenenormals->m_descriptor }, layouts.deferred->m_descriptorSetLayout, layouts.deferred->m_setLayoutBindings);
 
 	}

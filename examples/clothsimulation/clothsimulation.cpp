@@ -37,6 +37,8 @@ public:
 		render::VERTEX_COMPONENT_UV
 		}, {});
 
+	VkDescriptorPool descriptorPool;
+
 	engine::scene::SimpleModel models;
 	render::VulkanTexture* colorMap;
 	render::VulkanTexture* clothMap;
@@ -194,7 +196,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 7);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 7);
 	}
 
 	void SetupDescriptors()
@@ -206,11 +208,11 @@ public:
 		};
 		models.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		models.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
+		models.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
 			models._descriptorLayout->m_descriptorSetLayout, models._descriptorLayout->m_setLayoutBindings));
 
 		clothobject.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		clothobject.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor }, { &clothMap->m_descriptor },
+		clothobject.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, { &clothMap->m_descriptor },
 			clothobject._descriptorLayout->m_descriptorSetLayout, clothobject._descriptorLayout->m_setLayoutBindings));
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> offscreenbindings
@@ -218,7 +220,7 @@ public:
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
 		};
 		shadowobjects.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(offscreenbindings));
-		shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet({ &uniformBufferoffscreen->m_descriptor }, {},
+		shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBufferoffscreen->m_descriptor }, {},
 			shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._descriptorLayout->m_setLayoutBindings));
 	}
 
@@ -262,9 +264,9 @@ public:
 		};
 		clothcompute._descriptorLayout = vulkanDevice->GetDescriptorSetLayout(computebindings);
 		clothcompute.m_descriptorSets.resize(2);
-		clothcompute.m_descriptorSets[0] = vulkanDevice->GetDescriptorSet({ &clothcompute.storageBuffers.inbuffer->m_descriptor, &clothcompute.storageBuffers.outbuffer->m_descriptor, &clothcompute.m_uniformBuffer->m_descriptor }, { &shadowtex->m_descriptor },
+		clothcompute.m_descriptorSets[0] = vulkanDevice->GetDescriptorSet(descriptorPool, { &clothcompute.storageBuffers.inbuffer->m_descriptor, &clothcompute.storageBuffers.outbuffer->m_descriptor, &clothcompute.m_uniformBuffer->m_descriptor }, { &shadowtex->m_descriptor },
 			clothcompute._descriptorLayout->m_descriptorSetLayout, clothcompute._descriptorLayout->m_setLayoutBindings);
-		clothcompute.m_descriptorSets[1] = vulkanDevice->GetDescriptorSet({ &clothcompute.storageBuffers.outbuffer->m_descriptor, &clothcompute.storageBuffers.inbuffer->m_descriptor, &clothcompute.m_uniformBuffer->m_descriptor }, { &shadowtex->m_descriptor },
+		clothcompute.m_descriptorSets[1] = vulkanDevice->GetDescriptorSet(descriptorPool, { &clothcompute.storageBuffers.outbuffer->m_descriptor, &clothcompute.storageBuffers.inbuffer->m_descriptor, &clothcompute.m_uniformBuffer->m_descriptor }, { &shadowtex->m_descriptor },
 			clothcompute._descriptorLayout->m_descriptorSetLayout, clothcompute._descriptorLayout->m_setLayoutBindings);
 
 		std::string fileName = engine::tools::getAssetPath() + "shaders/clothsimulation/" + "cloth" + ".comp.spv";

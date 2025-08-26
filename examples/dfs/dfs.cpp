@@ -48,6 +48,8 @@ public:
 	render::VulkanBuffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 
+	VkDescriptorPool descriptorPool;
+
 	render::VulkanDescriptorSetLayout* lightinjectiondescriptorSetLayout;
 	//render::VulkanDescriptorSetLayout* raymarchdescriptorSetLayout;
 
@@ -138,7 +140,7 @@ public:
 			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT}
 		};
 		lightinjectiondescriptorSetLayout = vulkanDevice->GetDescriptorSetLayout(computebindings);
-		lightinjectiondescriptorSet = vulkanDevice->GetDescriptorSet(
+		lightinjectiondescriptorSet = vulkanDevice->GetDescriptorSet(descriptorPool,
 			{ &vertexStorageBuffer->m_descriptor, &indexStorageBuffer->m_descriptor, &computeUniformBuffer->m_descriptor }, { &textureDFS->m_descriptor },
 			lightinjectiondescriptorSetLayout->m_descriptorSetLayout, lightinjectiondescriptorSetLayout->m_setLayoutBindings);
 
@@ -212,16 +214,16 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
 	}
 
 	void init()
 	{	
 		setupDescriptorPool();
 		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 1.1f, 1, glm::vec3(0.0f, 1.0f,0.0f));
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.02f, 1, glm::vec3(-0.7f, 0.0f, 0.0f));
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", &vertexLayout, 0.1f, 1, glm::vec3(0.7f, 1.0f, 0.0f));
-		//plane.LoadGeometry(engine::tools::getAssetPath() + "models/teapot.dae", &vertexLayout, 0.05f, 1, glm::vec3(0.7f, 0.0f, 0.0f));
+		//plane.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.02f, 1, glm::vec3(-0.7f, 0.0f, 0.0f));
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", &vertexLayout, 0.1f, 1, glm::vec3(-0.7f, 1.0f, 0.0f));
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/teapot.dae", &vertexLayout, 0.05f, 1, glm::vec3(0.7f, 0.0f, 0.0f));
 
 		for (auto geo : plane.m_geometries)
 		{
@@ -255,7 +257,7 @@ public:
 		};
 		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor }, { &textureDFS->m_descriptor },
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, { &textureDFS->m_descriptor },
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
 		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/basic/dfs.vert.spv", engine::tools::getAssetPath() + "shaders/basic/dfs.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
@@ -295,7 +297,7 @@ public:
 		
 		//scene.Update(timer * 0.05f, queue);
 
-		dbgtex.Init(vulkanDevice, textureDFS, queue, mainRenderPass->GetRenderPass(), pipelineCache);
+		dbgtex.Init(vulkanDevice, descriptorPool, textureDFS, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 
 		initComputeObjects();
 	}
@@ -523,7 +525,7 @@ public:
 
 		framesno++;
 
-		int dif = framesno > 5 ? 1 : 0;
+		int dif = framesno > 2 ? 1 : 0;
 
 		std::vector<VkCommandBuffer> submitCommandBuffers(allDrawCommandBuffers.size()-dif);
 		for (int i = 0; i < submitCommandBuffers.size(); i++)

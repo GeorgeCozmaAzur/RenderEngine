@@ -24,7 +24,7 @@ layout (binding = 1) uniform UBO
 	int noise_index;
 } ubo;
 
-layout (binding = 2, rgba16) uniform writeonly image3D i_VoxelGrid;
+layout (binding = 2, rgba16f) uniform writeonly image3D i_VoxelGrid;
 
 
 float slice_distance(int z)

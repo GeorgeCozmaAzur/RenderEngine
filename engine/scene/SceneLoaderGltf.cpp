@@ -115,7 +115,7 @@ namespace engine
 				VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 			};
 
-			_device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);
+			descriptorPool = _device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
 			{
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
@@ -210,7 +210,7 @@ namespace engine
 				render_objects[i]->SetDescriptorSetLayout(currentDesclayout);
 				render_objects[i]->_vertexLayout = hasNormalmap ? &vertexlayoutNormalmap : &vertexlayout;
 				render_objects[i]->AddPipeline(hasNormalmap ? currentPipelineNormalmap : currentPipeline);
-				render::VulkanDescriptorSet* desc = _device->GetDescriptorSet(buffersDescriptors, texturesDescriptors,
+				render::VulkanDescriptorSet* desc = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, texturesDescriptors,
 					currentDesclayout->m_descriptorSetLayout, currentDesclayout->m_setLayoutBindings);
 				render_objects[i]->AddDescriptor(desc);
 			}
@@ -544,7 +544,7 @@ namespace engine
 						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache, props);
 					sro->AddPipeline(p);
 
-					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(buffersDescriptors, {},
+					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, {},
 						currentdescayout->m_descriptorSetLayout, currentdescayout->m_setLayoutBindings);
 					sro->AddDescriptor(set);
 

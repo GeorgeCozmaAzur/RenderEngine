@@ -93,6 +93,8 @@ public:
 		VulkanDescriptorSetLayout *filter_layout;
 	} layouts;
 
+	VkDescriptorPool descriptorPool;
+
 	struct {
 		VulkanPipeline *quad;
 		VulkanPipeline *offscreen;
@@ -257,15 +259,15 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}
 		};
 
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
 	}
 
 	void setupDescriptorSets()
 	{
-		descriptorSets.offscreen = vulkanDevice->GetDescriptorSet({&uniformBuffers.offscreen->m_descriptor }, {},
+		descriptorSets.offscreen = vulkanDevice->GetDescriptorSet(descriptorPool, {&uniformBuffers.offscreen->m_descriptor }, {},
 			layouts.offscreen_layout->m_descriptorSetLayout, layouts.offscreen_layout->m_setLayoutBindings);
 
-		descriptorSets.scene = vulkanDevice->GetDescriptorSet({ &uniformBuffers.scene->m_descriptor, &uniformBufferFS->m_descriptor }, { &shadowmapColor->m_descriptor },
+		descriptorSets.scene = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.scene->m_descriptor, &uniformBufferFS->m_descriptor }, { &shadowmapColor->m_descriptor },
 			layouts.scene_layout->m_descriptorSetLayout, layouts.scene_layout->m_setLayoutBindings);
 
 		for(auto scene:scenes)

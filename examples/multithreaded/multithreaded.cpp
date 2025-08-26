@@ -45,6 +45,8 @@ public:
 		},
 		{ render::VERTEX_COMPONENT_POSITION });
 
+	VkDescriptorPool descriptorPool;
+
 	struct ThreadData {
 		VkCommandPool commandPool;
 		// One command buffer per render object
@@ -244,7 +246,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 * static_cast<uint32_t>(objectsNo) + 2},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * static_cast<uint32_t>(objectsNo)}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2 * objectsNo+2);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2 * objectsNo+2);
 	}
 
 	void SetupDescriptors()
@@ -261,7 +263,7 @@ public:
 		for (int i = 0;i < objectsNo;i++)
 		{
 			objects[i].SetDescriptorSetLayout(objectslayout);
-			objects[i].AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &vert_uniform_buffers[i]->m_descriptor }, { &colorMap->m_descriptor },
+			objects[i].AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &vert_uniform_buffers[i]->m_descriptor }, { &colorMap->m_descriptor },
 				objects[i]._descriptorLayout->m_descriptorSetLayout, objects[i]._descriptorLayout->m_setLayoutBindings));
 		}
 	}
@@ -290,7 +292,7 @@ public:
 
 		std::vector <std::vector<glm::vec3>> boundries;
 		tree->GatherAllBoundries(boundries);
-		dbgbb.Init(boundries, vulkanDevice, sceneVertexUniformBuffer,queue,mainRenderPass->GetRenderPass(), pipelineCache, sizeof(float));
+		dbgbb.Init(boundries, vulkanDevice, descriptorPool, sceneVertexUniformBuffer, queue, mainRenderPass->GetRenderPass(), pipelineCache, sizeof(float));
 		
 		constants.resize(boundries.size());
 		std::fill(constants.begin(), constants.end(), 1.0f);

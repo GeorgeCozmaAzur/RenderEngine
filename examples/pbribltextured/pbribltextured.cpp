@@ -28,12 +28,13 @@ public:
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_TANGENT,
 		render::VERTEX_COMPONENT_BITANGENT
-		
 		}, {});
 
 	render::VertexLayout simpleVertexLayout = render::VertexLayout({
 		render::VERTEX_COMPONENT_POSITION
 		}, {});
+
+	VkDescriptorPool descriptorPool;
 
 	engine::scene::SimpleModel plane;
 	
@@ -185,7 +186,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 13}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
 	}
 
 	void SetupDescriptors()
@@ -206,7 +207,7 @@ public:
 		};
 		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor }, 
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor },
 			{ &BRDFLUTMap->m_descriptor, &irradianceMap->m_descriptor, &prefilterMap->m_descriptor, &colorMap->m_descriptor, &normalMap->m_descriptor, &roughnessMap->m_descriptor, &metallicMap->m_descriptor, &aoMap->m_descriptor },
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
 
@@ -219,7 +220,7 @@ public:
 		};
 		skybox.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(skyboxbindings));
 
-		skybox.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &modelSBVertexUniformBuffer->m_descriptor, &modelSBFragmentUniformBuffer->m_descriptor },
+		skybox.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelSBVertexUniformBuffer->m_descriptor, &modelSBFragmentUniformBuffer->m_descriptor },
 			{ &envMap->m_descriptor },
 			skybox._descriptorLayout->m_descriptorSetLayout, skybox._descriptorLayout->m_setLayoutBindings));
 	}
@@ -288,7 +289,7 @@ public:
 		};
 		scene::RenderObject obj;
 		obj.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		obj.AddDescriptor(vulkanDevice->GetDescriptorSet({  },
+		obj.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, {},
 			{ &envMap->m_descriptor },
 			obj._descriptorLayout->m_descriptorSetLayout, obj._descriptorLayout->m_setLayoutBindings));
 
@@ -413,7 +414,7 @@ public:
 		};
 		scene::RenderObject obj;
 		obj.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		obj.AddDescriptor(vulkanDevice->GetDescriptorSet({  },
+		obj.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, {},
 			{ &envMap->m_descriptor },
 			obj._descriptorLayout->m_descriptorSetLayout, obj._descriptorLayout->m_setLayoutBindings));
 

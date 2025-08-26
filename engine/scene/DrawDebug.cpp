@@ -14,7 +14,7 @@ namespace engine
 			m_texture = texture;
 		}
 
-		void DrawDebugTexture::Init(render::VulkanDevice* vulkanDevice, render::VulkanTexture* texture, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache)
+		void DrawDebugTexture::Init(render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VulkanTexture* texture, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache)
 		{
 			m_hasDepth = texture->m_depth > 1;
 
@@ -50,7 +50,7 @@ namespace engine
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, bufferSize);
 			VK_CHECK_RESULT(uniformBufferVS->Map());
 
-			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &uniformBufferVS->m_descriptor }, { &m_texture ->m_descriptor },
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBufferVS->m_descriptor }, { &m_texture ->m_descriptor },
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			std::string shaderFileName = m_hasDepth ? "texture3d" : "texture";
@@ -117,7 +117,7 @@ namespace engine
 			m_geometries.push_back(geo);
 		}
 
-		void DrawDebugVectors::Init(render::VulkanDevice* vulkanDevice, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache)
+		void DrawDebugVectors::Init(render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache)
 		{
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 			{
@@ -127,14 +127,14 @@ namespace engine
 
 			_vertexLayout = &debugVertexLayout;
 
-			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &globalUniformBufferVS->m_descriptor }, {},
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &globalUniformBufferVS->m_descriptor }, {},
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
 				engine::tools::getAssetPath() + "shaders/drawdebug/vertexcolored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
 		}
 
-		void DrawDebugBBs::Init(std::vector<std::vector<glm::vec3>> boundries, render::VulkanDevice* vulkanDevice, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, uint32_t constantSize)
+		void DrawDebugBBs::Init(std::vector<std::vector<glm::vec3>> boundries, render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, uint32_t constantSize)
 		{
 			_vertexLayout = &debugVertexLayout;
 
@@ -188,7 +188,7 @@ namespace engine
 			};
 			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(bindings);
 
-			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet({ &globalUniformBufferVS->m_descriptor }, {},
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &globalUniformBufferVS->m_descriptor }, {},
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,

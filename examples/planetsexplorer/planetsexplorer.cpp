@@ -46,6 +46,8 @@ public:
 		render::VERTEX_COMPONENT_BITANGENT
 		}, {});
 
+	VkDescriptorPool descriptorPool;
+
 	engine::scene::SimpleModel sun;
 	engine::scene::SimpleModel saturn;
 	engine::scene::Rings rings;
@@ -231,7 +233,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 17},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 10);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 10);
 	}
 
 	void SetupDescriptors()
@@ -245,11 +247,11 @@ public:
 		};
 
 		sun.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		sun.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &uniformBufferSunVS->m_descriptor }, { &sunMap->m_descriptor },
+		sun.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &uniformBufferSunVS->m_descriptor }, { &sunMap->m_descriptor },
 			sun._descriptorLayout->m_descriptorSetLayout, sun._descriptorLayout->m_setLayoutBindings));
 
 		saturn.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		saturn.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor, &uniformBufferMPVS->m_descriptor }, { &saturnMap->m_descriptor },
+		saturn.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &uniformBufferMPVS->m_descriptor }, { &saturnMap->m_descriptor },
 			saturn._descriptorLayout->m_descriptorSetLayout, saturn._descriptorLayout->m_setLayoutBindings));
 
 		/*std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> skyboxbindings
@@ -317,8 +319,8 @@ public:
 		transprops.attachmentCount = static_cast<uint32_t>(blendAttachmentStatesTransparent.size());
 		transprops.pAttachments = blendAttachmentStatesTransparent.data();
 
-		myplanet.Init(engine::tools::getAssetPath() + "textures/planets/mars_1k_topo.jpg", 6000, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), 0, { &colorMap->m_descriptor }, "planet/planet", "planet/planet", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue, 100, 100);
-		rings.Init(6700.0, 6700.0+8000.0, 300, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, { &ringsMap->m_descriptor, &shadowtex->m_descriptor }, "planet/shadowedplanet", "planet/shadowedplanet", scenepass->GetRenderPass(), pipelineCache, transprops, queue);
+		myplanet.Init(engine::tools::getAssetPath() + "textures/planets/mars_1k_topo.jpg", 6000, vulkanDevice, descriptorPool, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), 0, { &colorMap->m_descriptor }, "planet/planet", "planet/planet", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue, 100, 100);
+		rings.Init(6700.0, 6700.0+8000.0, 300, vulkanDevice, descriptorPool, &vertexLayout, sceneVertexUniformBuffer, { &ringsMap->m_descriptor, &shadowtex->m_descriptor }, "planet/shadowedplanet", "planet/shadowedplanet", scenepass->GetRenderPass(), pipelineCache, transprops, queue);
 		
 		shadowobjects.SetVertexLayout(&vertexLayout);
 		scene::Geometry* mygeo = new scene::Geometry;
@@ -332,7 +334,7 @@ public:
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
 		};
 		shadowobjects.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(offscreenbindings));
-		shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet({ &uniformBufferoffscreen->m_descriptor }, {},
+		shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBufferoffscreen->m_descriptor }, {},
 			shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._descriptorLayout->m_setLayoutBindings));
 		
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
@@ -342,7 +344,7 @@ public:
 			, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true));
 
 		sphereprops.blendEnable = true;
-		atmosphere.Init("", 6100, vulkanDevice, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), sizeof(modelUniformAtmosphereFS), { &colorMap->m_descriptor }, "planet/atmosphere", "planet/atmosphere", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue,
+		atmosphere.Init("", 6100, vulkanDevice, descriptorPool, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), sizeof(modelUniformAtmosphereFS), { &colorMap->m_descriptor }, "planet/atmosphere", "planet/atmosphere", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue,
 		128, 128);
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> atmosphereBindings
@@ -359,7 +361,7 @@ public:
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/planet/atmosphereposteffect.frag.spv",
 			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-		peffdesc = vulkanDevice->GetDescriptorSet({ &matricesUniformBuffer->m_descriptor, &atmosphere.GetFSUniformBuffer()->m_descriptor }, 
+		peffdesc = vulkanDevice->GetDescriptorSet(descriptorPool, { &matricesUniformBuffer->m_descriptor, &atmosphere.GetFSUniformBuffer()->m_descriptor },
 			{ &scenecolor->m_descriptor, &scenepositions->m_descriptor, &scenedepth->m_descriptor, &bluenoise->m_descriptor }, 
 			atmosphereLayout->m_descriptorSetLayout, atmosphereLayout->m_setLayoutBindings);
 

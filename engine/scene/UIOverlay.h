@@ -50,6 +50,8 @@ namespace engine
 			bool m_updated = false;
 			float m_scale = 1.0f;
 
+			VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+
 			UIOverlay();
 			~UIOverlay();
 

@@ -607,7 +607,7 @@ namespace engine
             return pipeline;
         }
 
-        void VulkanDevice::CreateDescriptorSetsPool(std::vector<VkDescriptorPoolSize> poolSizes, uint32_t maxSets)
+        VkDescriptorPool VulkanDevice::CreateDescriptorSetsPool(std::vector<VkDescriptorPoolSize> poolSizes, uint32_t maxSets)
         {
             VkDescriptorPoolCreateInfo descriptorPoolInfo{};
             descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -615,7 +615,13 @@ namespace engine
             descriptorPoolInfo.pPoolSizes = poolSizes.data();
             descriptorPoolInfo.maxSets = maxSets;
 
-            VK_CHECK_RESULT(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, nullptr, &m_descriptorPool));
+            VkDescriptorPool pool;
+
+            VK_CHECK_RESULT(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, nullptr, &pool));
+
+            m_descriptorPools.push_back(pool);
+
+            return pool;
         }
 
         VulkanDescriptorSetLayout* VulkanDevice::GetDescriptorSetLayout(std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> layoutbindigs)
@@ -628,7 +634,7 @@ namespace engine
             return layout;
         }
 
-        VulkanDescriptorSet* VulkanDevice::GetDescriptorSet(std::vector<VkDescriptorBufferInfo*> buffersDescriptors,
+        VulkanDescriptorSet* VulkanDevice::GetDescriptorSet(VkDescriptorPool pool, std::vector<VkDescriptorBufferInfo*> buffersDescriptors,
             std::vector<VkDescriptorImageInfo*> texturesDescriptors,
             VkDescriptorSetLayout layout, std::vector<VkDescriptorSetLayoutBinding> layoutBindings, uint32_t dynamicAllingment)
         {
@@ -640,7 +646,7 @@ namespace engine
             for (auto tex : texturesDescriptors)
                 set->AddTextureDescriptor(tex);
 
-            set->SetupDescriptors(logicalDevice, m_descriptorPool, layout, layoutBindings);
+            set->SetupDescriptors(logicalDevice, pool, layout, layoutBindings);
             m_descriptorSets.push_back(set);
             return set;
         }
@@ -909,9 +915,10 @@ namespace engine
             for (auto fence : m_fences)
                 vkDestroyFence(logicalDevice, fence, nullptr);
 
-            if (m_descriptorPool != VK_NULL_HANDLE)
+            for (auto pool : m_descriptorPools)
+            if (pool != VK_NULL_HANDLE)
             {
-                vkDestroyDescriptorPool(logicalDevice, m_descriptorPool, nullptr);
+                vkDestroyDescriptorPool(logicalDevice, pool, nullptr);
             }
 
             if (logicalDevice)

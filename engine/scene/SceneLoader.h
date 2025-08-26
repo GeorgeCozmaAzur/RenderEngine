@@ -68,6 +68,7 @@ namespace engine
 			Camera* m_camera = nullptr;
 			UniformBuffersManager uniform_manager;
 			std::vector<render::VulkanDescriptorSetLayout*> descriptorSetlayouts;
+			VkDescriptorPool descriptorPool;
 			std::vector<RenderObject*> render_objects;
 
 			std::string forwardShadersFolder = "basic";

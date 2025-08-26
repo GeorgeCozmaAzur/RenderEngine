@@ -8,7 +8,7 @@ namespace engine
 			return (float)rand() / ((float)RAND_MAX + 1);
 		}
 
-		void DeferredLights::Init(render::VulkanBuffer* ub, render::VulkanDevice* device, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture* positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic, render::VulkanTexture* albedo)
+		void DeferredLights::Init(render::VulkanBuffer* ub, render::VulkanDevice* device, VkDescriptorPool descriptorPool, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture* positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic, render::VulkanTexture* albedo)
 		{
 			vulkanDevice = device;
 			_vertexLayout = new render::VertexLayout(
@@ -62,7 +62,7 @@ namespace engine
 			}
 
 			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(modelbindings);
-			m_descriptorSets.push_back( vulkanDevice->GetDescriptorSet({ &ub->m_descriptor }, texturesDescriptors,
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &ub->m_descriptor }, texturesDescriptors,
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
 			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ {VK_TRUE, 
