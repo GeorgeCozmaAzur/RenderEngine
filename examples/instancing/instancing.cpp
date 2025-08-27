@@ -41,6 +41,7 @@ public:
 
 	render::VulkanBuffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
+	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 
 	glm::vec4 light_pos = glm::vec4(0.0f, -5.0f, 0.0f, 1.0f);
 
@@ -125,7 +126,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
 	}
 
 	void SetupDescriptors()
@@ -138,7 +139,7 @@ public:
 		};
 		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet({ &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
 	}
 

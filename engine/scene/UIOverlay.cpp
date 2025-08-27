@@ -61,35 +61,21 @@ namespace engine
 
 		UIOverlay::~UIOverlay() { }
 
-		/** Prepare all vulkan resources required to render the UI overlay */
-		void UIOverlay::prepareResources()
+		bool UIOverlay::LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
 		{
 			ImGuiIO& io = ImGui::GetIO();
 
 			// Create font texture
 			unsigned char* fontData;
 			int texWidth, texHeight;
-#if defined(__ANDROID__)
-			float scale = (float)engine::android::screenDensity / (float)ACONFIGURATION_DENSITY_MEDIUM;
-			AAsset* asset = AAssetManager_open(androidApp->activity->assetManager, "Roboto-Medium.ttf", AASSET_MODE_STREAMING);
-			if (asset) {
-				size_t size = AAsset_getLength(asset);
-				assert(size > 0);
-				char* fontAsset = new char[size];
-				AAsset_read(asset, fontAsset, size);
-				AAsset_close(asset);
-				io.Fonts->AddFontFromMemoryTTF(fontAsset, size, 14.0f * scale);
-				delete[] fontAsset;
-			}
-#else
-			io.Fonts->AddFontFromFileTTF("./../data/Roboto-Medium.ttf", 16.0f);
-#endif		
+
+			io.Fonts->AddFontFromFileTTF(filename.c_str(), 16.0f);	
 			io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
 			VkDeviceSize uploadSize = texWidth * texHeight * 4 * sizeof(char);
 
 			m_fontTexture = new render::VulkanTexture;
 
-			m_fontTexture->Create(_device->logicalDevice, &_device->memoryProperties, { touint(texWidth), touint(texHeight), 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+			m_fontTexture->Create(_device->logicalDevice, &_device->memoryProperties, { touint(texWidth), touint(texHeight), 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 
 			// Staging buffers for font data upload
 			render::VulkanBuffer* stagingBuffer = _device->CreateStagingBuffer(uploadSize, fontData);;
@@ -118,8 +104,8 @@ namespace engine
 			);
 
 			// Prepare for shader read
-			m_fontTexture->ChangeLayout(copyCmd, 
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
+			m_fontTexture->ChangeLayout(copyCmd,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 			_device->FlushCommandBuffer(copyCmd, _queue, true);
@@ -149,6 +135,8 @@ namespace engine
 			m_descriptorSets.push_back(set);
 
 			m_geometries.push_back(new Geometry);
+
+			return true;
 		}
 
 		/** Prepare a separate pipeline for the UI overlay rendering decoupled from the main application */
