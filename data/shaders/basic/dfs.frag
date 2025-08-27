@@ -49,9 +49,9 @@ float computeShadow(vec3 fragPos)
 
 void main() 
 {
-	vec4 vcolor = vec4(1.0,0.0,0.0,1.0);//texture(s_VoxelGrid, worldToUV(inPosition));//vec3(inUV, 0.5));
+	vec4 vcolor = vec4(1.0,1.0,1.0,1.0);//texture(s_VoxelGrid, worldToUV(inPosition));//vec3(inUV, 0.5));
 	vec3 lightDir = normalize(inLightPos - inPosition);  
 	float diff = max(dot(normalize(inNormal), lightDir), 0.0);
-	float s= computeShadow(inPosition + inNormal * 0.05);
-	outFragColor = vcolor * s * diff;
+	float s = computeShadow(inPosition + inNormal * 0.05);
+	outFragColor = vcolor * 0.2 + vcolor * s * diff * 0.8;
 }

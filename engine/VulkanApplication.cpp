@@ -581,7 +581,8 @@ void VulkanApplication::PrepareUI()
 	if (settings.overlay) {
 		UIOverlay._device = vulkanDevice;
 		UIOverlay._queue = queue;
-		UIOverlay.prepareResources();
+		engine::render::VertexLayout v;
+		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
 		UIOverlay.preparePipeline(pipelineCache, mainRenderPass->GetRenderPass());
 	}
 }
@@ -705,11 +706,6 @@ void VulkanApplication::UpdateOverlay()
 void VulkanApplication::DrawUI(const VkCommandBuffer commandBuffer)
 {
 	if (settings.overlay) {
-		const VkViewport viewport = { 0, 0, (float)width, (float)height, 0.0f, 1.0f };
-		const VkRect2D scissor = { VkOffset2D{0,0}, VkExtent2D{width, height} };
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
 		UIOverlay.draw(commandBuffer);
 	}
 }

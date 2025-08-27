@@ -20,9 +20,13 @@ namespace engine
 			VkMemoryPropertyFlags m_memoryPropertyFlags;
 
 		public:
+
 			VkDescriptorBufferInfo m_descriptor;
+
 			const VkBuffer GetVkBuffer() const { return m_buffer; }
+
 			VkDeviceSize GetSize() { return m_size; }
+
 			VkResult Create(VkDevice device,
 				VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkPhysicalDeviceMemoryProperties* memoryProperties, 
 				VkDeviceSize size, void* data = nullptr);

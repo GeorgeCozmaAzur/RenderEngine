@@ -37,7 +37,7 @@ namespace engine
 		{
 		public:
 			render::VulkanDevice* _device = nullptr;
-			VkQueue _queue;
+			VkQueue _queue = VK_NULL_HANDLE;
 
 			class render::VulkanTexture* m_fontTexture = nullptr;
 
@@ -55,8 +55,9 @@ namespace engine
 			UIOverlay();
 			~UIOverlay();
 
+			virtual bool LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale = 1.0f, int instanceNo = 1, glm::vec3 atPos = glm::vec3(0.0f));
+
 			void preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass);
-			void prepareResources();
 
 			bool shouldRecreateBuffers();
 

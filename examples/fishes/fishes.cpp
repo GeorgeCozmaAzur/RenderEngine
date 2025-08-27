@@ -14,7 +14,7 @@
 
 using namespace engine;
 
-#define OBJECT_INSTANCES 16000
+#define OBJECT_INSTANCES 1600
 #define THREADS_NO 10
 
 // Wrapper functions for aligned memory allocation
@@ -367,7 +367,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
 	}
 
 	void SetupDescriptors()

@@ -50,6 +50,7 @@ set(EXAMPLES
 	clothsimulation
 	emptyproject
 	fishes
+	instancing
 	multithreaded
 	normalparallax
 	paraboloidreflections

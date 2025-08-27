@@ -43,7 +43,7 @@ namespace engine
 
 			RenderObject& operator = (const RenderObject& t);
 
-			virtual bool LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos = glm::vec3(0.0f));
+			virtual bool LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale = 1.0f, int instanceNo = 1, glm::vec3 atPos = glm::vec3(0.0f));
 			void AdoptGeometriesFrom(const RenderObject& t);
 			void ComputeTangents(glm::vec3 pos1, glm::vec3 pos2, glm::vec3 pos3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, glm::vec3& tangent1, glm::vec3& bitangent1);
 			void SetVertexLayout(render::VertexLayout* vlayout) { _vertexLayout = vlayout; };

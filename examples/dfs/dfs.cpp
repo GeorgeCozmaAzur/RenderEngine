@@ -459,7 +459,7 @@ public:
 	virtual void update(float dt)
 	{
 		
-		depth += frameTimer * 1.15f;
+		depth += frameTimer * 0.15f;
 		if (depth > 1.0f)
 			depth = depth - 1.0f;
 
@@ -490,7 +490,9 @@ public:
 		uboFSscene.bias_near_far_pow = glm::vec4(0.002f, scene.m_camera->getNearClip(), scene.m_camera->getFarClip(), 1.0f);
 		scene.sceneFragmentUniformBuffer->MemCopy(&uboFSscene, sizeof(uboFSscene));*/
 
-		dbgtex.UpdateUniformBuffers(perspectiveMatrix, viewMatrix, depth);
+		glm::mat4 transM = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,-6.0f,0.0f));
+
+		dbgtex.UpdateUniformBuffers(perspectiveMatrix, viewMatrix * transM, depth);
 
 		//uint32_t read_idx = static_cast<uint32_t>(m_ct_ping_pong);
 		//uint32_t write_idx = static_cast<uint32_t>(!m_ct_ping_pong);
