@@ -11,7 +11,7 @@
 
 #include <vulkan/vulkan.h>
 #include "VulkanApplication.h"
-#include "render/VulkanRenderPass.h"
+#include "render/vulkan/VulkanRenderPass.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
 

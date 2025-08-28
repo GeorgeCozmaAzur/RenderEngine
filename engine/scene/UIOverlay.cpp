@@ -7,7 +7,7 @@
 */
 
 #include "UIOverlay.h"
-#include "render/VulkanTexture.h"
+#include "render/vulkan/VulkanTexture.h"
 
 namespace engine 
 {

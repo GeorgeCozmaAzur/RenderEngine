@@ -1,6 +1,6 @@
 #pragma once
-#include "render/VulkanDevice.h"
-#include "render/VulkanBuffer.h"
+#include "render/vulkan/VulkanDevice.h"
+#include "render/vulkan/VulkanBuffer.h"
 
 #include <vector>
 #include <unordered_map>

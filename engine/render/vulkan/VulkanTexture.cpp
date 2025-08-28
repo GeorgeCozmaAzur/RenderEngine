@@ -252,37 +252,37 @@ namespace engine
 			}
 		}
 
-		void TextureData::CreateStagingBuffer(VkDevice _device, VkPhysicalDeviceMemoryProperties* memoryProperties)
-		{
-			VkMemoryAllocateInfo memAllocInfo{};
-			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			VkMemoryRequirements memReqs;
+		//void TextureData::CreateStagingBuffer(VkDevice _device, VkPhysicalDeviceMemoryProperties* memoryProperties)
+		//{
+		//	VkMemoryAllocateInfo memAllocInfo{};
+		//	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		//	VkMemoryRequirements memReqs;
 
-			VkBufferCreateInfo bufferCreateInfo{};
-			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			bufferCreateInfo.size = m_imageSize;
-			// This buffer is used as a transfer source for the buffer copy
-			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		//	VkBufferCreateInfo bufferCreateInfo{};
+		//	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		//	bufferCreateInfo.size = m_imageSize;
+		//	// This buffer is used as a transfer source for the buffer copy
+		//	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		//	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			VK_CHECK_RESULT(vkCreateBuffer(_device, &bufferCreateInfo, nullptr, &m_stagingBuffer));
+		//	VK_CHECK_RESULT(vkCreateBuffer(_device, &bufferCreateInfo, nullptr, &m_stagingBuffer));
 
-			// Get memory requirements for the staging buffer (alignment, memory type bits)
-			vkGetBufferMemoryRequirements(_device, m_stagingBuffer, &memReqs);
+		//	// Get memory requirements for the staging buffer (alignment, memory type bits)
+		//	vkGetBufferMemoryRequirements(_device, m_stagingBuffer, &memReqs);
 
-			memAllocInfo.allocationSize = memReqs.size;
-			// Get memory type index for a host visible buffer
-			memAllocInfo.memoryTypeIndex = tools::getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memoryProperties);
+		//	memAllocInfo.allocationSize = memReqs.size;
+		//	// Get memory type index for a host visible buffer
+		//	memAllocInfo.memoryTypeIndex = tools::getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memoryProperties);
 
-			VK_CHECK_RESULT(vkAllocateMemory(_device, &memAllocInfo, nullptr, &m_stagingMemory));
-			VK_CHECK_RESULT(vkBindBufferMemory(_device, m_stagingBuffer, m_stagingMemory, 0));
+		//	VK_CHECK_RESULT(vkAllocateMemory(_device, &memAllocInfo, nullptr, &m_stagingMemory));
+		//	VK_CHECK_RESULT(vkBindBufferMemory(_device, m_stagingBuffer, m_stagingMemory, 0));
 
-			// Copy texture data into staging buffer
-			uint8_t* data;
-			VK_CHECK_RESULT(vkMapMemory(_device, m_stagingMemory, 0, memReqs.size, 0, (void**)&data));
-			memcpy(data, m_ram_data, m_imageSize);
-			vkUnmapMemory(_device, m_stagingMemory);
-		}
+		//	// Copy texture data into staging buffer
+		//	uint8_t* data;
+		//	VK_CHECK_RESULT(vkMapMemory(_device, m_stagingMemory, 0, memReqs.size, 0, (void**)&data));
+		//	memcpy(data, m_ram_data, m_imageSize);
+		//	vkUnmapMemory(_device, m_stagingMemory);
+		//}
 
 		void TextureData::Destroy(VkDevice _device)
 		{
@@ -296,10 +296,10 @@ namespace engine
 			delete[] m_ram_data;
 
 			// Clean up staging resources
-			if (m_stagingMemory)
+			/*if (m_stagingMemory)
 				vkFreeMemory(_device, m_stagingMemory, nullptr);
 			if (m_stagingBuffer)
-				vkDestroyBuffer(_device, m_stagingBuffer, nullptr);
+				vkDestroyBuffer(_device, m_stagingBuffer, nullptr);*/
 		}
 
 		void VulkanTexture::Create(VkDevice device, VkPhysicalDeviceMemoryProperties* memoryProperties, VkExtent3D extent, VkFormat format,
@@ -501,7 +501,7 @@ namespace engine
 				1, &imageMemoryBarrier);
 		}
 
-		void VulkanTexture::Update(TextureData* textureData, VkCommandBuffer copyCmd, VkQueue copyQueue)
+		void VulkanTexture::Update(TextureExtent** extents, VkBuffer stagingBuffer, VkCommandBuffer copyCmd, VkQueue copyQueue)
 		{
 			// Image barrier for optimal image (target)
 			ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -518,22 +518,22 @@ namespace engine
 					bufferCopyRegion.imageSubresource.mipLevel = level;
 					bufferCopyRegion.imageSubresource.baseArrayLayer = face;
 					bufferCopyRegion.imageSubresource.layerCount = 1;
-					bufferCopyRegion.imageExtent.width = static_cast<uint32_t>(textureData->m_extents[face][level].width);
-					bufferCopyRegion.imageExtent.height = static_cast<uint32_t>(textureData->m_extents[face][level].height);
+					bufferCopyRegion.imageExtent.width = static_cast<uint32_t>(extents[face][level].width);
+					bufferCopyRegion.imageExtent.height = static_cast<uint32_t>(extents[face][level].height);
 					bufferCopyRegion.imageExtent.depth = 1;
 					bufferCopyRegion.bufferOffset = offset;
 
 					bufferCopyRegions.push_back(bufferCopyRegion);
 
 					// Increase offset into staging buffer for next level / face
-					offset += textureData->m_extents[face][level].size;
+					offset += extents[face][level].size;
 				}
 			}
 
 			// Copy the faces from the staging buffer to the optimal tiled image
 			vkCmdCopyBufferToImage(
 				copyCmd,
-				textureData->m_stagingBuffer,
+				stagingBuffer,
 				m_vkImage,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				static_cast<uint32_t>(bufferCopyRegions.size()),
@@ -543,7 +543,7 @@ namespace engine
 			ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_descriptor.imageLayout, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 		}
 
-		void VulkanTexture::UpdateGeneratingMipmaps(TextureData* textureData, VkCommandBuffer copyCmd, VkQueue copyQueue)
+		void VulkanTexture::UpdateGeneratingMipmaps(TextureExtent** extents, VkBuffer stagingBuffer, VkCommandBuffer copyCmd, VkQueue copyQueue)
 		{
 			ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
@@ -555,17 +555,17 @@ namespace engine
 				bufferCopyRegion.imageSubresource.mipLevel = 0;
 				bufferCopyRegion.imageSubresource.baseArrayLayer = face;
 				bufferCopyRegion.imageSubresource.layerCount = 1;
-				bufferCopyRegion.imageExtent.width = static_cast<uint32_t>(textureData->m_extents[face][0].width);
-				bufferCopyRegion.imageExtent.height = static_cast<uint32_t>(textureData->m_extents[face][0].height);
+				bufferCopyRegion.imageExtent.width = static_cast<uint32_t>(extents[face][0].width);
+				bufferCopyRegion.imageExtent.height = static_cast<uint32_t>(extents[face][0].height);
 				bufferCopyRegion.imageExtent.depth = 1;
 				bufferCopyRegion.bufferOffset = offset;
 
-				offset += textureData->m_extents[face][0].size;
+				offset += extents[face][0].size;
 
 				// Copy the faces from the staging buffer to the optimal tiled image
 				vkCmdCopyBufferToImage(
 					copyCmd,
-					textureData->m_stagingBuffer,
+					stagingBuffer,
 					m_vkImage,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					1,
@@ -581,8 +581,8 @@ namespace engine
 				barrier.subresourceRange.layerCount = 1;
 				barrier.subresourceRange.levelCount = 1;
 
-				int32_t mipWidth = textureData->m_extents[face][0].width;
-				int32_t mipHeight = textureData->m_extents[face][0].height;
+				int32_t mipWidth = extents[face][0].width;
+				int32_t mipHeight = extents[face][0].height;
 
 				for (uint32_t i = 1; i < m_mipLevelsCount; i++)
 				{

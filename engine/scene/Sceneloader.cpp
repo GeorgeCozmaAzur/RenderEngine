@@ -2,10 +2,10 @@
 #include <assimp/Importer.hpp> 
 #include <assimp/scene.h>  
 #include <assimp/cimport.h>
-#include "render/VulkanDevice.h"
+#include "render/vulkan/VulkanDevice.h"
 #include "scene/Timer.h"
 #include "Camera.h"
-#include "render/VulkanRenderPass.h"
+#include "render/vulkan/VulkanRenderPass.h"
 //#include "fbxsdk.h"
 #include <algorithm>
 

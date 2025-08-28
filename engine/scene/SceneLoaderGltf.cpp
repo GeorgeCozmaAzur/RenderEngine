@@ -1,9 +1,9 @@
 #include "SceneLoaderGltf.h"
 
-#include "render/VulkanDevice.h"
+#include "render/vulkan/VulkanDevice.h"
 #include "scene/Timer.h"
 #include "Camera.h"
-#include "render/VulkanRenderPass.h"
+#include "render/vulkan/VulkanRenderPass.h"
 
 #include <algorithm>
 #define TINYGLTF_IMPLEMENTATION

@@ -30,11 +30,11 @@ namespace engine
 			TextureExtent** m_extents = nullptr;
 			uint32_t m_layers_no, m_mips_no;
 
-			VkBuffer m_stagingBuffer = VK_NULL_HANDLE;
-			VkDeviceMemory m_stagingMemory = VK_NULL_HANDLE;
+			/*VkBuffer m_stagingBuffer = VK_NULL_HANDLE;
+			VkDeviceMemory m_stagingMemory = VK_NULL_HANDLE;*/
 
 			virtual void LoadFromFile(std::string filename, VkFormat format) = 0;
-			void CreateStagingBuffer(VkDevice, VkPhysicalDeviceMemoryProperties* memoryProperties);
+			//void CreateStagingBuffer(VkDevice, VkPhysicalDeviceMemoryProperties* memoryProperties);
 			void Destroy(VkDevice);
 		};
 
@@ -92,9 +92,9 @@ namespace engine
 				VkPipelineStageFlags dstStageMask
 				);
 
-			void Update(TextureData* textureData, VkCommandBuffer copyCmd, VkQueue copyQueue);
+			void Update(TextureExtent** extents, VkBuffer stagingBuffer, VkCommandBuffer copyCmd, VkQueue copyQueue);
 
-			void UpdateGeneratingMipmaps(TextureData* textureData, VkCommandBuffer copyCmd, VkQueue copyQueue);
+			void UpdateGeneratingMipmaps(TextureExtent** extents, VkBuffer stagingBuffer, VkCommandBuffer copyCmd, VkQueue copyQueue);
 
 			void CreateDescriptor(VkSamplerAddressMode adressMode, VkImageViewType viewType, float maxAnisoropy = 1);
 

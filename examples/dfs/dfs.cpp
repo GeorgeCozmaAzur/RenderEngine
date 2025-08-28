@@ -13,7 +13,7 @@
 
 #include <vulkan/vulkan.h>
 #include "VulkanApplication.h"
-#include "render/VulkanTexture.h"
+#include "render/vulkan/VulkanTexture.h"
 #include "scene/DrawDebug.h"
 #include "scene/SceneLoader.h"
 #include "scene/SimpleModel.h"

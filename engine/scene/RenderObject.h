@@ -1,11 +1,11 @@
 #pragma once
 #include <map>
-#include "render/VulkanDescriptorSet.h"
-#include "render/VulkanPipeline.h"
-#include "render/VulkanDescriptorSetLayout.h"
-#include "render/VertexLayout.h"
+#include "render/vulkan/VulkanDescriptorSet.h"
+#include "render/vulkan/VulkanPipeline.h"
+#include "render/vulkan/VulkanDescriptorSetLayout.h"
+#include "render/vulkan/VertexLayout.h"
 #include "BoundingObject.h"
-#include "render/VulkanBuffer.h"
+#include "render/vulkan/VulkanBuffer.h"
 #include "scene/Geometry.h"
 
 namespace engine

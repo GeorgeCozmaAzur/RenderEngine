@@ -19,9 +19,9 @@
 #include <vulkan/vulkan.h>
 #include "VulkanTools.h"
 #include "VulkanDebug.h"
-#include "render/VulkanBuffer.h"
-#include "render/VulkanDevice.h"
-#include "render/VulkanPipeline.h"
+#include "render/vulkan/VulkanBuffer.h"
+#include "render/vulkan/VulkanDevice.h"
+#include "render/vulkan/VulkanPipeline.h"
 
 #include "../external/imgui/imgui.h"
 

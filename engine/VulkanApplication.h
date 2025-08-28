@@ -46,8 +46,8 @@
 #include "VulkanTools.h"
 #include "VulkanDebug.h"
 
-#include "render/VulkanDevice.h"
-#include "render/VulkanSwapChain.h"
+#include "render/vulkan/VulkanDevice.h"
+#include "render/vulkan/VulkanSwapChain.h"
 #include "scene/UIOverlay.h"
 #include "scene/Camera.h"
 

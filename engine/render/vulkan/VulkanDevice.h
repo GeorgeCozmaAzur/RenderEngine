@@ -3,7 +3,7 @@
 #include <vector>
 #include <map>
 #include "VulkanBuffer.h"
-#include "render/VulkanTexture.h"
+#include "render/vulkan/VulkanTexture.h"
 #include "scene/RenderObject.h"
 #include "VulkanRenderPass.h"
 #include "threadpool.hpp"

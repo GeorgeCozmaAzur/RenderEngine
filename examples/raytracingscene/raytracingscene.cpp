@@ -2,7 +2,7 @@
 #include "vulkan/vulkan.h"
 #include "VulkanApplication.h"
 #include "VulkanTools.h"
-#include "render/VulkanDevice.h"
+#include "render/vulkan/VulkanDevice.h"
 #include "scene/SimpleModelRT.h"
 
 class VulkanExample : public VulkanApplication

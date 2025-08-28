@@ -1,7 +1,7 @@
 #pragma once
 #include <map>
 #include "RenderObject.h"
-#include "render/VulkanDevice.h"
+#include "render/vulkan/VulkanDevice.h"
 
 namespace engine
 {

@@ -1,6 +1,6 @@
 #pragma once
 #include <VulkanTools.h>
-#include "render/VulkanBuffer.h"
+#include "render/vulkan/VulkanBuffer.h"
 
 namespace engine
 {
