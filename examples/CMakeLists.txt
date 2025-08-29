@@ -22,8 +22,14 @@ function(buildExample EXAMPLE_NAME)
 	file(GLOB SHADERS "${SHADER_DIR}/*.vert" "${SHADER_DIR}/*.frag" "${SHADER_DIR}/*.comp" "${SHADER_DIR}/*.geom" "${SHADER_DIR}/*.tesc" "${SHADER_DIR}/*.tese" "${SHADER_DIR}/*.mesh" "${SHADER_DIR}/*.task" "${SHADER_DIR}/*.rgen" "${SHADER_DIR}/*.rchit" "${SHADER_DIR}/*.rmiss")
 	source_group("Shaders" FILES ${SHADERS})
 	if(WIN32)
+		set(DX12_LIBS
+			d3d12
+			dxgi
+			dxguid
+			d3dcompiler
+		)
 		add_executable(${EXAMPLE_NAME} WIN32 ${MAIN_CPP} ${SOURCE} ${SHADERS})
-		target_link_libraries(${EXAMPLE_NAME} engine ${Vulkan_LIBRARY} ${ASSIMP_LIBRARIES} ${WINLIBS})
+		target_link_libraries(${EXAMPLE_NAME} engine ${Vulkan_LIBRARY} ${ASSIMP_LIBRARIES} ${WINLIBS} ${DX12_LIBS})
 	else(WIN32)
 		add_executable(${EXAMPLE_NAME} ${MAIN_CPP} ${SOURCE} ${SHADERS})
 		target_link_libraries(${EXAMPLE_NAME} engine )
