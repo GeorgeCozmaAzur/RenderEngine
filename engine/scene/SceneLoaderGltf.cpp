@@ -65,7 +65,11 @@ namespace engine
 					delete[] buffer;
 				}
 			}
-			m_placeholder = _device->GetTexture(engine::tools::getAssetPath() + "textures/white_placeholder.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
+			render::Texture2DData data;
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/white_placeholder.png", render::GfxFormat::R8G8B8A8_UNORM);
+			m_placeholder = _device->GetTexture(&data, queue);
+			data.Destroy();
+			//m_placeholder = _device->GetTexture(engine::tools::getAssetPath() + "textures/white_placeholder.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 
 			modelsTexturesIds.resize(input.textures.size());
 			for (size_t i = 0; i < input.textures.size(); i++) {

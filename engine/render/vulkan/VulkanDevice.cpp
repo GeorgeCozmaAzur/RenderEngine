@@ -303,34 +303,34 @@ namespace engine
             }
         }
 
-        VulkanTexture* VulkanDevice::GetTexture(std::string filename, VkFormat format, VkQueue copyQueue,
+        VulkanTexture* VulkanDevice::GetTexture(TextureData* data, VkQueue copyQueue,
             VkImageUsageFlags imageUsageFlags,
             VkImageLayout imageLayout, 
             bool generateMipmaps,
             VkSamplerAddressMode sampleAdressMode)
         {
             VulkanTexture* tex = new VulkanTexture;
-            Texture2DData data;
-            data.LoadFromFile(filename, format);
-            VulkanBuffer* stagingBuffer = CreateStagingBuffer(data.m_imageSize, data.m_ram_data);
+            //Texture2DData data;
+            //data.LoadFromFile(filename, format);
+            VulkanBuffer* stagingBuffer = CreateStagingBuffer(data->m_imageSize, data->m_ram_data);
 
-            uint32_t mipsNo = generateMipmaps ? (static_cast<uint32_t>(std::floor(std::log2(std::max(data.m_width, data.m_height)))) + 1) : data.m_mips_no;
+            uint32_t mipsNo = generateMipmaps ? (static_cast<uint32_t>(std::floor(std::log2(std::max(data->m_width, data->m_height)))) + 1) : data->m_mips_no;
 
-            tex->Create(logicalDevice, &memoryProperties, { data.m_width, data.m_height, 1 }, data.m_format, imageUsageFlags,
+            tex->Create(logicalDevice, &memoryProperties, { data->m_width, data->m_height, 1 }, ToVkFormat(data->m_format), imageUsageFlags,
                 imageLayout,
                 VK_IMAGE_ASPECT_COLOR_BIT,
                 mipsNo);
 
             VkCommandBuffer copyCmd = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
             if (!generateMipmaps)
-                tex->Update(data.m_extents, stagingBuffer->GetVkBuffer(), copyCmd, copyQueue);
+                tex->Update(data->m_extents, stagingBuffer->GetVkBuffer(), copyCmd, copyQueue);
             else
-                tex->UpdateGeneratingMipmaps(data.m_extents, stagingBuffer->GetVkBuffer(), copyCmd, copyQueue);
+                tex->UpdateGeneratingMipmaps(data->m_extents, stagingBuffer->GetVkBuffer(), copyCmd, copyQueue);
             FlushCommandBuffer(copyCmd, copyQueue);
 
             tex->CreateDescriptor(sampleAdressMode, VK_IMAGE_VIEW_TYPE_2D, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
 
-            data.Destroy(logicalDevice);
+            //data->Destroy();
             DestroyStagingBuffer(stagingBuffer);
 
             m_textures.push_back(tex);
@@ -344,9 +344,8 @@ namespace engine
             bool generateMipmaps)
         {
             VulkanTexture* tex = new VulkanTexture;
-            Texture2DData data;
+            /*Texture2DData data;
             data.CreateFromBuffer(buffer,bufferSize,width,height);
-           // data.CreateStagingBuffer(logicalDevice, &memoryProperties);
             VulkanBuffer* stagingBuffer = CreateStagingBuffer(data.m_imageSize, data.m_ram_data);
             data.m_format = format;
 
@@ -366,8 +365,8 @@ namespace engine
 
             tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
 
-            data.Destroy(logicalDevice);
-            DestroyStagingBuffer(stagingBuffer);
+            data.Destroy();
+            DestroyStagingBuffer(stagingBuffer);*/
 
             m_textures.push_back(tex);
 
@@ -380,9 +379,8 @@ namespace engine
             bool generateMipmaps)
         {
             VulkanTexture* tex = new VulkanTexture;
-            Texture2DData data;
+           /* Texture2DData data;
             data.LoadFromFiles(filenames, format);
-            //data.CreateStagingBuffer(logicalDevice, &memoryProperties);
             VulkanBuffer* stagingBuffer = CreateStagingBuffer(data.m_imageSize, data.m_ram_data);
 
             uint32_t mipsNo = generateMipmaps ? (static_cast<uint32_t>(std::floor(std::log2(std::max(data.m_width, data.m_height)))) + 1) : data.m_mips_no;
@@ -401,8 +399,8 @@ namespace engine
 
             tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
 
-            data.Destroy(logicalDevice);
-            DestroyStagingBuffer(stagingBuffer);
+            data.Destroy();
+            DestroyStagingBuffer(stagingBuffer);*/
 
             m_textures.push_back(tex);
 
@@ -413,9 +411,8 @@ namespace engine
             VkImageLayout imageLayout)
         {
             VulkanTexture* tex = new VulkanTexture;
-            TextureCubeMapData data;
+            /*TextureCubeMapData data;
             data.LoadFromFile(filename, format);
-            //data.CreateStagingBuffer(logicalDevice, &memoryProperties);
             VulkanBuffer* stagingBuffer = CreateStagingBuffer(data.m_imageSize, data.m_ram_data);
 
             VkFormatProperties formatProperties;
@@ -432,8 +429,8 @@ namespace engine
 
             tex->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_CUBE, m_enabledFeatures.samplerAnisotropy ? m_properties.limits.maxSamplerAnisotropy : 1.0f);
 
-            data.Destroy(logicalDevice);
-            DestroyStagingBuffer(stagingBuffer);
+            data.Destroy();
+            DestroyStagingBuffer(stagingBuffer);*/
 
             m_textures.push_back(tex);
 

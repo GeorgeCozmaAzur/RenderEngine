@@ -4,6 +4,7 @@
 #include <string>
 
 #include "VulkanTools.h"
+#include "render/Texture.h"
 
 #if defined(__ANDROID__)
 #include <android/asset_manager.h>
@@ -13,45 +14,19 @@ namespace engine
 {
 	namespace render
 	{
-		struct TextureExtent
-		{
-			int width;
-			int height;
-			size_t size;
-		};
-
-		struct TextureData
-		{
-			char* m_ram_data = nullptr;
-			bool owndata = true;
-			VkDeviceSize m_imageSize;
-			VkFormat m_format;
-			uint32_t m_width, m_height;
-			TextureExtent** m_extents = nullptr;
-			uint32_t m_layers_no, m_mips_no;
-
-			/*VkBuffer m_stagingBuffer = VK_NULL_HANDLE;
-			VkDeviceMemory m_stagingMemory = VK_NULL_HANDLE;*/
-
-			virtual void LoadFromFile(std::string filename, VkFormat format) = 0;
-			//void CreateStagingBuffer(VkDevice, VkPhysicalDeviceMemoryProperties* memoryProperties);
-			void Destroy(VkDevice);
-		};
-
-		struct Texture2DData : TextureData
-		{
-			virtual void LoadFromFile(std::string filename, VkFormat format);
-			virtual void LoadFromFiles(std::vector<std::string> filenames, VkFormat format);
-			void CreateFromBuffer(unsigned char* buffer, VkDeviceSize bufferSize, uint32_t width, uint32_t height);
-		};
-
-		struct TextureCubeMapData : TextureData
-		{
-			virtual void LoadFromFile(std::string filename, VkFormat format);
-		};
+		inline VkFormat ToVkFormat(GfxFormat format) {
+			switch (format) {
+			case GfxFormat::R8_UNORM: return VK_FORMAT_R8_UNORM;
+			case GfxFormat::R8G8B8A8_UNORM: return VK_FORMAT_R8G8B8A8_UNORM;
+			case GfxFormat::B8G8R8A8_UNORM: return VK_FORMAT_B8G8R8A8_UNORM;
+			case GfxFormat::D24_UNORM_S8_UINT: return VK_FORMAT_D24_UNORM_S8_UINT;
+			case GfxFormat::D32_FLOAT: return VK_FORMAT_D32_SFLOAT_S8_UINT;
+			default: return VK_FORMAT_UNDEFINED;
+			}
+		}
 
 		/** @brief Vulkan texture base class */
-		class VulkanTexture {//TODO see how can be combined with buffer structure and how we can have different textures with the same image
+		class VulkanTexture : public Texture {//TODO see how can be combined with buffer structure and how we can have different textures with the same image
 		public:
 			VkDevice _device = VK_NULL_HANDLE;
 
@@ -63,10 +38,6 @@ namespace engine
 			VkDeviceSize m_imageSize;
 
 			VkImageAspectFlags m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-
-			uint32_t m_width, m_height, m_depth;
-			uint32_t m_mipLevelsCount = 1;
-			uint32_t m_layerCount = 1;
 
 			VulkanTexture::~VulkanTexture() { Destroy(); }
 

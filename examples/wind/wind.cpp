@@ -111,11 +111,18 @@ public:
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}*/
 
-		colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/grass3K/GroundForest003_COL_VAR1_3K.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
+		render::Texture2DData data;
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/grass3K/GroundForest003_COL_VAR1_3K.jpg", render::GfxFormat::R8G8B8A8_UNORM);
+		colorMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
 		
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/oak_bark.ktx", render::GfxFormat::R8G8B8A8_UNORM);
+		trunktex = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
 
-		trunktex = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/oak_bark.ktx", VK_FORMAT_R8G8B8A8_UNORM, queue);
-		leavestex = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/oak_leafs.ktx", VK_FORMAT_R8G8B8A8_UNORM, queue);
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/oak_leafs.ktx", render::GfxFormat::R8G8B8A8_UNORM);
+		leavestex = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
 		//perlinnoise = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/PerlinExample.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 	}
 

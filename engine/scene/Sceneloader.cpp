@@ -245,16 +245,24 @@ namespace engine
 						else
 						{
 							texFormat = VK_FORMAT_R8G8B8A8_UNORM;//TODO make format more flexible
-						}
+						}//TODO geroge very important to support compressed formats
 
-						render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue);//TODO mipmaps for every format
+						//render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue);//TODO mipmaps for every format
+						render::Texture2DData data;
+						data.LoadFromFile(foldername + texfilename, render::GfxFormat::R8G8B8A8_UNORM);
+						render::VulkanTexture* tex = _device->GetTexture(&data, copyQueue);
+						data.Destroy();
 
 						texturesDescriptors.push_back(&tex->m_descriptor);
 
 						if (pScene->mMaterials[i]->GetTextureCount(aiTextureType_NORMALS) > 0)
 						{
 							std::string texfilenamen = std::string(texturefilen.C_Str());
-							tex = device->GetTexture(foldername + texfilenamen, texFormat, copyQueue);
+							//tex = device->GetTexture(foldername + texfilenamen, texFormat, copyQueue);
+							render::Texture2DData data;
+							data.LoadFromFile(foldername + texfilenamen, render::GfxFormat::R8G8B8A8_UNORM);
+							render::VulkanTexture* tex = _device->GetTexture(&data, copyQueue);
+							data.Destroy();
 							texturesDescriptors.push_back(&tex->m_descriptor);
 							for(auto tex : globalTextures)
 								texturesDescriptors.push_back(&tex->m_descriptor);
