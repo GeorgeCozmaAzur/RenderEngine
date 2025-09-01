@@ -48,18 +48,22 @@ namespace engine
 					bufferSize = glTFImage.image.size();
 				}
 
-				VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+				render::GfxFormat format = render::GfxFormat::R8G8B8A8_UNORM;
 				switch (input.images[i].bits)
 				{
-					case 16: format = VK_FORMAT_R16G16B16A16_UNORM; break;
-					case 32: format = VK_FORMAT_R32G32B32A32_SFLOAT; break;
+					case 16: format = render::GfxFormat::R16G16B16A16_UNORM; break;
+					case 32: format = render::GfxFormat::R32G32B32A32_SFLOAT; break;
 					case 8: 
-					default: format = VK_FORMAT_R8G8B8A8_UNORM;
+					default: format = render::GfxFormat::R8G8B8A8_UNORM;
 				}
 
-				modelsTextures[i] = _device->GetTexture(buffer, bufferSize, glTFImage.width, glTFImage.height, format, queue,
+				render::Texture2DData data;
+				data.CreateFromBuffer(buffer, bufferSize, glTFImage.width, glTFImage.height, format);
+
+				modelsTextures[i] = _device->GetTexture(&data, queue,
 					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);				
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);	
+				data.Destroy();
 
 				if (deleteBuffer) {
 					delete[] buffer;

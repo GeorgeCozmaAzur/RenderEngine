@@ -175,19 +175,19 @@ namespace engine
 
 				// Textures
 				std::string texFormatSuffix;
-				VkFormat CompressedTexFormat;
+				render::GfxFormat CompressedTexFormat;
 				// Get supported compressed texture format
 				if (device->m_enabledFeatures.textureCompressionBC) {
 					texFormatSuffix = "_bc3_unorm";
-					CompressedTexFormat = VK_FORMAT_BC3_UNORM_BLOCK;
+					CompressedTexFormat = render::GfxFormat::BC3_UNORM_BLOCK;
 				}
 				else if (device->m_enabledFeatures.textureCompressionASTC_LDR) {
 					texFormatSuffix = "_astc_8x8_unorm";
-					CompressedTexFormat = VK_FORMAT_ASTC_8x8_UNORM_BLOCK;
+					CompressedTexFormat = render::GfxFormat::ASTC_8x8_UNORM_BLOCK;
 				}
 				else if (device->m_enabledFeatures.textureCompressionETC2) {
 					texFormatSuffix = "_etc2_unorm";
-					CompressedTexFormat = VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK;
+					CompressedTexFormat = render::GfxFormat::ETC2_R8G8B8_UNORM_BLOCK;
 				}
 				else {
 					engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
@@ -231,7 +231,7 @@ namespace engine
 
 					if (pScene->mMaterials[i]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 					{
-						VkFormat texFormat;
+						render::GfxFormat texFormat;
 
 						std::string texfilename = std::string(texturefile.C_Str());
 						std::replace(texfilename.begin(), texfilename.end(), '\\', '/');
@@ -244,12 +244,12 @@ namespace engine
 						}
 						else
 						{
-							texFormat = VK_FORMAT_R8G8B8A8_UNORM;//TODO make format more flexible
-						}//TODO geroge very important to support compressed formats
+							texFormat = render::GfxFormat::R8G8B8A8_UNORM;//TODO make format more flexible
+						}
 
 						//render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue);//TODO mipmaps for every format
 						render::Texture2DData data;
-						data.LoadFromFile(foldername + texfilename, render::GfxFormat::R8G8B8A8_UNORM);
+						data.LoadFromFile(foldername + texfilename, texFormat);
 						render::VulkanTexture* tex = _device->GetTexture(&data, copyQueue);
 						data.Destroy();
 
@@ -260,7 +260,7 @@ namespace engine
 							std::string texfilenamen = std::string(texturefilen.C_Str());
 							//tex = device->GetTexture(foldername + texfilenamen, texFormat, copyQueue);
 							render::Texture2DData data;
-							data.LoadFromFile(foldername + texfilenamen, render::GfxFormat::R8G8B8A8_UNORM);
+							data.LoadFromFile(foldername + texfilenamen, texFormat);
 							render::VulkanTexture* tex = _device->GetTexture(&data, copyQueue);
 							data.Destroy();
 							texturesDescriptors.push_back(&tex->m_descriptor);

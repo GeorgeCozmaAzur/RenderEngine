@@ -12,8 +12,14 @@ namespace engine
 			R8_UNORM,
 			R8G8B8A8_UNORM,
 			B8G8R8A8_UNORM,
+			R16G16B16A16_UNORM,
+			R16G16B16A16_SFLOAT,
+			R32G32B32A32_SFLOAT,
 			D24_UNORM_S8_UINT,
-			D32_FLOAT
+			D32_FLOAT,
+			BC3_UNORM_BLOCK,
+			ASTC_8x8_UNORM_BLOCK,
+			ETC2_R8G8B8_UNORM_BLOCK
 		};
 
 		struct TextureExtent
@@ -32,6 +38,7 @@ namespace engine
 			uint32_t m_width, m_height;
 			TextureExtent** m_extents = nullptr;
 			uint32_t m_layers_no, m_mips_no;
+			bool isCubeMap = false;
 
 			virtual void LoadFromFile(std::string filename, GfxFormat format) = 0;
 			void Destroy();
@@ -41,7 +48,7 @@ namespace engine
 		{
 			virtual void LoadFromFile(std::string filename, GfxFormat format);
 			virtual void LoadFromFiles(std::vector<std::string> filenames, GfxFormat format);
-			void CreateFromBuffer(unsigned char* buffer, size_t bufferSize, uint32_t width, uint32_t height);
+			void CreateFromBuffer(unsigned char* buffer, size_t bufferSize, uint32_t width, uint32_t height, GfxFormat format = GfxFormat::R8G8B8A8_UNORM);
 		};
 
 		struct TextureCubeMapData : TextureData

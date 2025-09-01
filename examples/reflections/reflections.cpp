@@ -112,19 +112,23 @@ public:
 		models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 0.5f, 1);
 		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayout, 0.3f, 1);	
 
-		// Textures
+		render::Texture2DData data;
 		if (vulkanDevice->m_enabledFeatures.textureCompressionBC) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", render::GfxFormat::BC3_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else if (vulkanDevice->m_enabledFeatures.textureCompressionASTC_LDR) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", render::GfxFormat::ASTC_8x8_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else if (vulkanDevice->m_enabledFeatures.textureCompressionETC2) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", render::GfxFormat::ETC2_R8G8B8_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
+		data.Destroy();
 
 		colorTex = vulkanDevice->GetColorRenderTarget(FB_DIM, FB_DIM, FB_COLOR_FORMAT);
 		depthTex = vulkanDevice->GetDepthRenderTarget(FB_DIM, FB_DIM, false);

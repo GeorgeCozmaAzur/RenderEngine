@@ -129,24 +129,30 @@ public:
 
 	void SetupTextures()
 	{
-		// Textures
+		render::Texture2DData data;
 		if (vulkanDevice->m_enabledFeatures.textureCompressionBC) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", render::GfxFormat::BC3_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else if (vulkanDevice->m_enabledFeatures.textureCompressionASTC_LDR) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", render::GfxFormat::ASTC_8x8_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else if (vulkanDevice->m_enabledFeatures.textureCompressionETC2) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", render::GfxFormat::ETC2_R8G8B8_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
-		clothMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "models/sponza/za_curtain_blue_diff.png", VK_FORMAT_R8G8B8A8_UNORM, queue,
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "models/sponza/za_curtain_blue_diff.png", render::GfxFormat::R8G8B8A8_UNORM);
+		clothMap = vulkanDevice->GetTexture(&data, queue,
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			true);
-		
+		data.Destroy();
 	}
 
 	void SetupUniforms()

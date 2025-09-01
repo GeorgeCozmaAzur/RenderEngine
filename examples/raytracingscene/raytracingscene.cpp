@@ -284,8 +284,11 @@ public:
 			if (geoRT->m_textures.size() > 0)
 				for (int i = 0; i < geoRT->m_textures.size();i++)
 				{
-					std::string shit = "textures/" + geoRT->m_textures[i];
-					alltextures.push_back(vulkanDevice->GetTexture(engine::tools::getAssetPath() + shit, VK_FORMAT_R8G8B8A8_UNORM, queue));
+					std::string textureName = "textures/" + geoRT->m_textures[i];
+					render::Texture2DData data;
+					data.LoadFromFile(engine::tools::getAssetPath() + textureName, render::GfxFormat::R8G8B8A8_UNORM);
+					alltextures.push_back(vulkanDevice->GetTexture(&data, queue));
+					//alltextures.push_back(vulkanDevice->GetTexture(engine::tools::getAssetPath() + shit, VK_FORMAT_R8G8B8A8_UNORM, queue));
 				}
 		}
 	}

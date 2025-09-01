@@ -115,10 +115,27 @@ public:
 
 	void SetupTextures()
 	{
-		colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_COL_4K.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
+		/*colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_COL_4K.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		normalMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_NRM_4K.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		dispMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_DISP_4K.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
-		glossMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_GLOSS_4K.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);	
+		glossMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_GLOSS_4K.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);*/
+
+		render::Texture2DData data;
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_COL_4K.jpg", render::GfxFormat::R8G8B8A8_UNORM);
+		colorMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_NRM_4K.jpg", render::GfxFormat::R8G8B8A8_UNORM);
+		normalMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_DISP_4K.jpg", render::GfxFormat::R8G8B8A8_UNORM);
+		dispMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_GLOSS_4K.jpg", render::GfxFormat::R8G8B8A8_UNORM);
+		glossMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
 	}
 
 	void SetupUniforms()

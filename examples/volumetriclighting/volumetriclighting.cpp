@@ -127,7 +127,11 @@ public:
 	{
 		for (int i = 0; i < NUM_BLUE_NOISE_TEXTURES; i++)
 			textureBlueNoiseFilenames.push_back(engine::tools::getAssetPath() + "textures/blue_noise/LDR_LLL1_" + std::to_string(i) + ".png");
-		textureBlueNoise = vulkanDevice->GetTextureArray(textureBlueNoiseFilenames, VK_FORMAT_R8G8B8A8_UNORM, queue);
+		//textureBlueNoise = vulkanDevice->GetTextureArray(textureBlueNoiseFilenames, VK_FORMAT_R8G8B8A8_UNORM, queue);
+		render::Texture2DData data;
+		data.LoadFromFiles(textureBlueNoiseFilenames, render::GfxFormat::R8G8B8A8_UNORM);
+		textureBlueNoise = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
 
 		computeUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(uboCompute));
 		VK_CHECK_RESULT(computeUniformBuffer->Map());
@@ -193,7 +197,11 @@ public:
 
 		scene.CreateShadowObjects(pipelineCache);
 
-		textureColorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/vulkan_11_rgba.ktx", VK_FORMAT_R8G8B8A8_UNORM, queue, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		//textureColorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/vulkan_11_rgba.ktx", VK_FORMAT_R8G8B8A8_UNORM, queue, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		render::Texture2DData data;
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/vulkan_11_rgba.ktx", render::GfxFormat::R8G8B8A8_UNORM);
+		textureColorMap = vulkanDevice->GetTexture(&data, queue, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		data.Destroy();
 
 		VkFormatProperties formatProperties;
 		vkGetPhysicalDeviceFormatProperties(vulkanDevice->physicalDevice, VK_FORMAT_R16G16B16A16_SFLOAT, &formatProperties);

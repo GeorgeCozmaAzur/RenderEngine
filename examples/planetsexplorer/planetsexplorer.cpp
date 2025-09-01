@@ -193,11 +193,33 @@ public:
 
 		scenepass->SetClearColor({ farplane, farplane, farplane, 0.0f }, 1);
 
-		colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/planets/marsmap1k.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
+		/*colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/planets/marsmap1k.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		sunMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/planets/2k_sun.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		ringsMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/planets/2k_saturn_ring_alpha.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		saturnMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/planets/2k_saturn.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
-		bluenoise = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/blue_noise/LDR_LLL1_0.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
+		bluenoise = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/blue_noise/LDR_LLL1_0.png", VK_FORMAT_R8G8B8A8_UNORM, queue);*/
+
+		render::Texture2DData data;
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/planets/marsmap1k.jpg", render::GfxFormat::R8G8B8A8_UNORM);
+		colorMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/planets/2k_sun.jpg", render::GfxFormat::R8G8B8A8_UNORM);
+		sunMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/planets/2k_saturn_ring_alpha.png", render::GfxFormat::R8G8B8A8_UNORM);
+		ringsMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/planets/2k_saturn.jpg", render::GfxFormat::R8G8B8A8_UNORM);
+		saturnMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/blue_noise/LDR_LLL1_0.png", render::GfxFormat::R8G8B8A8_UNORM);
+		bluenoise = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
 		//envMap = vulkanDevice->GetTextureCubeMap(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, queue);
 
 		prepareOffscreenRenderpass();

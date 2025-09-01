@@ -114,10 +114,26 @@ public:
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}*/
-		colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/albedo.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
+		/*colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/albedo.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		roughnessMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/roughness.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		metallicMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/metallic.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
-		aoMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/ao.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
+		aoMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/ao.png", VK_FORMAT_R8G8B8A8_UNORM, queue);*/
+		render::Texture2DData data;
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/albedo.png", render::GfxFormat::R8G8B8A8_UNORM);
+		colorMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/roughness.png", render::GfxFormat::R8G8B8A8_UNORM);
+		roughnessMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/metallic.png", render::GfxFormat::R8G8B8A8_UNORM);
+		metallicMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
+
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/ao.png", render::GfxFormat::R8G8B8A8_UNORM);
+		aoMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
 	}
 
 	void SetupUniforms()

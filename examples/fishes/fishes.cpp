@@ -189,10 +189,18 @@ public:
 
 	void SetupTextures()
 	{
-		textures = vulkanDevice->GetTextureArray(textureNames, VK_FORMAT_R8G8B8A8_UNORM, queue,
+		render::Texture2DData data;
+		data.LoadFromFiles(textureNames, render::GfxFormat::R8G8B8A8_UNORM);
+
+		textures = vulkanDevice->GetTexture(&data, queue,
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			true);
+
+		/*textures = vulkanDevice->GetTextureArray(textureNames, VK_FORMAT_R8G8B8A8_UNORM, queue,
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			true);*/
 		//colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish04.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue);
 	}
 

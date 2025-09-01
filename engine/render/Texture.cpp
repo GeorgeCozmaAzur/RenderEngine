@@ -149,7 +149,7 @@ namespace engine
 			}
 		}
 
-		void Texture2DData::CreateFromBuffer(unsigned char* buffer, size_t bufferSize, uint32_t width, uint32_t height)
+		void Texture2DData::CreateFromBuffer(unsigned char* buffer, size_t bufferSize, uint32_t width, uint32_t height, GfxFormat format)
 		{
 			owndata = false;
 			m_width = width;
@@ -158,6 +158,7 @@ namespace engine
 			m_mips_no = 1;
 			m_layers_no = 1;
 			m_ram_data = (char*)buffer;
+			m_format = format;
 
 			m_extents = new TextureExtent * [1];
 			m_extents[0] = new TextureExtent[1];
@@ -174,7 +175,7 @@ namespace engine
 		)
 		{
 			m_format = format;
-
+			isCubeMap = true;
 			/*if (!engine::tools::fileExists(filename)) {
 				engine::tools::exitFatal("Could not load texture from " + filename + "\n\nThe file may be part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
 			}*/
@@ -205,19 +206,22 @@ namespace engine
 					m_extents[face][level].height = texCube[face][level].extent().y;
 					m_extents[face][level].size = texCube[face][level].size();
 				}
-			}//george make it work with gli
+			}
 		}
 
 		void TextureData::Destroy()
 		{
-			for (uint32_t i = 0; i < m_layers_no; i++)
+			if (m_extents != nullptr)
 			{
-				delete[]m_extents[i];
+				for (uint32_t i = 0; i < m_layers_no; i++)
+				{
+					delete[]m_extents[i];
+				}
+				delete[]m_extents;
 			}
-			delete[]m_extents;
 
 			if(owndata)
-			delete[] m_ram_data;
+				delete[] m_ram_data;
 
 			// Clean up staging resources
 			/*if (m_stagingMemory)

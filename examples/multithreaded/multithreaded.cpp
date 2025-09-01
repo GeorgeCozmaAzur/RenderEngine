@@ -206,19 +206,23 @@ public:
 
 	void SetupTextures()
 	{
-		// Textures
+		render::Texture2DData data;
 		if (vulkanDevice->m_enabledFeatures.textureCompressionBC) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", VK_FORMAT_BC3_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", render::GfxFormat::BC3_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else if (vulkanDevice->m_enabledFeatures.textureCompressionASTC_LDR) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", VK_FORMAT_ASTC_8x8_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_astc_8x8_unorm.ktx", render::GfxFormat::ASTC_8x8_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else if (vulkanDevice->m_enabledFeatures.textureCompressionETC2) {
-			colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, queue);
+			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_etc2_unorm.ktx", render::GfxFormat::ETC2_R8G8B8_UNORM_BLOCK);
+			colorMap = vulkanDevice->GetTexture(&data, queue);
 		}
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
+		data.Destroy();
 	}
 
 	void SetupUniforms()
@@ -540,12 +544,22 @@ public:
 			vert_uniform_buffers[i]->MemCopy(&vert_ram_uniform_buffers[i]->model,sizeof(vert_ram_uniform_buffers[i]->model));
 		}
 	}
-	bool multithreaded = true;
+	bool multithreaded = false;
 	void draw()
 	{
 		vkWaitForFences(device, 1, &submitFences[multithreaded ? 0 : currentBuffer], VK_TRUE, UINT64_MAX);
 
-		VulkanApplication::PrepareFrame();
+		uint32_t mcb = 0;
+		uint32_t* cb = multithreaded ? &mcb : &currentBuffer;
+		// Acquire the next image from the swap chain
+		VkResult result = swapChain.acquireNextImage(presentCompleteSemaphores[multithreaded ? 0 : currentBuffer], cb);
+		// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or no longer optimal for presentation (SUBOPTIMAL)
+		/*if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {
+			WindowResize();
+		}
+		else {
+			VK_CHECK_RESULT(result);
+		}*/
 
 		vkResetFences(device, 1, &submitFences[multithreaded ? 0 : currentBuffer]);
 
@@ -563,11 +577,15 @@ public:
 		timer.stop();
 		timerender = timer.elapsedMicroseconds();
 
+		submitInfo.pWaitSemaphores = &presentCompleteSemaphores[multithreaded ? 0 : currentBuffer];
+		submitInfo.pSignalSemaphores = &renderCompleteSemaphores[multithreaded ? 0 : currentBuffer];
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &drawCommandBuffers[multithreaded? 0 : currentBuffer];
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, submitFences[multithreaded ? 0 : currentBuffer]));
 
-		VulkanApplication::PresentFrame();
+		//VulkanApplication::PresentFrame();
+		result = swapChain.queuePresent(presentationQueue, currentBuffer, renderCompleteSemaphores[multithreaded ? 0 : currentBuffer]);
+		currentBuffer = (currentBuffer + 1) % swapChain.swapChainImageViews.size();
 	}
 
 	void Prepare()

@@ -114,7 +114,10 @@ public:
 
 	void SetupTextures()
 	{
-		envMap = vulkanDevice->GetTextureCubeMap(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, queue);
+		render::TextureCubeMapData data;
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", render::GfxFormat::R16G16B16A16_SFLOAT);
+		envMap = vulkanDevice->GetTexture(&data, queue);
+		data.Destroy();
 	}
 
 	void SetupUniforms()
@@ -258,7 +261,14 @@ public:
 	{	
 		uint32_t dim = 64;
 		const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		irradianceMap = vulkanDevice->GetTextureCubeMap(dim, format, queue);
+		//irradianceMap = vulkanDevice->GetTextureCubeMap(dim, format, queue);
+		render::TextureCubeMapData data;
+		data.isCubeMap = true;
+		data.m_height = data.m_width = dim;
+		data.m_layers_no = 6;
+		data.m_format = render::GfxFormat::R32G32B32A32_SFLOAT;
+		irradianceMap = vulkanDevice->GetTexture(&data, queue, 6U, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, true);
+		data.Destroy();
 
 		render::VulkanTexture *tempTex = vulkanDevice->GetRenderTarget(dim, dim, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
@@ -382,7 +392,15 @@ public:
 	{
 		uint32_t dim = 512;
 		const VkFormat format = VK_FORMAT_R16G16B16A16_SFLOAT;
-		prefilterMap = vulkanDevice->GetTextureCubeMap(dim, format, queue);
+		//prefilterMap = vulkanDevice->GetTextureCubeMap(dim, format, queue);
+		render::TextureCubeMapData data;
+		data.isCubeMap = true;
+		data.m_height = data.m_width = dim;
+		data.m_layers_no = 6;
+		data.m_format = render::GfxFormat::R16G16B16A16_SFLOAT;
+		prefilterMap = vulkanDevice->GetTexture(&data, queue, 6U, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, true);
+		data.Destroy();
+
 		render::VulkanTexture* tempTex = vulkanDevice->GetRenderTarget(dim, dim, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
