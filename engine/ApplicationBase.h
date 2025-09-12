@@ -49,6 +49,8 @@ protected:
 
 	//graphical resources
 	//std::vector<Geometry *> m_geometries;
+	// Active frame buffer index
+	uint32_t currentBuffer = 0;
 public: 
 	bool prepared = false;
 	uint32_t width = 1280;
@@ -155,7 +157,9 @@ public:
 	void MainLoop();
 
 	// Render one frame of a render loop on platforms that sync rendering
-	virtual void UpdateFrame() = 0;
+	virtual void UpdateFrame();
+
+	virtual void UpdateOverlay()=0;
 
 	virtual void WaitForDevice() = 0;
 };

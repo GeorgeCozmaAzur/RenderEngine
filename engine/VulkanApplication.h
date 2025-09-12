@@ -52,8 +52,7 @@ protected:
 	// List of available frame buffers (same as number of swap chain images)
 	//std::vector<render::VulkanFrameBuffer*> frameBuffers;
 	render::VulkanRenderPass *mainRenderPass = nullptr;
-	// Active frame buffer index
-	uint32_t currentBuffer = 0;
+	
 	// Descriptor set pool
 	//VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 	// Pipeline cache object
@@ -146,18 +145,10 @@ public:
 	virtual void GetEnabledFeatures();
 
 	// Render one frame of a render loop on platforms that sync rendering
-	void UpdateFrame();
+	//void UpdateFrame();
 
-	void UpdateOverlay();
+	virtual void UpdateOverlay();
 	void DrawUI(const VkCommandBuffer commandBuffer);
-
-	// Prepare the frame for workload submission
-	// - Acquires the next image from the swap chain 
-	// - Sets the default wait and signal semaphores
-	void PrepareFrame();
-
-	// Submit the frames' workload 
-	void PresentFrame();
 
 	virtual void WaitForDevice();
 

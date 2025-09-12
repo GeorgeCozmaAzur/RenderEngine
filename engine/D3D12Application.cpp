@@ -1,0 +1,475 @@
+#include "D3D12Application.h"
+#include "render/directx/d3dx12.h"
+
+using Microsoft::WRL::ComPtr;
+
+D3D12Application::D3D12Application(bool enableValidation) : ApplicationBase(enableValidation)
+{
+
+}
+
+inline std::string HrToString(HRESULT hr)
+{
+	char s_str[64] = {};
+	sprintf_s(s_str, "HRESULT of 0x%08X", static_cast<UINT>(hr));
+	return std::string(s_str);
+}
+class HrException : public std::runtime_error
+{
+public:
+	HrException(HRESULT hr) : std::runtime_error(HrToString(hr)), m_hr(hr) {}
+	HRESULT Error() const { return m_hr; }
+private:
+	const HRESULT m_hr;
+};
+inline void ThrowIfFailed(HRESULT hr)
+{
+	if (FAILED(hr))
+	{
+		throw HrException(hr);
+	}
+}
+void GetHardwareAdapter(
+	IDXGIFactory1* pFactory,
+	IDXGIAdapter1** ppAdapter,
+	bool requestHighPerformanceAdapter = false)
+{
+	*ppAdapter = nullptr;
+
+	ComPtr<IDXGIAdapter1> adapter;
+
+	ComPtr<IDXGIFactory6> factory6;
+	if (SUCCEEDED(pFactory->QueryInterface(IID_PPV_ARGS(&factory6))))
+	{
+		for (
+			UINT adapterIndex = 0;
+			SUCCEEDED(factory6->EnumAdapterByGpuPreference(
+				adapterIndex,
+				requestHighPerformanceAdapter == true ? DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE : DXGI_GPU_PREFERENCE_UNSPECIFIED,
+				IID_PPV_ARGS(&adapter)));
+				++adapterIndex)
+		{
+			DXGI_ADAPTER_DESC1 desc;
+			adapter->GetDesc1(&desc);
+
+			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+			{
+				// Don't select the Basic Render Driver adapter.
+				// If you want a software adapter, pass in "/warp" on the command line.
+				continue;
+			}
+
+			// Check to see whether the adapter supports Direct3D 12, but don't create the
+			// actual device yet.
+			if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+			{
+				break;
+			}
+		}
+	}
+
+	if (adapter.Get() == nullptr)
+	{
+		for (UINT adapterIndex = 0; SUCCEEDED(pFactory->EnumAdapters1(adapterIndex, &adapter)); ++adapterIndex)
+		{
+			DXGI_ADAPTER_DESC1 desc;
+			adapter->GetDesc1(&desc);
+
+			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+			{
+				// Don't select the Basic Render Driver adapter.
+				// If you want a software adapter, pass in "/warp" on the command line.
+				continue;
+			}
+
+			// Check to see whether the adapter supports Direct3D 12, but don't create the
+			// actual device yet.
+			if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+			{
+				break;
+			}
+		}
+	}
+
+	*ppAdapter = adapter.Detach();
+}
+
+bool D3D12Application::InitAPI()
+{
+	UINT dxgiFactoryFlags = 0;
+
+#if defined(_DEBUG)
+	// Enable the debug layer (requires the Graphics Tools "optional feature").
+	// NOTE: Enabling the debug layer after device creation will invalidate the active device.
+	if(settings.validation)
+	{
+		ComPtr<ID3D12Debug> debugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+		{
+			debugController->EnableDebugLayer();
+
+			// Enable additional debug layers.
+			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+		}
+	}
+#endif
+	ComPtr<IDXGIFactory4> factory;
+	ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
+
+	ComPtr<IDXGIAdapter1> hardwareAdapter;
+	GetHardwareAdapter(factory.Get(), &hardwareAdapter);
+
+	ThrowIfFailed(D3D12CreateDevice(
+		hardwareAdapter.Get(),
+		D3D_FEATURE_LEVEL_11_0,
+		IID_PPV_ARGS(&m_device)
+	));
+
+	// Describe and create the command queue.
+	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+	ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+
+	// Describe and create the swap chain.
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+	swapChainDesc.BufferCount = FrameCount;
+	swapChainDesc.Width = width;
+	swapChainDesc.Height = height;
+	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.SampleDesc.Count = 1;
+
+	ComPtr<IDXGISwapChain1> swapChain;
+	ThrowIfFailed(factory->CreateSwapChainForHwnd(
+		m_commandQueue.Get(),        // Swap chain needs the queue so that it can force a flush on it.
+		window,
+		&swapChainDesc,
+		nullptr,
+		nullptr,
+		&swapChain
+	));
+
+	// This sample does not support fullscreen transitions.
+	ThrowIfFailed(factory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER));
+
+	ThrowIfFailed(swapChain.As(&m_swapChain));
+	currentBuffer = m_swapChain->GetCurrentBackBufferIndex();
+
+	// Create descriptor heaps.
+	{
+		// Describe and create a render target view (RTV) descriptor heap.
+		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+		rtvHeapDesc.NumDescriptors = FrameCount;
+		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
+
+		m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	}
+
+	// Create frame resources.
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
+
+		// Create a RTV for each frame.
+		for (UINT n = 0; n < FrameCount; n++)
+		{
+			ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
+			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
+			rtvHandle.Offset(1, m_rtvDescriptorSize);
+		}
+	}
+
+	ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
+
+	// Create the command list.
+	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
+
+	// Command lists are created in the recording state, but there is nothing
+	// to record yet. The main loop expects it to be closed, so close it now.
+	ThrowIfFailed(m_commandList->Close());
+
+	// Create synchronization objects.
+	{
+		ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+		m_fenceValue = 1;
+
+		// Create an event handle to use for frame synchronization.
+		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (m_fenceEvent == nullptr)
+		{
+			ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+		}
+	}
+
+	return true;
+}
+
+//void VulkanApplication::PrepareUI()
+//{
+//	settings.overlay = settings.overlay;
+//	if (settings.overlay) {
+//		UIOverlay._device = vulkanDevice;
+//		UIOverlay._queue = queue;
+//		engine::render::VertexLayout v;
+//		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
+//		UIOverlay.preparePipeline(pipelineCache, mainRenderPass->GetRenderPass());
+//	}
+//}
+
+void D3D12Application::PrepareUI()
+{
+
+}
+
+void D3D12Application::WaitForDevice()
+{
+	// Flush device to make sure all resources can be freed
+	/*if (device != VK_NULL_HANDLE) {
+		vkDeviceWaitIdle(device);
+	}*/
+}
+
+void D3D12Application::UpdateOverlay()
+{
+	if (!settings.overlay)
+		return;
+
+	/*ImGuiIO& io = ImGui::GetIO();
+
+	io.DisplaySize = ImVec2((float)width, (float)height);
+	io.DeltaTime = frameTimer;
+
+	io.MousePos = ImVec2(mousePos.x, mousePos.y);
+	io.MouseDown[0] = mouseButtons.left;
+	io.MouseDown[1] = mouseButtons.right;
+
+	ImGui::NewFrame();
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+	ImGui::SetNextWindowPos(ImVec2(10, 10));
+	ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+	ImGui::Begin("Vulkan Example", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+	ImGui::TextUnformatted(title.c_str());
+	ImGui::TextUnformatted(vulkanDevice->GetDeviceName());
+	ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / lastFPS), lastFPS);
+
+	ImGui::PushItemWidth(110.0f * UIOverlay.m_scale);
+	OnUpdateUIOverlay(&UIOverlay);
+	ImGui::PopItemWidth();
+
+	ImGui::End();
+	ImGui::PopStyleVar();
+	ImGui::Render();
+
+	if(UIOverlay.shouldRecreateBuffers())
+		vkWaitForFences(device, submitFences.size(), submitFences.data(), VK_TRUE, UINT64_MAX);
+
+	if (UIOverlay.update() || UIOverlay.m_updated) {		
+		BuildCommandBuffers();
+		UIOverlay.m_updated = false;
+	}*/
+}
+
+void D3D12Application::WaitForPreviousFrame()
+{
+	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+	// This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
+	// sample illustrates how to use fences for efficient resource usage and to
+	// maximize GPU utilization.
+
+	// Signal and increment the fence value.
+	const UINT64 fence = m_fenceValue;
+	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), fence));
+	m_fenceValue++;
+
+	// Wait until the previous frame is finished.
+	if (m_fence->GetCompletedValue() < fence)
+	{
+		ThrowIfFailed(m_fence->SetEventOnCompletion(fence, m_fenceEvent));
+		WaitForSingleObject(m_fenceEvent, INFINITE);
+	}
+
+	currentBuffer = m_swapChain->GetCurrentBackBufferIndex();
+}
+
+void D3D12Application::Render()
+{
+	if (!prepared)
+		return;
+
+	// Record all the commands we need to render the scene into the command list.
+	BuildCommandBuffers();
+
+	// Execute the command list.
+	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// Present the frame.
+	ThrowIfFailed(m_swapChain->Present(1, 0));
+
+	WaitForPreviousFrame();
+
+	//vkWaitForFences(device, 1, &submitFences[currentBuffer], VK_TRUE, UINT64_MAX);
+
+	////VulkanApplication::PrepareFrame();
+	//// Acquire the next image from the swap chain
+	//VkResult result = swapChain.acquireNextImage(presentCompleteSemaphores[currentBuffer], &currentBuffer);
+	//// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or no longer optimal for presentation (SUBOPTIMAL)
+	//if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {
+	//	WindowResize();
+	//}
+	//else {
+	//	VK_CHECK_RESULT(result);
+	//}
+
+	//vkResetFences(device, 1, &submitFences[currentBuffer]);
+
+	//std::vector<VkCommandBuffer> submitCommandBuffers(allDrawCommandBuffers.size());
+	//for (int i = 0; i < allDrawCommandBuffers.size(); i++)
+	//{
+	//	submitCommandBuffers[i] = allDrawCommandBuffers[i][currentBuffer];
+	//}
+
+	//submitInfo.pWaitSemaphores = &presentCompleteSemaphores[currentBuffer];
+	//submitInfo.pSignalSemaphores = &renderCompleteSemaphores[currentBuffer];
+	//submitInfo.commandBufferCount = submitCommandBuffers.size();
+	//submitInfo.pCommandBuffers = submitCommandBuffers.data();
+	//VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, submitFences[currentBuffer]));
+
+	////VulkanApplication::PresentFrame();
+	//result = swapChain.queuePresent(presentationQueue, currentBuffer, renderCompleteSemaphores[currentBuffer]);
+	//if (!((result == VK_SUCCESS) || (result == VK_SUBOPTIMAL_KHR))) {
+	//	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+	//		// Swap chain is no longer compatible with the surface and needs to be recreated
+	//		WindowResize();
+	//		return;
+	//	}
+	//	else {
+	//		VK_CHECK_RESULT(result);
+	//	}
+	//}
+	//currentBuffer = (currentBuffer + 1) % swapChain.swapChainImageViews.size();
+}
+
+void D3D12Application::ViewChanged() {}
+
+void D3D12Application::KeyPressed(uint32_t) {}
+
+void D3D12Application::MouseMoved(double x, double y, bool & handled) {}
+
+void D3D12Application::BuildCommandBuffers() 
+{
+	// Command list allocators can only be reset when the associated 
+	// command lists have finished execution on the GPU; apps should use 
+	// fences to determine GPU execution progress.
+	ThrowIfFailed(m_commandAllocator->Reset());
+
+	// However, when ExecuteCommandList() is called on a particular command 
+	// list, that command list can then be reset at any time and must be before 
+	// re-recording.
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get()));
+
+	// Indicate that the back buffer will be used as a render target.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[currentBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), currentBuffer, m_rtvDescriptorSize);
+
+	// Record commands.
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+	// Indicate that the back buffer will now be used to present.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[currentBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	ThrowIfFailed(m_commandList->Close());
+}
+
+
+void D3D12Application::GetEnabledFeatures()
+{
+	// Can be overriden in derived class
+}
+
+void D3D12Application::WindowResize()
+{
+	if (!prepared)
+	{
+		return;
+	}
+	prepared = false;
+
+	// Ensure all operations on the device have been finished before destroying resources
+	//vkDeviceWaitIdle(device);
+	WaitForDevice();
+
+	// Recreate swap chain
+	width = destWidth;
+	height = destHeight;
+	//SetupSwapChain();
+
+	//// Recreate the frame buffers
+	//vulkanDevice->DestroyTexture(depthStencil);
+	//SetupDepthStencil();
+	//mainRenderPass->ResetFrameBuffers();
+	//SetupFrameBuffer();
+
+	//if ((width > 0.0f) && (height > 0.0f)) {
+	//	if (settings.overlay) {
+	//		UIOverlay.resize(width, height);
+	//	}
+	//}
+
+	// Notify derived class
+	WindowResized();
+	BuildCommandBuffers();
+	
+	ViewChanged();
+
+	//vkDeviceWaitIdle(device);
+	WaitForDevice();
+
+	if ((width > 0.0f) && (height > 0.0f)) {
+		camera.UpdateAspectRatio((float)width / (float)height);
+	}
+
+	prepared = true;
+}
+
+void D3D12Application::WindowResized()
+{
+	// Can be overriden in derived class
+}
+
+//void VulkanApplication::OnUpdateUIOverlay(engine::scene::UIOverlay *overlay) {}
+
+D3D12Application::~D3D12Application()
+{
+	// Clean up Vulkan resources
+	/*swapChain.CleanUp();
+	DestroyCommandBuffers();
+	vulkanDevice->DestroyPipelineCache();
+	for(int i=0;i<presentCompleteSemaphores.size();i++)
+	vulkanDevice->DestroySemaphore(presentCompleteSemaphores[i]);
+	for (int i = 0; i < renderCompleteSemaphores.size(); i++)
+	vulkanDevice->DestroySemaphore(renderCompleteSemaphores[i]);
+
+	if (settings.overlay) {
+		UIOverlay.freeResources();
+	}
+
+	delete vulkanDevice;
+
+	if (settings.validation)
+	{
+		engine::debug::freeDebugCallback(instance);
+	}
+
+	vkDestroyInstance(instance, nullptr);*/
+	WaitForPreviousFrame();
+
+	CloseHandle(m_fenceEvent);
+}
