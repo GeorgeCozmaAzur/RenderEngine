@@ -521,7 +521,14 @@ public:
 
 		vkWaitForFences(device, 1, &submitFences[currentBuffer], VK_TRUE, UINT64_MAX);
 
-		VulkanApplication::PrepareFrame();
+		VkResult result = swapChain.acquireNextImage(presentCompleteSemaphores[currentBuffer], &currentBuffer);
+		// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or no longer optimal for presentation (SUBOPTIMAL)
+		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {
+			WindowResize();
+		}
+		else {
+			VK_CHECK_RESULT(result);
+		}
 
 		vkResetFences(device, 1, &submitFences[currentBuffer]);
 
@@ -540,7 +547,18 @@ public:
 		submitInfo.pCommandBuffers = submitCommandBuffers.data();
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, submitFences[currentBuffer]));
 
-		VulkanApplication::PresentFrame();
+		//VulkanApplication::PresentFrame();
+		result = swapChain.queuePresent(presentationQueue, currentBuffer, renderCompleteSemaphores[currentBuffer]);
+		if (!((result == VK_SUCCESS) || (result == VK_SUBOPTIMAL_KHR))) {
+			if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+				// Swap chain is no longer compatible with the surface and needs to be recreated
+				WindowResize();
+				return;
+			}
+			else {
+				VK_CHECK_RESULT(result);
+			}
+		}
 		currentBuffer = (currentBuffer + 1) % swapChain.swapChainImageViews.size();
 	}
 

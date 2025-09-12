@@ -1,45 +1,6 @@
-/*
-* Vulkan Example base class
-*
-* Copyright (C) by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
-*/
-
 #pragma once
 
-#ifdef _WIN32
-#pragma comment(linker, "/subsystem:windows")
-#include <windows.h>
-#include <fcntl.h>
-#include <io.h>
-#include <ShellScalingAPI.h>
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-#include <android/native_activity.h>
-#include <android/asset_manager.h>
-#include <android_native_app_glue.h>
-#include <sys/system_properties.h>
-#include "VulkanAndroid.h"
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-#include <wayland-client.h>
-#include "xdg-shell-client-protocol.h"
-#elif defined(_DIRECT2DISPLAY)
-//
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-#include <xcb/xcb.h>
-#endif
-
-#include <iostream>
-#include <chrono>
-#include <sys/stat.h>
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <string>
-#include <array>
-#include <numeric>
+#include "ApplicationBase.h"
 
 #include "vulkan/vulkan.h"
 
@@ -49,27 +10,16 @@
 #include "render/vulkan/VulkanDevice.h"
 #include "render/vulkan/VulkanSwapChain.h"
 #include "scene/UIOverlay.h"
-#include "scene/Camera.h"
 
 using namespace engine;
 
-class VulkanApplication
+class VulkanApplication : public ApplicationBase
 {
 private:	
-	/** brief Indicates that the view (position, rotation) has changed and buffers containing camera matrices need to be updated */
-	bool viewUpdated = false;
-	// Destination dimensions for resizing the window
-	uint32_t destWidth;
-	uint32_t destHeight;
-	bool resizing = false;
 	// Called if the window is resized and some resources have to be recreatesd
-	void WindowResize();
-	void HandleMouseMove(int32_t x, int32_t y);
+	
+	//void HandleMouseMove(int32_t x, int32_t y);
 protected:
-	// Frame counter to display fps
-	uint32_t frameCounter = 0;
-	uint32_t lastFPS = 0;
-	std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp;
 	// Vulkan instance, stores all per-application states
 	VkInstance instance = VK_NULL_HANDLE;
 	/** @brief Set of physical device features to be enabled for this example (must be set in the derived constructor) */
@@ -120,96 +70,26 @@ protected:
 
 	std::vector<VkFence> submitFences;
 
-	struct
-	{
-		bool n = false;
-		bool o = false;
-		bool t = false;
-	} pressedkeys;
-
 	//graphical resources
 	//std::vector<Geometry *> m_geometries;
 public: 
+	VulkanApplication::VulkanApplication(bool enableValidation);
+
 	bool prepared = false;
 	uint32_t width = 1280;
 	uint32_t height = 720;
 
 	engine::scene::UIOverlay UIOverlay;
 
-	/** @brief Last frame time measured using a high performance timer (if available) */
-	float frameTimer = 1.0f;
-
 	/** @brief Encapsulated physical and logical vulkan device */
 	engine::render::VulkanDevice* vulkanDevice = nullptr;
 
-	/** @brief Example settings that can be changed e.g. by command line arguments */
-	struct Settings {
-		/** @brief Activates validation layers (and message output) when set to true */
-		bool validation = false;
-		/** @brief Set to true if fullscreen mode has been requested via command line */
-		bool fullscreen = false;
-		/** @brief Set to true if v-sync will be forced for the swapchain */
-		bool vsync = false;
-		/** @brief Enable UI overlay */
-		bool overlay = false;
-	} settings;
-
 	VkClearColorValue defaultClearColor = { { 0.25f, 0.25f, 0.25f, 1.0f } };
 
-	float zoom = 0;
-
-	static std::vector<const char*> args;
-
-	// Defines a frame rate independent timer value clamped from -1.0...1.0
-	// For use in animations, rotations, etc.
-	float timer = 0.0f;
-	// Multiplier for speeding up (or slowing down) the global timer
-	float timerSpeed = 0.25f;
-	
-	bool paused = false;
-
-	// Use to adjust mouse rotation speed
-	float rotationSpeed = 1.0f;
-	// Use to adjust mouse zoom speed
-	float zoomSpeed = 1.0f;
-
-	scene::Camera camera;
-
-	glm::vec3 rotation = glm::vec3();
-	glm::vec3 cameraPos = glm::vec3();
-	glm::vec2 mousePos;
-
-	std::string title = "Vulkan Example";
-	std::string name = "vulkanExample";
 	uint32_t apiVersion = VK_API_VERSION_1_2;
 
 	class engine::render::VulkanTexture* depthStencil;
 
-	struct {
-		glm::vec2 axisLeft = glm::vec2(0.0f);
-		glm::vec2 axisRight = glm::vec2(0.0f);
-	} gamePadState;
-
-	struct {
-		bool left = false;
-		bool right = false;
-		bool middle = false;
-	} mouseButtons;
-
-	// OS specific 
-#if defined(_WIN32)
-	HWND window;
-	HINSTANCE windowInstance;
-#endif
-
-	// Default ctor
-	VulkanApplication(bool enableValidation = false);
-
-#if defined(_WIN32)
-	void SetupConsole(std::string title);
-	HWND SetupWindow(HINSTANCE hinstance, WNDPROC wndproc);
-	void HandleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-#endif
 	/**
 	* Create the application wide Vulkan instance
 	*
@@ -237,18 +117,14 @@ public:
 	void CreatePipelineCache();
 
 	// Setup the vulkan instance, enable required extensions and connect to the physical device (GPU)
-	bool InitVulkan();
+	virtual bool InitAPI();
 
 	//Prepare ui elements
 	void PrepareUI();
 
-	// Prepare commonly used Vulkan functions
-	virtual void Prepare() = 0;
-
 	// Pure virtual render function (override in derived class)
 	virtual void Render();
 
-	virtual void update(float dt) = 0;
 	// Called when view change occurs
 	// Can be overriden in derived class to e.g. update uniform buffers 
 	// Containing view dependant matrices
@@ -260,6 +136,7 @@ public:
 	// Called when the window has been resized
 	// Can be overriden in derived class to recreate or rebuild resources attached to the frame buffer / swapchain
 	virtual void WindowResized();
+	virtual void WindowResize();
 	// Pure virtual function to be overriden by the dervice class
 	// Called in case of an event where e.g. the framebuffer has to be rebuild and thus
 	// all command buffers that may reference this
@@ -267,9 +144,6 @@ public:
 
 	/** @brief (Virtual) Called after the physical device features have been read, can be used to set features to enable on the device */
 	virtual void GetEnabledFeatures();
-	
-	// Start the main render loop
-	void MainLoop();
 
 	// Render one frame of a render loop on platforms that sync rendering
 	void UpdateFrame();
@@ -285,35 +159,10 @@ public:
 	// Submit the frames' workload 
 	void PresentFrame();
 
+	virtual void WaitForDevice();
+
 	/** @brief (Virtual) Called when the UI overlay is updating, can be used to add custom elements to the overlay */
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay);
 
 	virtual ~VulkanApplication();
 };
-
-// OS specific macros for the example main entry points
-#if defined(_WIN32)
-// Windows entry point
-#define VULKAN_EXAMPLE_MAIN()																		\
-VulkanExample *vulkanExample;																		\
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)						\
-{																									\
-	if (vulkanExample != NULL)																		\
-	{																								\
-		vulkanExample->HandleMessages(hWnd, uMsg, wParam, lParam);									\
-	}																								\
-	return (DefWindowProc(hWnd, uMsg, wParam, lParam));												\
-}																									\
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)									\
-{																									\
-	for (int32_t i = 0; i < __argc; i++) { VulkanExample::args.push_back(__argv[i]); };  			\
-	vulkanExample = new VulkanExample();															\
-	vulkanExample->SetupWindow(hInstance, WndProc);													\
-	vulkanExample->InitVulkan();																	\
-	vulkanExample->Prepare();																		\
-	vulkanExample->MainLoop();																	\
-	delete(vulkanExample);																			\
-	_CrtDumpMemoryLeaks();																			\
-	return 0;																						\
-}																									
-#endif
