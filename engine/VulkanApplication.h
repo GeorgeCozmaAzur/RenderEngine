@@ -74,10 +74,6 @@ protected:
 public: 
 	VulkanApplication::VulkanApplication(bool enableValidation);
 
-	bool prepared = false;
-	uint32_t width = 1280;
-	uint32_t height = 720;
-
 	engine::scene::UIOverlay UIOverlay;
 
 	/** @brief Encapsulated physical and logical vulkan device */
