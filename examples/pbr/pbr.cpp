@@ -194,12 +194,12 @@ public:
 
 	void setupPipelines()
 	{
-
+		render::PipelineProperties props;
 		basicModel.AddPipeline(vulkanDevice->GetPipeline(basicModel._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbr.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbr.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 
 		basicModelTextured.AddPipeline(vulkanDevice->GetPipeline(basicModelTextured._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbrtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbrtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	}
 
 	void init()
@@ -210,9 +210,7 @@ public:
 		setupDescriptorPool();
 		SetupDescriptors();
 		setupPipelines();
-	}
-
-	
+	}	
 
 	void BuildCommandBuffers()
 	{

@@ -253,11 +253,12 @@ public:
 
 	void setupPipelines()
 	{
-		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/pbribltextured.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbribltextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
-
 		render::PipelineProperties props;
-		props.cullMode = VK_CULL_MODE_FRONT_BIT;
+		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/pbr/pbribltextured.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbribltextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+
+		//render::PipelineProperties props;
+		props.cullMode = render::CullMode::FRONT;
 		skybox.AddPipeline(vulkanDevice->GetPipeline(skybox._descriptorLayout->m_descriptorSetLayout, simpleVertexLayout.m_vertexInputBindings, simpleVertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/pbr/skybox.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/skybox.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	}
@@ -281,8 +282,9 @@ public:
 
 		render::VulkanDescriptorSetLayout* layout = vulkanDevice->GetDescriptorSetLayout(modelbindings);
 
+		render::PipelineProperties props;
 		render::VulkanPipeline* pipeline = vulkanDevice->GetPipeline(layout->m_descriptorSetLayout, {}, {},
-			engine::tools::getAssetPath() + "shaders/pbr/genbrdflut.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/genbrdflut.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+			engine::tools::getAssetPath() + "shaders/pbr/genbrdflut.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/genbrdflut.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props);
 
 		VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 		offscreenRenderPass->Begin(cmdBuf,0);
@@ -337,7 +339,7 @@ public:
 		obj.SetVertexLayout(&simpleVertexLayout);
 
 		render::PipelineProperties props;
-		props.cullMode = VK_CULL_MODE_FRONT_BIT;
+		props.cullMode = render::CullMode::FRONT;
 		props.vertexConstantBlockSize = sizeof(pushBlock);
 		
 		obj.AddPipeline(vulkanDevice->GetPipeline(obj._descriptorLayout->m_descriptorSetLayout, obj._vertexLayout->m_vertexInputBindings, obj._vertexLayout->m_vertexInputAttributes,
@@ -469,7 +471,7 @@ public:
 		obj.SetVertexLayout(&simpleVertexLayout);
 
 		render::PipelineProperties props;
-		props.cullMode = VK_CULL_MODE_FRONT_BIT;
+		props.cullMode = render::CullMode::FRONT;
 		props.vertexConstantBlockSize = sizeof(pushBlock);
 		obj.AddPipeline(vulkanDevice->GetPipeline(obj._descriptorLayout->m_descriptorSetLayout, obj._vertexLayout->m_vertexInputBindings, obj._vertexLayout->m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/prefilterenvmap.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props));

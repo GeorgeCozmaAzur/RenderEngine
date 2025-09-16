@@ -149,9 +149,9 @@ public:
 
 	void setupPipelines()
 	{
-
+		render::PipelineProperties props;
 		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayoutInstanced.m_vertexInputBindings, vertexLayoutInstanced.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/instancing/phong.vert.spv", engine::tools::getAssetPath() + "shaders/instancing/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/instancing/phong.vert.spv", engine::tools::getAssetPath() + "shaders/instancing/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	}
 
 	void init()

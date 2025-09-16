@@ -438,7 +438,7 @@ namespace engine
             vkDestroyPipelineCache(logicalDevice, pipelineCache, nullptr);
         }
 
-        VulkanPipeline* VulkanDevice::GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
+       /* VulkanPipeline* VulkanDevice::GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
             std::vector<VkVertexInputBindingDescription> vertexInputBindings, std::vector<VkVertexInputAttributeDescription> vertexInputAttributes,
             std::string vertexFile, std::string fragmentFile,
             VkRenderPass renderPass, VkPipelineCache cache,
@@ -469,7 +469,7 @@ namespace engine
             pipeline->Create(logicalDevice, descriptorSetLayout, vertexInputBindings, vertexInputAttributes, vertexFile, fragmentFile, renderPass, cache, properties);
             m_pipelines.push_back(pipeline);
             return pipeline;
-        }
+        }*/
 
         VulkanPipeline* VulkanDevice::GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
             std::vector<VkVertexInputBindingDescription> vertexInputBindings, std::vector<VkVertexInputAttributeDescription> vertexInputAttributes,

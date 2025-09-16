@@ -187,15 +187,15 @@ public:
 
 	void setupPipelines()
 	{
-
+		render::PipelineProperties props;
 		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 
 		trunk.AddPipeline(vulkanDevice->GetPipeline(trunk._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/wind/tree.vert.spv", engine::tools::getAssetPath() + "shaders/wind/tree.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/wind/tree.vert.spv", engine::tools::getAssetPath() + "shaders/wind/tree.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 
 		leaves.AddPipeline(vulkanDevice->GetPipeline(leaves._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/wind/leaves.vert.spv", engine::tools::getAssetPath() + "shaders/wind/leaves.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/wind/leaves.vert.spv", engine::tools::getAssetPath() + "shaders/wind/leaves.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	}
 
 	void init()

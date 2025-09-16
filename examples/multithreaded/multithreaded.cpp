@@ -274,8 +274,9 @@ public:
 
 	void setupPipelines()
 	{
+		render::PipelineProperties props;
 		objectsPipeline = vulkanDevice->GetPipeline(objectslayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/multithreaded/phong.vert.spv", engine::tools::getAssetPath() + "shaders/multithreaded/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache);
+			engine::tools::getAssetPath() + "shaders/multithreaded/phong.vert.spv", engine::tools::getAssetPath() + "shaders/multithreaded/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props);
 
 		for (int i = 0;i < objectsNo;i++)
 		{

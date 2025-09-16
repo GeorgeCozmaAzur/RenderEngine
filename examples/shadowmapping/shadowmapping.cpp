@@ -284,12 +284,14 @@ public:
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
 		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
 
+		render::PipelineProperties props;
+		props.depthBias = true;
 		pipelines.offscreen = vulkanDevice->GetPipeline(layouts.offscreen_layout->m_descriptorSetLayout, layouts.scene_vlayout->m_vertexInputBindings, vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/offscreenvariancecolor.frag.spv", offscreenPass->GetRenderPass(), pipelineCache//);
-			,false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true);
+			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/offscreenvariancecolor.frag.spv", offscreenPass->GetRenderPass(), pipelineCache, props);
 
+		props.depthBias = false;
 		pipelines.sceneShadow = vulkanDevice->GetPipeline(layouts.scene_layout->m_descriptorSetLayout, layouts.scene_vlayout->m_vertexInputBindings, layouts.scene_vlayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/shadowmapping/scene.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/scene.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache);
+			engine::tools::getAssetPath() + "shaders/shadowmapping/scene.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/scene.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props);
 
 		/*pipelines.filterSM = vulkanDevice->GetPipeline(layouts.filter_layout->m_descriptorSetLayout, {}, {},
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/shadowmapping/gaussfilter.frag.spv",

@@ -291,10 +291,12 @@ public:
 
 	void setupPipelines()
 	{
-		VkPipelineColorBlendAttachmentState opaqueState{};
+		/*VkPipelineColorBlendAttachmentState opaqueState{};
 		opaqueState.blendEnable = VK_FALSE;
 		opaqueState.colorWriteMask = 0xf;
-		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };
+		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };*/
+		render::BlendAttachmentState opaqueState{ false };
+		std::vector <render::BlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };
 
 		render::PipelineProperties props;
 		props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
@@ -315,17 +317,18 @@ public:
 
 	void setupSphere()
 	{
-		VkPipelineColorBlendAttachmentState opaqueState{};
+		/*VkPipelineColorBlendAttachmentState opaqueState{};
 		opaqueState.blendEnable = VK_FALSE;
 		opaqueState.colorWriteMask = 0xf;
-		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };
+		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };*/
+		render::BlendAttachmentState opaqueState{ false };
+		std::vector <render::BlendAttachmentState> blendAttachmentStates{ opaqueState, opaqueState };
 
 		render::PipelineProperties sphereprops;
-		sphereprops.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		sphereprops.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 		sphereprops.pAttachments = blendAttachmentStates.data();
 
-		VkPipelineColorBlendAttachmentState transparentState{
+		/*VkPipelineColorBlendAttachmentState transparentState{
 			VK_TRUE,
 			VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 			VK_BLEND_OP_ADD,
@@ -333,10 +336,11 @@ public:
 			VK_BLEND_OP_ADD,
 			0xf
 		};
-		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatesTransparent{ transparentState, transparentState };
+		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatesTransparent{ transparentState, transparentState };*/
+		render::BlendAttachmentState transparentState{ true };
+		std::vector <render::BlendAttachmentState> blendAttachmentStatesTransparent{ transparentState, transparentState };
 		
 		render::PipelineProperties transprops;
-		transprops.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		transprops.blendEnable = true;
 		transprops.attachmentCount = static_cast<uint32_t>(blendAttachmentStatesTransparent.size());
 		transprops.pAttachments = blendAttachmentStatesTransparent.data();
@@ -361,9 +365,9 @@ public:
 		
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
 		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
+		render::PipelineProperties sprops; sprops.depthBias = true;
 		shadowobjects.AddPipeline(vulkanDevice->GetPipeline(shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._vertexLayout->m_vertexInputBindings, shadowobjects._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache
-			, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true));
+			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache, sprops));
 
 		sphereprops.blendEnable = true;
 		atmosphere.Init("", 6100, vulkanDevice, descriptorPool, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), sizeof(modelUniformAtmosphereFS), { &colorMap->m_descriptor }, "planet/atmosphere", "planet/atmosphere", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue,
@@ -379,9 +383,10 @@ public:
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
 		render::VulkanDescriptorSetLayout* atmosphereLayout = vulkanDevice->GetDescriptorSetLayout(atmosphereBindings);
+		render::PipelineProperties props;
 		peffpipeline = vulkanDevice->GetPipeline(atmosphereLayout->m_descriptorSetLayout, {}, {},
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/planet/atmosphereposteffect.frag.spv",
-			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+			mainRenderPass->GetRenderPass(), pipelineCache, props);
 
 		peffdesc = vulkanDevice->GetDescriptorSet(descriptorPool, { &matricesUniformBuffer->m_descriptor, &atmosphere.GetFSUniformBuffer()->m_descriptor },
 			{ &scenecolor->m_descriptor, &scenepositions->m_descriptor, &scenedepth->m_descriptor, &bluenoise->m_descriptor }, 

@@ -68,15 +68,17 @@ namespace engine
 
 			std::string shaderfolder = engine::tools::getAssetPath() + "shaders/" + (deferred ? deferredShadersFolder : forwardShadersFolder) + "/";
 
-			VkPipelineColorBlendAttachmentState opaqueState{};
+			/*VkPipelineColorBlendAttachmentState opaqueState{};
 			opaqueState.blendEnable = VK_FALSE;
 			opaqueState.colorWriteMask = 0xf;
-			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
+			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;*/
+			render::BlendAttachmentState opaqueState{ false };
+			std::vector <render::BlendAttachmentState> blendAttachmentStates;
 			blendAttachmentStates.push_back(opaqueState);
 			if (deferred)
 				blendAttachmentStates.push_back(opaqueState);
 
-			VkPipelineColorBlendAttachmentState transparentState{
+			/*VkPipelineColorBlendAttachmentState transparentState{
 				VK_TRUE,
 				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 				VK_BLEND_OP_ADD,
@@ -84,7 +86,9 @@ namespace engine
 				VK_BLEND_OP_ADD,
 				0xf
 			};
-			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatestrans;
+			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatestrans;*/
+			render::BlendAttachmentState transparentState{ true };
+			std::vector <render::BlendAttachmentState> blendAttachmentStatestrans;
 			blendAttachmentStatestrans.push_back(transparentState);
 			if (deferred)
 				blendAttachmentStatestrans.push_back(transparentState);
@@ -282,8 +286,11 @@ namespace engine
 
 							currentVertexLayout = &vnlayout;
 						
+							render::PipelineProperties props;
+							props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
+							props.pAttachments = blendAttachmentStates.data();
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vnlayout.m_vertexInputBindings, vnlayout.m_vertexInputAttributes,
-								shaderfolder+normalmapVS, shaderfolder+normalmapFS, renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data());
+								shaderfolder+normalmapVS, shaderfolder+normalmapFS, renderPass, pipelineCache, props);
 							
 						}
 						else
@@ -309,10 +316,11 @@ namespace engine
 
 							currentVertexLayout = &vlayout;
 
+							render::PipelineProperties props;
+							props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
+							props.pAttachments = blendAttachmentStates.data();
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
-								shaderfolder + lightingVS, shaderfolder + lightingTexturedFS, renderPass, pipelineCache,
-									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data());
-
+								shaderfolder + lightingVS, shaderfolder + lightingTexturedFS, renderPass, pipelineCache, props);
 						}
 					}
 					else
@@ -360,16 +368,22 @@ namespace engine
 
 						if (fdata.transparency != 1.0f)
 						{
+							render::PipelineProperties props;
+							props.blendEnable = true;
+							props.attachmentCount = static_cast<uint32_t>(blendAttachmentStatestrans.size());
+							props.pAttachments = blendAttachmentStatestrans.data();
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
-									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache, true,
-									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStatestrans.size()), blendAttachmentStatestrans.data());
+									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache, props);
 							areTransparents[i] = true;
 						}
 						else
 						{
+							render::PipelineProperties props;
+							props.blendEnable = false;
+							props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
+							props.pAttachments = blendAttachmentStates.data();
 							currentPipeline = device->GetPipeline(currentDesclayout->m_descriptorSetLayout, vlayout.m_vertexInputBindings, vlayout.m_vertexInputAttributes,
-									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache,
-									false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data());
+									shaderfolder + lightingVS, shaderfolder + lightingFS, renderPass, pipelineCache,props);
 							areTransparents[i] = false;
 						}
 					}
@@ -634,23 +648,25 @@ namespace engine
 					bool blendenable = areTransparents[ro_index];
 
 					//This one doesn't write to color. Carefull here if we want to use variance shadowmapping or other techniques that require aditional data from the color buffer
-					VkPipelineColorBlendAttachmentState opaqueState{};
+					/*VkPipelineColorBlendAttachmentState opaqueState{};
 					opaqueState.blendEnable = VK_FALSE;
 					opaqueState.colorWriteMask = 0xf;
-					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState };
+					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState };*/
+					render::BlendAttachmentState opaqueState{ false };
+					std::vector <render::BlendAttachmentState> blendAttachmentStates;
 
 					render::PipelineProperties props;
 					props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 					props.pAttachments = blendAttachmentStates.data();
 					props.depthBias = true;
-					props.cullMode = VK_CULL_MODE_NONE;
+					props.cullMode = render::CullMode::NONE;
 					props.depthTestEnable = true;
 					
 
 					if (blendenable)
 					{
 						props.depthWriteEnable = false;
-						blendAttachmentStates[0].colorWriteMask = 0xf;//We want to write to color only for transparents;
+						//blendAttachmentStates[0].colorWriteMask = 0xf;//We want to write to color only for transparents;
 					}
 
 					render::VulkanPipeline* p = _device->GetPipeline(currentdescayout->m_descriptorSetLayout, l->m_vertexInputBindings, l->m_vertexInputAttributes,

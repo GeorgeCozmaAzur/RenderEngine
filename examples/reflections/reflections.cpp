@@ -274,14 +274,15 @@ public:
 		offscreenRenderPass->AddFrameBuffer(fb);
 
 		//TODO that clip plane
+		render::PipelineProperties props;
 		pipelines.model = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/offscreen/phong.vert.spv", engine::tools::getAssetPath() + "shaders/offscreen/phong.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache);
+			engine::tools::getAssetPath() + "shaders/offscreen/phong.vert.spv", engine::tools::getAssetPath() + "shaders/offscreen/phong.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props);
 
 		pipelines.offscreen = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/offscreen/phong.vert.spv", engine::tools::getAssetPath() + "shaders/offscreen/phong.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache);
+			engine::tools::getAssetPath() + "shaders/offscreen/phong.vert.spv", engine::tools::getAssetPath() + "shaders/offscreen/phong.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props);
 
 		pipelines.mirror = vulkanDevice->GetPipeline(layouts.mirror->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/offscreen/mirror.vert.spv", engine::tools::getAssetPath() + "shaders/offscreen/mirror.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache);
+			engine::tools::getAssetPath() + "shaders/offscreen/mirror.vert.spv", engine::tools::getAssetPath() + "shaders/offscreen/mirror.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props);
 
 		models.example->AddPipeline(pipelines.model);
 		models.exampleoffscreen->AddPipeline(pipelines.offscreen);

@@ -259,8 +259,9 @@ public:
 
 		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, { &textureDFS->m_descriptor },
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
+		render::PipelineProperties props;
 		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basic/dfs.vert.spv", engine::tools::getAssetPath() + "shaders/basic/dfs.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/basic/dfs.vert.spv", engine::tools::getAssetPath() + "shaders/basic/dfs.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 
 		/*textureCompute3dTargets[0] = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
 		textureCompute3dTargets[1] = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);

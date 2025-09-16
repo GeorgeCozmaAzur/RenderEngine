@@ -295,24 +295,30 @@ public:
 
 	void setupPipelines()
 	{
-		VkPipelineColorBlendAttachmentState opaqueAttachmentState {}; opaqueAttachmentState.blendEnable = VK_FALSE, opaqueAttachmentState.colorWriteMask = 0xf;
+		/*VkPipelineColorBlendAttachmentState opaqueAttachmentState {}; opaqueAttachmentState.blendEnable = VK_FALSE, opaqueAttachmentState.colorWriteMask = 0xf;
 		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates = { 
 			opaqueAttachmentState, 
 			opaqueAttachmentState,
-			opaqueAttachmentState };
+			opaqueAttachmentState };*/
+		render::BlendAttachmentState opaqueState{ false };
+		std::vector <render::BlendAttachmentState> blendAttachmentStates{ opaqueState ,opaqueState ,opaqueState };
 
+		render::PipelineProperties props;
+		props.attachmentCount = blendAttachmentStates.size();
+		props.pAttachments = blendAttachmentStates.data();
 		pipelines.plane = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basiccolored.frag.spv", 
-			scenepass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data());
+			scenepass->GetRenderPass(), pipelineCache, props);
 		pipelines.model = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayoutInstanced.m_vertexInputBindings, vertexLayoutInstanced.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcoloredinstanced.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basiccolored.frag.spv",
-			scenepass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data());
+			scenepass->GetRenderPass(), pipelineCache, props);
 		models.example.AddPipeline(pipelines.model);
 		models.plane.AddPipeline(pipelines.plane);
 
+		render::PipelineProperties propsd;
 		pipelines.deferred = vulkanDevice->GetPipeline(layouts.deferred->m_descriptorSetLayout, {}, {},
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/deferredlighting.frag.spv",
-			mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+			mainRenderPass->GetRenderPass(), pipelineCache, propsd);
 	}
 
 	void BuildCommandBuffers()

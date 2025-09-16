@@ -157,8 +157,11 @@ namespace engine
 				VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},	// Location 1: UV
 				VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},	// Location 0: Color
 			};
+			render::PipelineProperties props;
+			props.blendEnable = true;
+			props.vertexConstantBlockSize = sizeof(pushConstBlock);
 			_pipeline = _device->GetPipeline(_descriptorLayout->m_descriptorSetLayout, vertexInputBindings, vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", renderPass, pipelineCache, true, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, sizeof(pushConstBlock));
+				engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", renderPass, pipelineCache, props);
 		}
 
 		bool UIOverlay::shouldRecreateBuffers()

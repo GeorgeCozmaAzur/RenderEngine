@@ -93,25 +93,30 @@ namespace engine
 			shadow_uniform_buffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_SPACE });
 
 			render_objects.resize(input.materials.size());
-			VkPipelineColorBlendAttachmentState opaqueState{};
+
+			render::BlendAttachmentState opaqueState{false};
+			std::vector <render::BlendAttachmentState> blendAttachmentStates;
+			/*VkPipelineColorBlendAttachmentState opaqueState{};
 			opaqueState.blendEnable = VK_FALSE;
 			opaqueState.colorWriteMask = 0xf;
-			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
+			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;*/
 			
 			if (deferred)
 				blendAttachmentStates = { opaqueState, opaqueState, opaqueState, opaqueState };
 			else
 				blendAttachmentStates = { opaqueState };
 
-			VkPipelineColorBlendAttachmentState transparentState{
+			/*VkPipelineColorBlendAttachmentState transparentState{
 				VK_TRUE,
 				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 				VK_BLEND_OP_ADD,
 				VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ZERO,
 				VK_BLEND_OP_ADD,
 				0xf
-			};
-			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatestrans;
+			};*/
+			render::BlendAttachmentState transparentState{ true };
+			//std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStatestrans;
+			std::vector <render::BlendAttachmentState> blendAttachmentStatestrans;
 			blendAttachmentStatestrans.push_back(transparentState);
 			if (deferred)
 				blendAttachmentStatestrans.push_back(transparentState);
@@ -139,7 +144,7 @@ namespace engine
 
 			std::string shaderfolder = engine::tools::getAssetPath() + "shaders/" + (deferred ? deferredShadersFolder : forwardShadersFolder) + "/";
 			render::PipelineProperties props;
-			props.cullMode = VK_CULL_MODE_FRONT_BIT;
+			props.cullMode = render::CullMode::FRONT;
 			props.attachmentCount = blendAttachmentStates.size();
 			props.pAttachments = blendAttachmentStates.data();
 			render::VulkanPipeline* currentPipeline = _device->GetPipeline(currentDesclayoutSimple->m_descriptorSetLayout, vertexlayout.m_vertexInputBindings, vertexlayout.m_vertexInputAttributes,
@@ -529,23 +534,25 @@ namespace engine
 					bool blendenable = areTransparents[ro_index];
 
 					//This one doesn't write to color. Carefull here if we want to use variance shadowmapping or other techniques that require aditional data from the color buffer
-					VkPipelineColorBlendAttachmentState opaqueState{};
+					/*VkPipelineColorBlendAttachmentState opaqueState{};
 					opaqueState.blendEnable = VK_FALSE;
 					opaqueState.colorWriteMask = 0xf;
-					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState };
+					std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ opaqueState };*/
+					render::BlendAttachmentState opaqueState{ false };
+					std::vector <render::BlendAttachmentState> blendAttachmentStates;
 
 					render::PipelineProperties props;
 					props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 					props.pAttachments = blendAttachmentStates.data();
 					props.depthBias = true;
-					props.cullMode = VK_CULL_MODE_NONE;
+					props.cullMode = render::CullMode::NONE;
 					props.depthTestEnable = true;
 
 
 					if (blendenable)
 					{
 						props.depthWriteEnable = false;
-						blendAttachmentStates[0].colorWriteMask = 0xf;//We want to write to color only for transparents;
+						//blendAttachmentStates[0].colorWriteMask = 0xf;//We want to write to color only for transparents;
 					}
 
 					render::VulkanPipeline* p = _device->GetPipeline(currentdescayout->m_descriptorSetLayout, l->m_vertexInputBindings, l->m_vertexInputAttributes,

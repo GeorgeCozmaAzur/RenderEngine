@@ -394,8 +394,10 @@ public:
 
 	void setupPipelines()
 	{
+		render::PipelineProperties props;
+		props.vertexConstantBlockSize = sizeof(int);
 		allfish.AddPipeline(vulkanDevice->GetPipeline(allfish._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/fishes/phongmodel.vert.spv", engine::tools::getAssetPath() + "shaders/fishes/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, sizeof(int)));
+			engine::tools::getAssetPath() + "shaders/fishes/phongmodel.vert.spv", engine::tools::getAssetPath() + "shaders/fishes/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	}
 
 	void init()

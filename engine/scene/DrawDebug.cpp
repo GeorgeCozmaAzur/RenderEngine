@@ -55,8 +55,10 @@ namespace engine
 
 			std::string shaderFileName = m_hasDepth ? "texture3d" : "texture";
 
+			render::PipelineProperties props;
+
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, m_vertexLayout.m_vertexInputBindings, m_vertexLayout.m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/drawdebug/" + shaderFileName +".vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/" + shaderFileName + ".frag.spv", renderPass, pipelineCache);
+				engine::tools::getAssetPath() + "shaders/drawdebug/" + shaderFileName +".vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/" + shaderFileName + ".frag.spv", renderPass, pipelineCache, props);
 		}
 
 		void DrawDebugTexture::UpdateUniformBuffers(glm::mat4 projection, glm::mat4 view, float depth)
@@ -130,8 +132,10 @@ namespace engine
 			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &globalUniformBufferVS->m_descriptor }, {},
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
+			render::PipelineProperties props;
+			props.topology = render::PrimitiveTopolgy::LINE_LIST;
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/drawdebug/vertexcolored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+				engine::tools::getAssetPath() + "shaders/drawdebug/vertexcolored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, props);
 		}
 
 		void DrawDebugBBs::Init(std::vector<std::vector<glm::vec3>> boundries, render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, uint32_t constantSize)
@@ -191,8 +195,12 @@ namespace engine
 			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &globalUniformBufferVS->m_descriptor }, {},
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
+			render::PipelineProperties props;
+			props.topology = render::PrimitiveTopolgy::LINE_LIST;
+			props.vertexConstantBlockSize = constantSize;
+
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/drawdebug/colored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, false, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, constantSize);
+				engine::tools::getAssetPath() + "shaders/drawdebug/colored.vert.spv", engine::tools::getAssetPath() + "shaders/drawdebug/colored.frag.spv", renderPass, pipelineCache, props);
 
 		}
 

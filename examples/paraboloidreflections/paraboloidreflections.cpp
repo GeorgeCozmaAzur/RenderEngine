@@ -330,7 +330,7 @@ public:
 			engine::tools::getAssetPath() + "shaders/paraboloidreflections/paraboloidprojection.vert.spv", engine::tools::getAssetPath() + "shaders/paraboloidreflections/phong.frag.spv", offscreenBackRenderPass->GetRenderPass(), pipelineCache, props);
 
 		pipelines.mirror = vulkanDevice->GetPipeline(layouts.mirror->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/paraboloidreflections/mirror.vert.spv", engine::tools::getAssetPath() + "shaders/paraboloidreflections/mirror.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache);
+			engine::tools::getAssetPath() + "shaders/paraboloidreflections/mirror.vert.spv", engine::tools::getAssetPath() + "shaders/paraboloidreflections/mirror.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props);
 
 		models.example->AddPipeline(pipelines.model);
 		models.exampleoffscreen->AddPipeline(pipelines.offscreen);

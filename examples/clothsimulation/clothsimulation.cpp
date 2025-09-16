@@ -234,12 +234,14 @@ public:
 	{
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
 		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
+		render::PipelineProperties props;
+		props.depthBias = true;
 		shadowobjects.AddPipeline(vulkanDevice->GetPipeline(shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._vertexLayout->m_vertexInputBindings, shadowobjects._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache//);
-			, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, 0, nullptr, true));
+			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache, props));
 
+		props.depthBias = false;
 		models.AddPipeline(vulkanDevice->GetPipeline(models._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));
+			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 
 		std::vector<VkVertexInputBindingDescription> inputBindings = {
 			VkVertexInputBindingDescription{0, sizeof(scene::ClothComputeObject::ClothVertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -251,9 +253,9 @@ public:
 			VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(scene::ClothComputeObject::ClothVertex, uv)}
 			
 		};
-		render::PipelineProperties props;
-		props.cullMode = VK_CULL_MODE_NONE;
-		props.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+		//render::PipelineProperties props;
+		props.cullMode = render::CullMode::NONE;
+		props.topology = render::PrimitiveTopolgy::TRIANGLE_STRIP;
 		props.primitiveRestart = VK_TRUE;
 		clothobject.AddPipeline(vulkanDevice->GetPipeline(clothobject._descriptorLayout->m_descriptorSetLayout, inputBindings, inputAttributes,
 			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));

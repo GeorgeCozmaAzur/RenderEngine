@@ -65,23 +65,23 @@ namespace engine
 			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &ub->m_descriptor }, texturesDescriptors,
 				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
 
-			std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ {VK_TRUE, 
+			/*std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ {VK_TRUE, 
 				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_DST_ALPHA,
 				VK_BLEND_OP_ADD,
 				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_DST_ALPHA,
 				VK_BLEND_OP_ADD,
 				0xf
-				} };
-
+				} };*/
+			std::vector <render::BlendAttachmentState> blendAttachmentStates{ {true} };
 			render::PipelineProperties props;
 			props.blendEnable = true;
-			props.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			props.topology = render::PrimitiveTopolgy::TRIANGLE_LIST;
 			props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 			props.pAttachments = blendAttachmentStates.data();
 			props.depthTestEnable = true;
 			props.depthWriteEnable = false;
 			props.subpass = 1U;
-			props.cullMode = VK_CULL_MODE_BACK_BIT;
+			props.cullMode = render::CullMode::BACK;
 			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
 				engine::tools::getAssetPath() + shaderVertexName, engine::tools::getAssetPath() + shaderFragmentName,
 				renderPass, pipelineCache, props);

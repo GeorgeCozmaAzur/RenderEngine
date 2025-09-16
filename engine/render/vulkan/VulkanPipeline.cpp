@@ -4,6 +4,25 @@ namespace engine
 {
 	namespace render
 	{
+		inline VkPrimitiveTopology ToVkTopology(PrimitiveTopolgy topology) {
+			switch (topology) {
+			case PrimitiveTopolgy::TRIANGLE_LIST: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			case PrimitiveTopolgy::TRIANGLE_STRIP: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+			case PrimitiveTopolgy::LINE_LIST: return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			default: return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+			}
+		}
+
+		inline VkCullModeFlagBits ToVkCullMode(CullMode cullMode) {
+			switch (cullMode) {
+			case CullMode::NONE: return VK_CULL_MODE_NONE;
+			case CullMode::FRONT: return VK_CULL_MODE_FRONT_BIT;
+			case CullMode::BACK: return VK_CULL_MODE_BACK_BIT;
+			case CullMode::FRONTBACK: return VK_CULL_MODE_FRONT_AND_BACK;
+			default: return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+			}
+		}
+
 		VkPipelineShaderStageCreateInfo VulkanPipeline::LoadShader(std::string fileName, VkShaderStageFlagBits stage)
 		{
 			VkPipelineShaderStageCreateInfo shaderStage = {};
@@ -68,7 +87,7 @@ namespace engine
 
 			VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI{};
 			inputAssemblyStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-			inputAssemblyStateCI.topology = properties.topology;
+			inputAssemblyStateCI.topology = ToVkTopology(properties.topology);
 			inputAssemblyStateCI.flags = 0;
 			inputAssemblyStateCI.primitiveRestartEnable = properties.primitiveRestart;
 
@@ -89,10 +108,23 @@ namespace engine
 					0xf };
 			blendAttachmentState.blendEnable = VkBool32(properties.blendEnable);
 
+			std::vector<VkPipelineColorBlendAttachmentState> attachments{ blendAttachmentState };
+
 			VkPipelineColorBlendStateCreateInfo colorBlendStateCI{};
 			colorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-			colorBlendStateCI.attachmentCount = properties.attachmentCount > 0 ? properties.attachmentCount : 1;
-			colorBlendStateCI.pAttachments = properties.pAttachments ? properties.pAttachments : &blendAttachmentState;
+
+			if (properties.pAttachments)
+			{
+				attachments.clear();
+				for (int i = 0; i < properties.attachmentCount; i++)
+				{
+					VkPipelineColorBlendAttachmentState newblendAttachmentState = blendAttachmentState;
+					newblendAttachmentState.blendEnable = VkBool32(properties.pAttachments[i].blend_enable);
+					attachments.push_back(newblendAttachmentState);
+				}
+			}
+			colorBlendStateCI.attachmentCount = attachments.size();
+			colorBlendStateCI.pAttachments = attachments.data();
 
 			VkBool32 enableDepthWrite = VkBool32(properties.depthWriteEnable && !properties.blendEnable);
 			//TODO there will be times when we want to write to depth when there is blend enabled

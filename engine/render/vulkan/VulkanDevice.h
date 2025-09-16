@@ -129,7 +129,7 @@ namespace engine
 			void DestroyPipelineCache();
 
 			// Gets a graphics pipeline
-			VulkanPipeline* GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
+			/*VulkanPipeline* GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
 				std::vector<VkVertexInputBindingDescription> vertexInputBindings, std::vector<VkVertexInputAttributeDescription> vertexInputAttributes,
 				std::string vertexFile, std::string fragmentFile,
 				VkRenderPass renderPass, VkPipelineCache cache,
@@ -142,7 +142,7 @@ namespace engine
 				bool depthBias = false,
 				bool depthTestEnable = true,
 				bool depthWriteEnable = true,
-				uint32_t subpass = 0);
+				uint32_t subpass = 0);*/
 
 			// Gets a graphics pipeline with additional properties
 			VulkanPipeline* GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
