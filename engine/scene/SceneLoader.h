@@ -101,12 +101,12 @@ namespace engine
 			glm::vec4 light_pos = glm::vec4(0.0f, 10.0f, 0.0f, 1.0f);
 			/** @brief Release all Vulkan resources of this model */
 
-			render::VertexLayout vlayout = render::VertexLayout({
+			render::VulkanVertexLayout vlayout = render::VulkanVertexLayout({
 			render::VERTEX_COMPONENT_POSITION,
 			render::VERTEX_COMPONENT_NORMAL,
 			render::VERTEX_COMPONENT_UV
 				}, {});
-			render::VertexLayout vnlayout = render::VertexLayout({
+			render::VulkanVertexLayout vnlayout = render::VulkanVertexLayout({
 			render::VERTEX_COMPONENT_POSITION,
 			render::VERTEX_COMPONENT_NORMAL,
 			render::VERTEX_COMPONENT_UV,

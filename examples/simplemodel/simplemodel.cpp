@@ -21,7 +21,7 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV

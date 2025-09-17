@@ -1,6 +1,5 @@
 #pragma once
 
-#include <VulkanTools.h>
 #include <vector>
 
 namespace engine
@@ -27,10 +26,6 @@ namespace engine
 			/** @brief Components used to generate vertices from */
 			std::vector<std::vector<Component>> m_components;
 
-			std::vector<VkVertexInputBindingDescription> m_vertexInputBindings;
-
-			std::vector<VkVertexInputAttributeDescription> m_vertexInputAttributes;
-
 			VertexLayout()
 			{
 
@@ -41,8 +36,6 @@ namespace engine
 				m_components.push_back(std::move(vComponents));
 				if (iComponents.size() > 0)
 					m_components.push_back(std::move(iComponents));
-
-				CreateVertexDescription();
 			}
 
 			uint32_t GetComponentSize(Component component)
@@ -63,24 +56,6 @@ namespace engine
 				}
 			}
 
-			VkFormat GetVkFormat(Component component)
-			{
-				switch (component)
-				{
-				case VERTEX_COMPONENT_UV:			return VK_FORMAT_R32G32_SFLOAT;
-
-				case VERTEX_COMPONENT_DUMMY_FLOAT:	return VK_FORMAT_R32_SFLOAT;
-
-				case VERTEX_COMPONENT_DUMMY_INT:	return VK_FORMAT_R32_SFLOAT;
-
-				case VERTEX_COMPONENT_TANGENT4:		return VK_FORMAT_R32G32B32A32_SFLOAT;
-
-				case VERTEX_COMPONENT_DUMMY_VEC4:	return VK_FORMAT_R32G32B32A32_SFLOAT;
-
-				default:							return VK_FORMAT_R32G32B32_SFLOAT;
-				}
-			}
-
 			uint32_t GetVertexSize(int index)
 			{
 				uint32_t res = 0;
@@ -92,10 +67,6 @@ namespace engine
 
 				return res;
 			}
-
-			void CreateVertexDescription();
-
-			uint32_t GetVertexInputBinding(VkVertexInputRate inputRate);
 		};
 	}
 }

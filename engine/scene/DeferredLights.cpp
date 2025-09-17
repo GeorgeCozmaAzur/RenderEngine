@@ -11,7 +11,7 @@ namespace engine
 		void DeferredLights::Init(render::VulkanBuffer* ub, render::VulkanDevice* device, VkDescriptorPool descriptorPool, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture* positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic, render::VulkanTexture* albedo)
 		{
 			vulkanDevice = device;
-			_vertexLayout = new render::VertexLayout(
+			_vertexLayout = new render::VulkanVertexLayout(
 				{
 					render::VERTEX_COMPONENT_POSITION
 				},

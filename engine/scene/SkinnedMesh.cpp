@@ -219,7 +219,7 @@ namespace engine
 		}
 
 		// Load a mesh based on data read via assimp 
-		bool SkinnedMesh::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
+		bool SkinnedMesh::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
 		{
 			_vertexLayout = vertex_layout;
 			//skinnedMesh = new SkinnedMesh();

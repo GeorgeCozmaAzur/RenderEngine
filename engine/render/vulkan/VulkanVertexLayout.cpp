@@ -1,10 +1,10 @@
-#include "VertexLayout.h"
+#include "VulkanVertexLayout.h"
 
 namespace engine
 {
 	namespace render
 	{
-		uint32_t VertexLayout::GetVertexInputBinding(VkVertexInputRate inputRate)
+		uint32_t VulkanVertexLayout::GetVertexInputBinding(VkVertexInputRate inputRate)
 		{
 			uint32_t binding = 0;
 			for (auto inputBinding : m_vertexInputBindings)
@@ -15,7 +15,7 @@ namespace engine
 			return binding;
 		}
 
-		void VertexLayout::CreateVertexDescription()
+		void VulkanVertexLayout::CreateVertexDescription()
 		{
 			uint32_t location = 0;
 			for (uint32_t i = 0;i < m_components.size();i++)

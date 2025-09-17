@@ -58,7 +58,7 @@ namespace engine
 			VkQueue copyQueue, VkRenderPass renderPass, VkPipelineCache pipelineCache, bool deferred)
 		{
 
-			render::VertexLayout* vertex_layout = nullptr;
+			render::VulkanVertexLayout* vertex_layout = nullptr;
 
 			uniform_manager.SetDevice(device->logicalDevice);
 			uniform_manager.SetEngineDevice(device);
@@ -231,7 +231,7 @@ namespace engine
 
 					render::VulkanDescriptorSetLayout* currentDesclayout = nullptr;
 					render::VulkanPipeline* currentPipeline = nullptr;
-					render::VertexLayout* currentVertexLayout = nullptr;				
+					render::VulkanVertexLayout* currentVertexLayout = nullptr;				
 
 					if (pScene->mMaterials[i]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 					{
@@ -599,14 +599,14 @@ namespace engine
 			};
 			render::VulkanDescriptorSetLayout* descColorLayout = _device->GetDescriptorSetLayout(offscreencolorbindings);
 
-			std::vector<render::VertexLayout*> vlayouts;
+			std::vector<render::VulkanVertexLayout*> vlayouts;
 
 			for (int ro_index=0;ro_index<render_objects.size();ro_index++)
 			{
 				RenderObject* ro = render_objects[ro_index];
 				if (!ro)
 					continue;
-				render::VertexLayout* l = ro->_vertexLayout;
+				render::VulkanVertexLayout* l = ro->_vertexLayout;
 				//it = std::find(vlayouts.begin(), vlayouts.end(), l);
 				int index = -1;
 				for (int i = 0; i < vlayouts.size(); i++)

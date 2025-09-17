@@ -4,7 +4,7 @@ namespace engine
 {
 	namespace scene
 	{
-		bool SimpleModelRT::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec3 normalsCoefficient, glm::vec2 uvCoefficient)
+		bool SimpleModelRT::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec3 normalsCoefficient, glm::vec2 uvCoefficient)
 		{
 			//m_device = device->logicalDevice;
 

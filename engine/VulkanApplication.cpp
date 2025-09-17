@@ -230,7 +230,7 @@ void VulkanApplication::PrepareUI()
 	if (settings.overlay) {
 		UIOverlay._device = vulkanDevice;
 		UIOverlay._queue = queue;
-		engine::render::VertexLayout v;
+		engine::render::VulkanVertexLayout v;
 		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
 		UIOverlay.preparePipeline(pipelineCache, mainRenderPass->GetRenderPass());
 	}

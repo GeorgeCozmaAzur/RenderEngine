@@ -6,10 +6,11 @@
 #include <vector>
 
 #include "D3D12Application.h"
-#include "D3D12Texture.h"
+//#include "D3D12Texture.h"
 #include "Geometry.h"
-#include "Pipeline.h"
-#include "D3D12DescriptorTable.h"
+#include "render/directx/D3D12Pipeline.h"
+#include "render/directx/D3D12Texture.h"
+#include "render/directx/D3D12DescriptorTable.h"
 #include "DXSampleHelper.h"
 
 using Microsoft::WRL::ComPtr;
@@ -49,20 +50,20 @@ public:
 
 	ComPtr<ID3D12Resource> m_depthStencilOffscreen;
 
-	Pipeline pipelineOffscreen;
-	Pipeline pipeline;
-	Pipeline pipelineMT;
+	render::D3D12Pipeline pipelineOffscreen;
+	render::D3D12Pipeline pipeline;
+	render::D3D12Pipeline pipelineMT;
 	Geometry geometry;
 	Geometry planegeometry;
 	// ComPtr<ID3D12Resource> m_texture;
-	D3D12Texture m_texture;
-	D3D12Texture m_texture1;
+	render::D3D12Texture m_texture;
+	render::D3D12Texture m_texture1;
 
 	ComPtr<ID3D12Resource> m_constantBuffer;
 	ComPtr<ID3D12Resource> m_constantBufferOffscreen;
 	SceneConstantBuffer m_constantBufferData;
 	SceneConstantBuffer m_constantBufferData2;
-	D3D12DescriptorTable planetable;
+	render::D3D12DescriptorTable planetable;
 
 	UINT8* m_pCbvDataBegin;
 	UINT8* m_pCbvDataBeginOffscreen;
@@ -169,7 +170,9 @@ public:
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
 			// Create SRV.
 			m_device->CreateShaderResourceView(m_renderTargeto.Get(), nullptr, cbvSrvHandle);
-			planetable.AddEntry(2, 1);
+
+			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
+			planetable.AddEntry(cbvSrvHandleGPU, 1);
 		}
 		// Create the depth stencil view.
 		{
@@ -197,9 +200,12 @@ public:
 			m_device->CreateDepthStencilView(m_depthStencilOffscreen.Get(), &depthStencilDesc, m_dsvoHeap->GetCPUDescriptorHandleForHeapStart());
 		}
 
-		pipelineOffscreen.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainOffscreen", 0, 1);
-		pipeline.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMain", 1, 1);
-		pipelineMT.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainMT", 2, 1);
+		render::PipelineProperties props;
+		props.depthBias = true;
+		pipelineOffscreen.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainOffscreen", 0, 1, props);
+		props.depthBias = false;
+		pipeline.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMain", 1, 1, props);
+		pipelineMT.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainMT", 2, 1, props);
 
 		// Create the command list.
 		ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), pipeline.m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
@@ -232,7 +238,8 @@ public:
 			ThrowIfFailed(m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBegin)));
 			memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
 
-			planetable.AddEntry(1, 2);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
+			planetable.AddEntry(cbvSrvHandleGPU, 2);
 		}
 
 		//the other constant buffer
@@ -261,7 +268,9 @@ public:
 		}
 
 		m_texture.Load(m_device.Get(), "./../data/textures/compass.jpg", m_commandList.Get(), m_srvHeap->GetCPUDescriptorHandleForHeapStart());
-		planetable.AddEntry(0, 0);
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 0, m_cbvSrvDescriptorSize);
+		planetable.AddEntry(cbvSrvHandleGPU, 0);
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle1(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 3, m_cbvSrvDescriptorSize);
 		m_texture1.Load(m_device.Get(), "./../data/textures/PlanksBare0002_1_S.jpg", m_commandList.Get(), cbvSrvHandle1);
 

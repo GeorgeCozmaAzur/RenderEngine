@@ -83,7 +83,7 @@ namespace engine
 
 		void SceneLoaderGltf::LoadMaterials(tinygltf::Model& input, VkQueue queue, bool deferred)
 		{
-			render::VertexLayout* vertex_layout = nullptr;
+			render::VulkanVertexLayout* vertex_layout = nullptr;
 
 			uniform_manager.SetDevice(_device->logicalDevice);
 			uniform_manager.SetEngineDevice(_device);
@@ -307,7 +307,7 @@ namespace engine
 						{
 							hasNormalmap = true;
 						}
-						render::VertexLayout vlayout = hasNormalmap ? vertexlayoutNormalmap : vertexlayout;
+						render::VulkanVertexLayout vlayout = hasNormalmap ? vertexlayoutNormalmap : vertexlayout;
 
 						geometry->m_vertexCount = vertexCount;
 						geometry->m_verticesSize = geometry->m_vertexCount * vlayout.GetVertexSize(0) / sizeof(float);
@@ -485,14 +485,14 @@ namespace engine
 			};
 			render::VulkanDescriptorSetLayout* descColorLayout = _device->GetDescriptorSetLayout(offscreencolorbindings);
 
-			std::vector<render::VertexLayout*> vlayouts;
+			std::vector<render::VulkanVertexLayout*> vlayouts;
 
 			for (int ro_index = 0; ro_index < render_objects.size(); ro_index++)
 			{
 				RenderObject* ro = render_objects[ro_index];
 				if (!ro)
 					continue;
-				render::VertexLayout* l = ro->_vertexLayout;
+				render::VulkanVertexLayout* l = ro->_vertexLayout;
 				//it = std::find(vlayouts.begin(), vlayouts.end(), l);
 				int index = -1;
 				for (int i = 0; i < vlayouts.size(); i++)

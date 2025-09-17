@@ -78,7 +78,7 @@ namespace engine
 			}
 		}
 
-		bool RenderObject::LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
+		bool RenderObject::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
 		{
 			return false;
 		}

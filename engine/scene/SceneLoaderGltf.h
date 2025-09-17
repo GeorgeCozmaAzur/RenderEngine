@@ -74,12 +74,12 @@ namespace engine
 			float lightFOV = 45.0f;
 			std::vector<glm::vec4> lightPositions;// = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-			render::VertexLayout vertexlayout = render::VertexLayout({
+			render::VulkanVertexLayout vertexlayout = render::VulkanVertexLayout({
 			render::VERTEX_COMPONENT_POSITION,
 			render::VERTEX_COMPONENT_NORMAL,
 			render::VERTEX_COMPONENT_UV
 				}, {});
-			render::VertexLayout vertexlayoutNormalmap = render::VertexLayout({
+			render::VulkanVertexLayout vertexlayoutNormalmap = render::VulkanVertexLayout({
 			render::VERTEX_COMPONENT_POSITION,
 			render::VERTEX_COMPONENT_NORMAL,
 			render::VERTEX_COMPONENT_UV,

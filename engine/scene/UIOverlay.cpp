@@ -61,7 +61,7 @@ namespace engine
 
 		UIOverlay::~UIOverlay() { }
 
-		bool UIOverlay::LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
+		bool UIOverlay::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
 		{
 			ImGuiIO& io = ImGui::GetIO();
 
@@ -142,7 +142,7 @@ namespace engine
 		/** Prepare a separate pipeline for the UI overlay rendering decoupled from the main application */
 		void UIOverlay::preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass)
 		{
-			render::VertexLayout vertexLayout = render::VertexLayout({
+			render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 			render::VERTEX_COMPONENT_POSITION,
 			render::VERTEX_COMPONENT_UV,
 			render::VERTEX_COMPONENT_COLOR,

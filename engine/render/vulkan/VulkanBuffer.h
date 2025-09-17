@@ -1,13 +1,14 @@
 #pragma once
 
 #include <vector>
+#include "Buffer.h"
 #include "VulkanTools.h"
 
 namespace engine
 {
 	namespace render
 	{
-		class VulkanBuffer
+		class VulkanBuffer : public Buffer
 		{
 			VkDevice _device = VK_NULL_HANDLE;
 			VkBuffer m_buffer = VK_NULL_HANDLE;

@@ -3,7 +3,7 @@
 #include "render/vulkan/VulkanDescriptorSet.h"
 #include "render/vulkan/VulkanPipeline.h"
 #include "render/vulkan/VulkanDescriptorSetLayout.h"
-#include "render/vulkan/VertexLayout.h"
+#include "render/vulkan/VulkanVertexLayout.h"
 #include "BoundingObject.h"
 #include "render/vulkan/VulkanBuffer.h"
 #include "scene/Geometry.h"
@@ -16,7 +16,7 @@ namespace engine
 		{
 		public:
 
-			render::VertexLayout* _vertexLayout = nullptr;
+			render::VulkanVertexLayout* _vertexLayout = nullptr;
 			render::VulkanDescriptorSetLayout* _descriptorLayout = nullptr;
 			render::VulkanPipeline* _pipeline = nullptr;
 			std::vector <render::VulkanDescriptorSet*> m_descriptorSets;
@@ -43,10 +43,10 @@ namespace engine
 
 			RenderObject& operator = (const RenderObject& t);
 
-			virtual bool LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale = 1.0f, int instanceNo = 1, glm::vec3 atPos = glm::vec3(0.0f));
+			virtual bool LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale = 1.0f, int instanceNo = 1, glm::vec3 atPos = glm::vec3(0.0f));
 			void AdoptGeometriesFrom(const RenderObject& t);
 			void ComputeTangents(glm::vec3 pos1, glm::vec3 pos2, glm::vec3 pos3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, glm::vec3& tangent1, glm::vec3& bitangent1);
-			void SetVertexLayout(render::VertexLayout* vlayout) { _vertexLayout = vlayout; };
+			void SetVertexLayout(render::VulkanVertexLayout* vlayout) { _vertexLayout = vlayout; };
 			void SetDescriptorSetLayout(render::VulkanDescriptorSetLayout* val) { _descriptorLayout = val; }
 			void AddPipeline(render::VulkanPipeline*);
 			void AddDescriptor(render::VulkanDescriptorSet*);

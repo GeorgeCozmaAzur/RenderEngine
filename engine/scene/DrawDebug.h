@@ -9,7 +9,7 @@ namespace engine
 	{	
 		class DrawDebugTexture : public RenderObject
 		{
-			render::VertexLayout m_vertexLayout = render::VertexLayout({
+			render::VulkanVertexLayout m_vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV
 				}, {});
@@ -37,7 +37,7 @@ namespace engine
 
 		class DrawDebugVectors : public RenderObject
 		{
-			render::VertexLayout debugVertexLayout = render::VertexLayout({
+			render::VulkanVertexLayout debugVertexLayout = render::VulkanVertexLayout({
 			render::VERTEX_COMPONENT_POSITION,
 			render::VERTEX_COMPONENT_COLOR
 				}, {});
@@ -49,7 +49,7 @@ namespace engine
 
 		class DrawDebugBBs : public RenderObject
 		{
-			render::VertexLayout debugVertexLayout = render::VertexLayout({
+			render::VulkanVertexLayout debugVertexLayout = render::VulkanVertexLayout({
 			render::VERTEX_COMPONENT_POSITION,
 			render::VERTEX_COMPONENT_COLOR
 				}, {});

@@ -113,7 +113,7 @@ namespace engine
 				//vertexBuffer.indices.destroy();
 			}
 
-			bool LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no = 1, glm::vec3 atPos = glm::vec3(0.0f));
+			bool LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no = 1, glm::vec3 atPos = glm::vec3(0.0f));
 
 		private:
 			// Find animation for a given node

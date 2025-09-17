@@ -133,7 +133,7 @@ namespace engine
 			computedNormals = true;
 		}
 
-		bool Terrain::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
+		bool Terrain::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
 		{
 			_vertexLayout = vertex_layout;
 
