@@ -11,6 +11,7 @@
 #include "render/directx/D3D12Pipeline.h"
 #include "render/directx/D3D12Texture.h"
 #include "render/directx/D3D12DescriptorTable.h"
+#include "render/directx/D3D12Buffer.h"
 #include "DXSampleHelper.h"
 
 using Microsoft::WRL::ComPtr;
@@ -59,13 +60,14 @@ public:
 	render::D3D12Texture m_texture;
 	render::D3D12Texture m_texture1;
 
-	ComPtr<ID3D12Resource> m_constantBuffer;
+	//ComPtr<ID3D12Resource> m_constantBuffer;
+	render::D3D12UniformBuffer m_constantBuffer;
 	ComPtr<ID3D12Resource> m_constantBufferOffscreen;
 	SceneConstantBuffer m_constantBufferData;
 	SceneConstantBuffer m_constantBufferData2;
 	render::D3D12DescriptorTable planetable;
 
-	UINT8* m_pCbvDataBegin;
+	//void* m_pCbvDataBegin;
 	UINT8* m_pCbvDataBeginOffscreen;
 
 	float planey = -0.5f;
@@ -214,9 +216,11 @@ public:
 		planegeometry.Load(m_device.Get(), "./../data/models/plane.obj", XMFLOAT3(0.0, planey, 0.0), 0.1f, m_commandList.Get());
 
 		// Create the constant buffer.
-		const UINT constantBufferSize = sizeof(SceneConstantBuffer);    // CB size is required to be 256-byte aligned.
+		const UINT64 constantBufferSize = sizeof(SceneConstantBuffer);    // CB size is required to be 256-byte aligned.
 		{
-			ThrowIfFailed(m_device->CreateCommittedResource(
+			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
+			/*ThrowIfFailed(m_device->CreateCommittedResource(
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 				D3D12_HEAP_FLAG_NONE,
 				&CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
@@ -225,6 +229,7 @@ public:
 				IID_PPV_ARGS(&m_constantBuffer)));
 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
 			// Describe and create a constant buffer view.
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 			cbvDesc.BufferLocation = m_constantBuffer->GetGPUVirtualAddress();
@@ -235,10 +240,11 @@ public:
 			// Map and initialize the constant buffer. We don't unmap this until the
 			// app closes. Keeping things mapped for the lifetime of the resource is okay.
 			CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
-			ThrowIfFailed(m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBegin)));
-			memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
+			ThrowIfFailed(m_constantBuffer->Map(0, &readRange, &m_pCbvDataBegin));
+			memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));*/
 
-			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
+			m_constantBuffer.Create(m_device, sizeof(SceneConstantBuffer), &m_constantBufferData, cbvSrvHandle, cbvSrvHandleGPU);
+
 			planetable.AddEntry(cbvSrvHandleGPU, 2);
 		}
 
@@ -258,6 +264,7 @@ public:
 			cbvDesc.BufferLocation = m_constantBufferOffscreen->GetGPUVirtualAddress();
 			cbvDesc.SizeInBytes = constantBufferSize;
 			// m_device->CreateConstantBufferView(&cbvDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+			m_device->CreateConstantBufferView(&cbvDesc, cbvSrvHandle);
 			m_device->CreateConstantBufferView(&cbvDesc, cbvSrvHandle);
 
 			// Map and initialize the constant buffer. We don't unmap this until the
@@ -337,12 +344,14 @@ public:
 		 // m_commandList->ClearRenderTargetView(rtvoHandle, clearColoro, 0, nullptr);
 		m_commandList->ClearDepthStencilView(m_dsvoHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 		m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		m_commandList->IASetIndexBuffer(&geometry.m_indexBufferView);
+		/*m_commandList->IASetIndexBuffer(&geometry.m_indexBufferView);
 		m_commandList->IASetVertexBuffers(0, 1, &geometry.m_vertexBufferView);
-		m_commandList->DrawIndexedInstanced(geometry.m_numIndices, 1, 0, 0, 0);
-		m_commandList->IASetIndexBuffer(&planegeometry.m_indexBufferView);
+		m_commandList->DrawIndexedInstanced(geometry.m_numIndices, 1, 0, 0, 0);*/
+		geometry.Draw(m_commandList);
+		/*m_commandList->IASetIndexBuffer(&planegeometry.m_indexBufferView);
 		m_commandList->IASetVertexBuffers(0, 1, &planegeometry.m_vertexBufferView);
-		m_commandList->DrawIndexedInstanced(planegeometry.m_numIndices, 1, 0, 0, 0);
+		m_commandList->DrawIndexedInstanced(planegeometry.m_numIndices, 1, 0, 0, 0);*/
+		planegeometry.Draw(m_commandList);
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargeto.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));//george rly dono
 
 
@@ -366,9 +375,10 @@ public:
 		m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		m_commandList->ClearDepthStencilView(m_dsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 		m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		m_commandList->IASetIndexBuffer(&geometry.m_indexBufferView);
+		/*m_commandList->IASetIndexBuffer(&geometry.m_indexBufferView);
 		m_commandList->IASetVertexBuffers(0, 1, &geometry.m_vertexBufferView);
-		m_commandList->DrawIndexedInstanced(geometry.m_numIndices, 1, 0, 0, 0);
+		m_commandList->DrawIndexedInstanced(geometry.m_numIndices, 1, 0, 0, 0);*/
+		geometry.Draw(m_commandList);
 
 		m_commandList->SetPipelineState(pipelineMT.m_pipelineState.Get());
 		m_commandList->SetGraphicsRootSignature(pipelineMT.m_rootSignature.Get());
@@ -458,7 +468,8 @@ public:
 		{
 			offset = -offsetBounds;
 		}
-		memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
+		//memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
+		m_constantBuffer.MemCopy(&m_constantBufferData, sizeof(m_constantBufferData));
 		memcpy(m_pCbvDataBeginOffscreen, &m_constantBufferData2, sizeof(m_constantBufferData2));
 	}
 

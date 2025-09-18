@@ -34,7 +34,7 @@ namespace engine
 			VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &m_memory));
 
 			m_alignment = memRequirements.alignment;
-			m_size = size;//memAlloc.allocationSize;
+			m_size = (size_t)size;//memAlloc.allocationSize;
 			m_usageFlags = usageFlags;
 			m_memoryPropertyFlags = memoryPropertyFlags;
 
@@ -68,13 +68,6 @@ namespace engine
 				vkUnmapMemory(_device, m_memory);
 				m_mapped = nullptr;
 			}
-		}
-
-		void VulkanBuffer::MemCopy(void* data, VkDeviceSize size, VkDeviceSize offset)
-		{
-			assert(m_mapped);
-			
-			memcpy((char*)m_mapped + offset, data, size);
 		}
 
 		VkResult VulkanBuffer::Flush(VkDeviceSize size, VkDeviceSize offset)
