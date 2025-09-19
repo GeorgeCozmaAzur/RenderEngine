@@ -22,7 +22,7 @@ namespace engine
             }
         }
 
-        void D3D12Texture::Load(ID3D12Device* device, std::string fileName, ID3D12GraphicsCommandList* commandList, D3D12_CPU_DESCRIPTOR_HANDLE descriptorHeapAdress)
+        void D3D12Texture::Load(ID3D12Device* device, std::string fileName, ID3D12GraphicsCommandList* commandList, D3D12_CPU_DESCRIPTOR_HANDLE descriptorHeapAdress, D3D12_GPU_DESCRIPTOR_HANDLE descriptorGPUHeapAdress)
         {
             // Note: ComPtr's are CPU objects but this resource needs to stay in scope until
            // the command list that references it has finished executing on the GPU.
@@ -99,6 +99,9 @@ namespace engine
                 srvDesc.Texture2D.MipLevels = 1;
                 //device->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
                 device->CreateShaderResourceView(m_texture.Get(), &srvDesc, descriptorHeapAdress);
+
+                m_CPUHandle = descriptorHeapAdress;
+                m_GPUHandle = descriptorGPUHeapAdress;
             }
         }
 

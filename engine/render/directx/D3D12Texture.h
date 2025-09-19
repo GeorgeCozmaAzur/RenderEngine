@@ -38,7 +38,10 @@ namespace engine
             Microsoft::WRL::ComPtr<ID3D12Resource> m_texture;
             Microsoft::WRL::ComPtr<ID3D12Resource> m_textureUploadHeap;
 
-            void Load(ID3D12Device* device, std::string fileName, ID3D12GraphicsCommandList* commandList, D3D12_CPU_DESCRIPTOR_HANDLE descriptorHeapAdress);
+            CD3DX12_CPU_DESCRIPTOR_HANDLE m_CPUHandle;
+            CD3DX12_GPU_DESCRIPTOR_HANDLE m_GPUHandle;
+
+            void Load(ID3D12Device* device, std::string fileName, ID3D12GraphicsCommandList* commandList, D3D12_CPU_DESCRIPTOR_HANDLE descriptorHeapAdress, D3D12_GPU_DESCRIPTOR_HANDLE descriptorGPUHeapAdress);
             void FreeRamData();
         };
     }

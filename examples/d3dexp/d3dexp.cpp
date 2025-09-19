@@ -10,6 +10,7 @@
 #include "Geometry.h"
 #include "render/directx/D3D12Pipeline.h"
 #include "render/directx/D3D12Texture.h"
+#include "render/directx/D3D12DescriptorHeap.h"
 #include "render/directx/D3D12DescriptorTable.h"
 #include "render/directx/D3D12Buffer.h"
 #include "DXSampleHelper.h"
@@ -45,9 +46,11 @@ public:
 	static_assert((sizeof(SceneConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
 
 	ComPtr<ID3D12Resource> m_renderTargeto;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE m_renderTargetoSRVHandleGPU;
 	ComPtr<ID3D12DescriptorHeap> m_rtvoHeap;
 	ComPtr<ID3D12DescriptorHeap> m_dsvoHeap;
-	ComPtr<ID3D12DescriptorHeap> m_srvHeap;
+	//ComPtr<ID3D12DescriptorHeap> m_srvHeap;
+	render::D3D12DescriptorHeap m_srvHeap;
 
 	ComPtr<ID3D12Resource> m_depthStencilOffscreen;
 
@@ -62,10 +65,14 @@ public:
 
 	//ComPtr<ID3D12Resource> m_constantBuffer;
 	render::D3D12UniformBuffer m_constantBuffer;
-	ComPtr<ID3D12Resource> m_constantBufferOffscreen;
+	//ComPtr<ID3D12Resource> m_constantBufferOffscreen;
+	render::D3D12UniformBuffer m_constantBufferOffscreen;
 	SceneConstantBuffer m_constantBufferData;
 	SceneConstantBuffer m_constantBufferData2;
+
 	render::D3D12DescriptorTable planetable;
+	render::D3D12DescriptorTable modeltableoffscreen;
+	render::D3D12DescriptorTable modeltable;
 
 	//void* m_pCbvDataBegin;
 	UINT8* m_pCbvDataBeginOffscreen;
@@ -117,11 +124,12 @@ public:
 			ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvoHeapDesc, IID_PPV_ARGS(&m_dsvoHeap)));
 
 			// Describe and create a shader resource view (SRV) heap for the texture.
-			D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+			/*D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 			srvHeapDesc.NumDescriptors = 6;
 			srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 			srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-			ThrowIfFailed(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
+			ThrowIfFailed(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));*/
+			m_srvHeap.Create(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 6);
 
 			// Describe and create a constant buffer view (CBV) descriptor heap.
 			// Flags indicate that this descriptor heap can be bound to the pipeline 
@@ -135,7 +143,7 @@ public:
 			m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 			m_cbvSrvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		}
-		planetable.Create(m_device, m_srvHeap, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		//planetable.Create(m_device, m_srvHeap, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		// Create frame resources.
 		{
@@ -169,12 +177,13 @@ public:
 			 // Create RTV.
 			m_device->CreateRenderTargetView(m_renderTargeto.Get(), nullptr, rtvHandle);
 
-			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
+			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle;// (m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
+			//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU;// (m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
+			m_srvHeap.GetAvailableHandles(cbvSrvHandle, m_renderTargetoSRVHandleGPU);
 			// Create SRV.
 			m_device->CreateShaderResourceView(m_renderTargeto.Get(), nullptr, cbvSrvHandle);
-
-			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
-			planetable.AddEntry(cbvSrvHandleGPU, 1);
+			
+			//planetable.AddEntry(m_renderTargetoSRVHandleGPU, 1);
 		}
 		// Create the depth stencil view.
 		{
@@ -218,8 +227,11 @@ public:
 		// Create the constant buffer.
 		const UINT64 constantBufferSize = sizeof(SceneConstantBuffer);    // CB size is required to be 256-byte aligned.
 		{
-			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
-			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
+			//CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
+			//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
+			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU;
+			m_srvHeap.GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
 			/*ThrowIfFailed(m_device->CreateCommittedResource(
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 				D3D12_HEAP_FLAG_NONE,
@@ -245,41 +257,61 @@ public:
 
 			m_constantBuffer.Create(m_device, sizeof(SceneConstantBuffer), &m_constantBufferData, cbvSrvHandle, cbvSrvHandleGPU);
 
-			planetable.AddEntry(cbvSrvHandleGPU, 2);
+			//planetable.AddEntry(cbvSrvHandleGPU, 2);
+			//modeltable.AddEntry(cbvSrvHandleGPU, 1);
 		}
 
 		//the other constant buffer
 		{
-			ThrowIfFailed(m_device->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
-				D3D12_RESOURCE_STATE_GENERIC_READ,
-				nullptr,
-				IID_PPV_ARGS(&m_constantBufferOffscreen)));
+			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU;
+			m_srvHeap.GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
+			//ThrowIfFailed(m_device->CreateCommittedResource(
+			//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			//	D3D12_HEAP_FLAG_NONE,
+			//	&CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
+			//	D3D12_RESOURCE_STATE_GENERIC_READ,
+			//	nullptr,
+			//	IID_PPV_ARGS(&m_constantBufferOffscreen)));
 
-			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 4, m_cbvSrvDescriptorSize);
-			// Describe and create a constant buffer view.
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-			cbvDesc.BufferLocation = m_constantBufferOffscreen->GetGPUVirtualAddress();
-			cbvDesc.SizeInBytes = constantBufferSize;
-			// m_device->CreateConstantBufferView(&cbvDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
-			m_device->CreateConstantBufferView(&cbvDesc, cbvSrvHandle);
-			m_device->CreateConstantBufferView(&cbvDesc, cbvSrvHandle);
+			////CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 4, m_cbvSrvDescriptorSize);
+			
+			//// Describe and create a constant buffer view.
+			//D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+			//cbvDesc.BufferLocation = m_constantBufferOffscreen->GetGPUVirtualAddress();
+			//cbvDesc.SizeInBytes = constantBufferSize;
+			//// m_device->CreateConstantBufferView(&cbvDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+			//m_device->CreateConstantBufferView(&cbvDesc, cbvSrvHandle);
+			////m_device->CreateConstantBufferView(&cbvDesc, cbvSrvHandle);
 
-			// Map and initialize the constant buffer. We don't unmap this until the
-			// app closes. Keeping things mapped for the lifetime of the resource is okay.
-			CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
-			ThrowIfFailed(m_constantBufferOffscreen->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBeginOffscreen)));
-			memcpy(m_pCbvDataBeginOffscreen, &m_constantBufferData2, sizeof(m_constantBufferData2));
+			//// Map and initialize the constant buffer. We don't unmap this until the
+			//// app closes. Keeping things mapped for the lifetime of the resource is okay.
+			//CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+			//ThrowIfFailed(m_constantBufferOffscreen->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBeginOffscreen)));
+			//memcpy(m_pCbvDataBeginOffscreen, &m_constantBufferData2, sizeof(m_constantBufferData2));
+			m_constantBufferOffscreen.Create(m_device, sizeof(SceneConstantBuffer), &m_constantBufferData2, cbvSrvHandle, cbvSrvHandleGPU);
+
+			//modeltableoffscreen.AddEntry(cbvSrvHandleGPU, 0);
 		}
 
-		m_texture.Load(m_device.Get(), "./../data/textures/compass.jpg", m_commandList.Get(), m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandlet;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPUt;
+		m_srvHeap.GetAvailableHandles(cbvSrvHandlet, cbvSrvHandleGPUt);
+		m_texture.Load(m_device.Get(), "./../data/textures/compass.jpg", m_commandList.Get(), cbvSrvHandlet, cbvSrvHandleGPUt);
+		
+		//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 0, m_cbvSrvDescriptorSize);
+		//modeltable.AddEntry(cbvSrvHandleGPUt, 0);
+		//planetable.AddEntry(cbvSrvHandleGPUt, 0);
+		/*CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle1(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 3, m_cbvSrvDescriptorSize);
+		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU1(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 3, m_cbvSrvDescriptorSize);*/
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle1;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU1;
+		m_srvHeap.GetAvailableHandles(cbvSrvHandle1, cbvSrvHandleGPU1);
+		m_texture1.Load(m_device.Get(), "./../data/textures/PlanksBare0002_1_S.jpg", m_commandList.Get(), cbvSrvHandle1, cbvSrvHandleGPU1);
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 0, m_cbvSrvDescriptorSize);
-		planetable.AddEntry(cbvSrvHandleGPU, 0);
-		CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle1(m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 3, m_cbvSrvDescriptorSize);
-		m_texture1.Load(m_device.Get(), "./../data/textures/PlanksBare0002_1_S.jpg", m_commandList.Get(), cbvSrvHandle1);
+		planetable.Create({ {m_texture.m_GPUHandle,0}, {m_renderTargetoSRVHandleGPU,1},{m_constantBuffer.m_GPUHandle,2} });
+		modeltable.Create({ {m_texture.m_GPUHandle,0}, {m_constantBuffer.m_GPUHandle,1} });
+		modeltableoffscreen.Create({ {m_constantBufferOffscreen.m_GPUHandle,0} });
 
 		// Close the command list and execute it to begin the initial GPU setup.
 		ThrowIfFailed(m_commandList->Close());
@@ -319,12 +351,13 @@ public:
 		// Set necessary state.
 		m_commandList->SetGraphicsRootSignature(pipelineOffscreen.m_rootSignature.Get());
 
-		ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
+		ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.m_heap.Get() };
 		m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
 		// m_commandList->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
-		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 4, m_cbvSrvDescriptorSize);
-		m_commandList->SetGraphicsRootDescriptorTable(0, cbvSrvHandle);
+		//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandle(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 4, m_cbvSrvDescriptorSize);
+		//m_commandList->SetGraphicsRootDescriptorTable(0, cbvSrvHandle);
+		modeltableoffscreen.Draw(m_commandList);
 		//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandle1(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 3, m_cbvSrvDescriptorSize);
 		//m_commandList->SetGraphicsRootDescriptorTable(1, cbvSrvHandle1);
 		m_commandList->RSSetViewports(1, &m_viewport);
@@ -366,9 +399,10 @@ public:
 
 		m_commandList->SetPipelineState(pipeline.m_pipelineState.Get());
 		m_commandList->SetGraphicsRootSignature(pipeline.m_rootSignature.Get());
-		m_commandList->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+		/*m_commandList->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleo(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 1, m_cbvSrvDescriptorSize);
-		m_commandList->SetGraphicsRootDescriptorTable(1, cbvSrvHandleo);
+		m_commandList->SetGraphicsRootDescriptorTable(1, cbvSrvHandleo);*/
+		modeltable.Draw(m_commandList);
 
 		// Record commands.
 		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
@@ -470,7 +504,8 @@ public:
 		}
 		//memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
 		m_constantBuffer.MemCopy(&m_constantBufferData, sizeof(m_constantBufferData));
-		memcpy(m_pCbvDataBeginOffscreen, &m_constantBufferData2, sizeof(m_constantBufferData2));
+		m_constantBufferOffscreen.MemCopy(&m_constantBufferData2, sizeof(m_constantBufferData2));
+		//memcpy(m_pCbvDataBeginOffscreen, &m_constantBufferData2, sizeof(m_constantBufferData2));
 	}
 
 	virtual void ViewChanged()
