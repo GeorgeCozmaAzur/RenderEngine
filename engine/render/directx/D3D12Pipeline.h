@@ -7,6 +7,7 @@
 #include <wrl.h>
 #include <shellapi.h>
 #include "PipeLine.h"
+#include "DescriptorSetLayout.h"
 
 namespace engine
 {
@@ -18,7 +19,7 @@ namespace engine
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
 			Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
 
-			void Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, int texturesNo, int cbNo, PipelineProperties properties);
+			void Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, DescriptorSetLayout* dlayout, PipelineProperties properties);
 		};
 	}
 }

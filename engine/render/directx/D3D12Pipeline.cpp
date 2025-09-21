@@ -8,7 +8,7 @@ namespace engine
 {
     namespace render
     {
-        void D3D12Pipeline::Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, int texturesNo, int cbNo, PipelineProperties properties)
+        void D3D12Pipeline::Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, DescriptorSetLayout* dlayout, PipelineProperties properties)
         {
             // Create the root signature.
             {
@@ -22,20 +22,24 @@ namespace engine
                     featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
                 }
 
-                std::vector<CD3DX12_DESCRIPTOR_RANGE1> ranges;
-                std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters;
-                ranges.resize(texturesNo + cbNo);
-                rootParameters.resize(texturesNo + cbNo);
-                int i = 0;
-                for (i = 0; i < texturesNo; i++)
+                std::vector<CD3DX12_DESCRIPTOR_RANGE1> ranges(dlayout->m_bindings.size());
+                std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters(dlayout->m_bindings.size());
+                UINT bsrsrv = 0;
+                UINT bsrcvb = 0;
+                for (int i = 0; i < dlayout->m_bindings.size(); i++)
                 {
-                    ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, i, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-                    rootParameters[i].InitAsDescriptorTable(1, &ranges[i], D3D12_SHADER_VISIBILITY_PIXEL);
-                }
-                for (int j = i; j < ranges.size(); j++)
-                {
-                    ranges[j].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, j - i, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-                    rootParameters[j].InitAsDescriptorTable(1, &ranges[j], D3D12_SHADER_VISIBILITY_ALL);
+                    D3D12_DESCRIPTOR_RANGE_TYPE rangeType;
+                    if(dlayout->m_bindings[i].descriptorType == DescriptorType::UNIFORM_BUFFER)
+                    {
+                        ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bsrcvb++, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+                    }
+                    else
+                    {
+                        ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bsrsrv++, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+                    }
+                    
+                    D3D12_SHADER_VISIBILITY sv = dlayout->m_bindings[i].stage == ShaderStage::VERTEX ? D3D12_SHADER_VISIBILITY_ALL : D3D12_SHADER_VISIBILITY_PIXEL;
+                    rootParameters[i].InitAsDescriptorTable(1, &ranges[i], sv);
                 }
 
                 //CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
