@@ -4,9 +4,22 @@ namespace engine
 {
 	namespace render
 	{
-		void D3D12DescriptorTable::Create(std::vector<TableEntry> entries)
+		void D3D12DescriptorTable::Create(DescriptorSetLayout* layout, std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> buffers, std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> textures)
 		{
-			m_entries = entries;
+			auto buffersit = buffers.begin();
+			auto texturesit = textures.begin();
+			//for (auto binding : layout->m_bindings)
+			for (UINT i = 0; i < layout->m_bindings.size(); i++)
+			{
+				if (layout->m_bindings[i].descriptorType == UNIFORM_BUFFER)
+				{
+					m_entries.push_back({i,*(buffersit++)});
+				}
+				else
+				{
+					m_entries.push_back({ i,*(texturesit++) });
+				}
+			}
 		}
 
 		void D3D12DescriptorTable::Draw(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList)

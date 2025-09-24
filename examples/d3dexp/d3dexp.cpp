@@ -224,12 +224,25 @@ public:
 			m_depthStencilOffscreen.CreateDescriptor(m_device.Get(), emptyCPUHandle, emptyGPUHandle, m_dsvoHeap->GetCPUDescriptorHandleForHeapStart());
 		}
 
+		render::DescriptorSetLayout odsl({ {render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX} });
+
+		render::DescriptorSetLayout mdsl({ 
+						{render::DescriptorType::TEXTURE,render::ShaderStage::FRAGMENT } ,
+						{render::DescriptorType::UNIFORM_BUFFER,render::ShaderStage::VERTEX }
+			});
+
+		render::DescriptorSetLayout pdsl({
+						{render::DescriptorType::TEXTURE, render::ShaderStage::FRAGMENT},
+						{render::DescriptorType::TEXTURE, render::ShaderStage::FRAGMENT},
+						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX}
+			});
+
 		render::PipelineProperties props;
 		props.depthBias = true;
-		pipelineOffscreen.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainOffscreen", 0, 1, props);
+		pipelineOffscreen.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainOffscreen", &odsl, props);
 		props.depthBias = false;
-		pipeline.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMain", 1, 1, props);
-		pipelineMT.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainMT", 2, 1, props);
+		pipeline.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMain", &mdsl, props);
+		pipelineMT.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainMT", &pdsl, props);
 
 		// Create the command list.
 		ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), pipeline.m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
@@ -322,9 +335,12 @@ public:
 		m_srvHeap.GetAvailableHandles(cbvSrvHandle1, cbvSrvHandleGPU1);
 		m_texture1.Load(m_device.Get(), "./../data/textures/PlanksBare0002_1_S.jpg", m_commandList.Get(), cbvSrvHandle1, cbvSrvHandleGPU1);
 
-		planetable.Create({ {m_texture.m_GPUHandle,0}, {m_renderTargetoSRVHandleGPU,1},{m_constantBuffer.m_GPUHandle,2} });
-		modeltable.Create({ {m_texture.m_GPUHandle,0}, {m_constantBuffer.m_GPUHandle,1} });
-		modeltableoffscreen.Create({ {m_constantBufferOffscreen.m_GPUHandle,0} });
+		//planetable.Create({ {m_texture.m_GPUHandle,0}, {m_renderTargetoSRVHandleGPU,1},{m_constantBuffer.m_GPUHandle,2} });
+		planetable.Create(&pdsl, { m_constantBuffer.m_GPUHandle }, { m_texture.m_GPUHandle, m_renderTargetoSRVHandleGPU });
+		//modeltable.Create({ {m_texture.m_GPUHandle,0}, {m_constantBuffer.m_GPUHandle,1} });
+		modeltable.Create(&mdsl, { m_constantBuffer.m_GPUHandle }, { m_texture.m_GPUHandle });
+		//modeltableoffscreen.Create({ {m_constantBufferOffscreen.m_GPUHandle,0} });
+		modeltableoffscreen.Create(&odsl, {m_constantBufferOffscreen.m_GPUHandle},{});
 
 		offscreenPass.Create(TextureWidth, TextureHeight, m_renderTargeto.m_CPURTVHandle, m_depthStencilOffscreen.m_CPURTVHandle, m_renderTargeto.m_texture.Get());
 

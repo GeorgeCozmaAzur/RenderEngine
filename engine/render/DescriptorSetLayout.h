@@ -8,9 +8,10 @@ namespace engine
 		enum ShaderStage
 		{
 			VERTEX,
-			FRAGMANET,
+			FRAGMENT,
 			COMPUTE
 		};
+
 		enum DescriptorType
 		{
 			TEXTURE,
@@ -18,16 +19,17 @@ namespace engine
 			STORAGE_BUFFER,
 			INPUT_ATTACHMENT
 		};
+
 		struct LayoutBinding
 		{
-			uint32_t binding;
-			ShaderStage stage;
 			DescriptorType descriptorType;
+			ShaderStage stage;
 		};
 
 		struct DescriptorSetLayout
 		{
-			void Create(std::vector<LayoutBinding> bindings);
+			std::vector<LayoutBinding> m_bindings;
+			DescriptorSetLayout(std::vector<LayoutBinding> bindings) : m_bindings(bindings) {};
 		};
 	}
 }
