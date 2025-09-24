@@ -1,0 +1,35 @@
+#include "D3D12RenderPass.h"
+#include "DXSampleHelper.h"
+
+namespace engine
+{
+	namespace render
+	{
+		void D3D12RenderPass::Create(uint32_t width, uint32_t height, CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle, CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle, ID3D12Resource* colorTexture)
+		{
+			m_width = width;
+			m_height = height;
+			m_rtvHandle = rtvHandle;
+			m_dsvHandle = dsvHandle;
+			m_colorTexture = colorTexture;
+
+			m_viewport = CD3DX12_VIEWPORT{ 0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height) };
+			m_scissorRect = CD3DX12_RECT{ 0, 0, static_cast<LONG>(m_width), static_cast<LONG>(m_height) };
+		}
+
+		void D3D12RenderPass::Begin(ID3D12GraphicsCommandList* commandList)
+		{
+			commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_colorTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
+			commandList->RSSetViewports(1, &m_viewport);
+			commandList->RSSetScissorRects(1, &m_scissorRect);
+			commandList->OMSetRenderTargets(1, &m_rtvHandle, FALSE, &m_dsvHandle);
+			const float clearColoro[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+			commandList->ClearRenderTargetView(m_rtvHandle, clearColoro, 0, nullptr);
+			commandList->ClearDepthStencilView(m_dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		}
+		void D3D12RenderPass::End(ID3D12GraphicsCommandList* commandList)
+		{
+			commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_colorTexture, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+		}
+	}
+}

@@ -42,6 +42,7 @@ namespace engine
 
 			virtual void LoadFromFile(std::string filename, GfxFormat format) = 0;
 			void Destroy();
+			~TextureData() { Destroy(); }
 		};
 
 		struct Texture2DData : TextureData

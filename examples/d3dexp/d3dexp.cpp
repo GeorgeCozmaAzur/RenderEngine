@@ -13,6 +13,7 @@
 #include "render/directx/D3D12DescriptorHeap.h"
 #include "render/directx/D3D12DescriptorTable.h"
 #include "render/directx/D3D12Buffer.h"
+#include "render/directx/D3D12RenderPass.h"
 #include "DXSampleHelper.h"
 
 using Microsoft::WRL::ComPtr;
@@ -45,14 +46,18 @@ public:
 	};
 	static_assert((sizeof(SceneConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
 
-	ComPtr<ID3D12Resource> m_renderTargeto;
+	//ComPtr<ID3D12Resource> m_renderTargeto;
+	render::D3D12RenderTarget m_renderTargeto;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE m_renderTargetoSRVHandleGPU;
 	ComPtr<ID3D12DescriptorHeap> m_rtvoHeap;
 	ComPtr<ID3D12DescriptorHeap> m_dsvoHeap;
 	//ComPtr<ID3D12DescriptorHeap> m_srvHeap;
 	render::D3D12DescriptorHeap m_srvHeap;
 
-	ComPtr<ID3D12Resource> m_depthStencilOffscreen;
+	//ComPtr<ID3D12Resource> m_depthStencilOffscreen;
+	render::D3D12RenderTarget m_depthStencilOffscreen;
+
+	render::D3D12RenderPass offscreenPass;
 
 	render::D3D12Pipeline pipelineOffscreen;
 	render::D3D12Pipeline pipeline;
@@ -149,45 +154,48 @@ public:
 		{
 			//float width = 512;
 			//float height = 512;
-			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			//DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvoHeap->GetCPUDescriptorHandleForHeapStart());
-			//m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
-			auto const heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+			////m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
+			//auto const heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
-			const D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Tex2D(format,
-				static_cast<UINT64>(TextureWidth),
-				static_cast<UINT>(TextureHeight),
-				1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+			//const D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Tex2D(format,
+			//	static_cast<UINT64>(TextureWidth),
+			//	static_cast<UINT>(TextureHeight),
+			//	1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-			D3D12_CLEAR_VALUE clearValue = { format, {} };
-			// memcpy(clearValue.Color, m_clearColor, sizeof(clearValue.Color));
+			//D3D12_CLEAR_VALUE clearValue = { format, {} };
+			//// memcpy(clearValue.Color, m_clearColor, sizeof(clearValue.Color));
 
-			D3D12_RESOURCE_STATES m_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+			//D3D12_RESOURCE_STATES m_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
-			// Create a render target
-			ThrowIfFailed(
-				m_device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
-					&desc,
-					m_state, &clearValue,
-					IID_PPV_ARGS(&m_renderTargeto))
-			);
+			//// Create a render target
+			//ThrowIfFailed(
+			//	m_device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
+			//		&desc,
+			//		m_state, &clearValue,
+			//		IID_PPV_ARGS(&m_renderTargeto))
+			//);
 
 			// SetDebugObjectName(m_resource.Get(), L"RenderTexture RT");
 
 			 // Create RTV.
-			m_device->CreateRenderTargetView(m_renderTargeto.Get(), nullptr, rtvHandle);
+			//m_device->CreateRenderTargetView(m_renderTargeto.Get(), nullptr, rtvHandle);
 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle;// (m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
 			//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU;// (m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
 			m_srvHeap.GetAvailableHandles(cbvSrvHandle, m_renderTargetoSRVHandleGPU);
 			// Create SRV.
-			m_device->CreateShaderResourceView(m_renderTargeto.Get(), nullptr, cbvSrvHandle);
+			//m_device->CreateShaderResourceView(m_renderTargeto.Get(), nullptr, cbvSrvHandle);
+
+			m_renderTargeto.Create(m_device.Get(), TextureWidth, TextureHeight, render::GfxFormat::R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			m_renderTargeto.CreateDescriptor(m_device.Get(), cbvSrvHandle, m_renderTargetoSRVHandleGPU, rtvHandle);
 			
 			//planetable.AddEntry(m_renderTargetoSRVHandleGPU, 1);
 		}
 		// Create the depth stencil view.
 		{
-			D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
+	/*		D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
 			depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
 			depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 			depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
@@ -200,7 +208,7 @@ public:
 			ThrowIfFailed(m_device->CreateCommittedResource(
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, TextureWidth, TextureHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+				&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, TextureWidth, TextureHeight, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
 				D3D12_RESOURCE_STATE_DEPTH_WRITE,
 				&depthOptimizedClearValue,
 				IID_PPV_ARGS(&m_depthStencilOffscreen)
@@ -208,7 +216,12 @@ public:
 
 			NAME_D3D12_OBJECT(m_depthStencilOffscreen);
 
-			m_device->CreateDepthStencilView(m_depthStencilOffscreen.Get(), &depthStencilDesc, m_dsvoHeap->GetCPUDescriptorHandleForHeapStart());
+			m_device->CreateDepthStencilView(m_depthStencilOffscreen.Get(), &depthStencilDesc, m_dsvoHeap->GetCPUDescriptorHandleForHeapStart());*/
+
+			D3D12_CPU_DESCRIPTOR_HANDLE emptyCPUHandle{};
+			D3D12_GPU_DESCRIPTOR_HANDLE emptyGPUHandle{};
+			m_depthStencilOffscreen.Create(m_device.Get(), TextureWidth, TextureHeight, render::GfxFormat::D32_FLOAT, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			m_depthStencilOffscreen.CreateDescriptor(m_device.Get(), emptyCPUHandle, emptyGPUHandle, m_dsvoHeap->GetCPUDescriptorHandleForHeapStart());
 		}
 
 		render::PipelineProperties props;
@@ -313,6 +326,8 @@ public:
 		modeltable.Create({ {m_texture.m_GPUHandle,0}, {m_constantBuffer.m_GPUHandle,1} });
 		modeltableoffscreen.Create({ {m_constantBufferOffscreen.m_GPUHandle,0} });
 
+		offscreenPass.Create(TextureWidth, TextureHeight, m_renderTargeto.m_CPURTVHandle, m_depthStencilOffscreen.m_CPURTVHandle, m_renderTargeto.m_texture.Get());
+
 		// Close the command list and execute it to begin the initial GPU setup.
 		ThrowIfFailed(m_commandList->Close());
 		ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
@@ -360,12 +375,12 @@ public:
 		modeltableoffscreen.Draw(m_commandList);
 		//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandle1(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 3, m_cbvSrvDescriptorSize);
 		//m_commandList->SetGraphicsRootDescriptorTable(1, cbvSrvHandle1);
-		m_commandList->RSSetViewports(1, &m_viewport);
-		m_commandList->RSSetScissorRects(1, &m_scissorRect);
+		//m_commandList->RSSetViewports(1, &m_viewport);
+		//m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
 		// Indicate that the back buffer will be used as a render target.
 		//m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargeto.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));//george rly dono
-		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargeto.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));//george rly dono
+		/*m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargeto.m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 		CD3DX12_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(TextureWidth), static_cast<float>(TextureHeight));
 		CD3DX12_RECT   scissorRect(0, 0, static_cast<LONG>(TextureWidth), static_cast<LONG>(TextureHeight));
 		m_commandList->RSSetViewports(1, &viewport);
@@ -373,9 +388,11 @@ public:
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvoHandle(m_rtvoHeap->GetCPUDescriptorHandleForHeapStart());
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvoHandle(m_dsvoHeap->GetCPUDescriptorHandleForHeapStart());
 		m_commandList->OMSetRenderTargets(1, &rtvoHandle, FALSE, &dsvoHandle);
-		//  const float clearColoro[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		 // m_commandList->ClearRenderTargetView(rtvoHandle, clearColoro, 0, nullptr);
-		m_commandList->ClearDepthStencilView(m_dsvoHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		const float clearColoro[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		m_commandList->ClearRenderTargetView(rtvoHandle, clearColoro, 0, nullptr);
+		m_commandList->ClearDepthStencilView(m_dsvoHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);*/
+		offscreenPass.Begin(m_commandList.Get());
+
 		m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		/*m_commandList->IASetIndexBuffer(&geometry.m_indexBufferView);
 		m_commandList->IASetVertexBuffers(0, 1, &geometry.m_vertexBufferView);
@@ -385,8 +402,8 @@ public:
 		m_commandList->IASetVertexBuffers(0, 1, &planegeometry.m_vertexBufferView);
 		m_commandList->DrawIndexedInstanced(planegeometry.m_numIndices, 1, 0, 0, 0);*/
 		planegeometry.Draw(m_commandList);
-		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargeto.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));//george rly dono
-
+		//m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargeto.m_texture.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));//george rly dono
+		offscreenPass.End(m_commandList.Get());
 
 		// Indicate that the back buffer will be used as a render target.
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[currentBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
