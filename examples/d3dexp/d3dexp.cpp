@@ -245,10 +245,10 @@ public:
 		pipelineMT.Load(m_device.Get(), GetAssetFullPath(L"shaders/d3dexp/shaders.hlsl"), "VSMain", "PSMainMT", &pdsl, props);
 
 		// Create the command list.
-		ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), pipeline.m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
+		//ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), pipeline.m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
 
-		geometry.Load(m_device.Get(), "./../data/models/venus.fbx", XMFLOAT3(0.0, -0.7, 0.0), 0.03f, m_commandList.Get());
-		planegeometry.Load(m_device.Get(), "./../data/models/plane.obj", XMFLOAT3(0.0, planey, 0.0), 0.1f, m_commandList.Get());
+		geometry.Load(m_device.Get(), "./../data/models/venus.fbx", XMFLOAT3(0.0, -0.7, 0.0), 0.03f, m_commandBuffer.m_commandList.Get());
+		planegeometry.Load(m_device.Get(), "./../data/models/plane.obj", XMFLOAT3(0.0, planey, 0.0), 0.1f, m_commandBuffer.m_commandList.Get());
 
 		// Create the constant buffer.
 		const UINT64 constantBufferSize = sizeof(SceneConstantBuffer);    // CB size is required to be 256-byte aligned.
@@ -323,7 +323,7 @@ public:
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandlet;
 		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPUt;
 		m_srvHeap.GetAvailableHandles(cbvSrvHandlet, cbvSrvHandleGPUt);
-		m_texture.Load(m_device.Get(), "./../data/textures/compass.jpg", m_commandList.Get(), cbvSrvHandlet, cbvSrvHandleGPUt);
+		m_texture.Load(m_device.Get(), "./../data/textures/compass.jpg", m_commandBuffer.m_commandList.Get(), cbvSrvHandlet, cbvSrvHandleGPUt);
 		
 		//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU(m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 0, m_cbvSrvDescriptorSize);
 		//modeltable.AddEntry(cbvSrvHandleGPUt, 0);
@@ -333,7 +333,7 @@ public:
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle1;
 		CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU1;
 		m_srvHeap.GetAvailableHandles(cbvSrvHandle1, cbvSrvHandleGPU1);
-		m_texture1.Load(m_device.Get(), "./../data/textures/PlanksBare0002_1_S.jpg", m_commandList.Get(), cbvSrvHandle1, cbvSrvHandleGPU1);
+		m_texture1.Load(m_device.Get(), "./../data/textures/PlanksBare0002_1_S.jpg", m_commandBuffer.m_commandList.Get(), cbvSrvHandle1, cbvSrvHandleGPU1);
 
 		//planetable.Create({ {m_texture.m_GPUHandle,0}, {m_renderTargetoSRVHandleGPU,1},{m_constantBuffer.m_GPUHandle,2} });
 		planetable.Create(&pdsl, { m_constantBuffer.m_GPUHandle }, { m_texture.m_GPUHandle, m_renderTargetoSRVHandleGPU });
@@ -345,8 +345,9 @@ public:
 		offscreenPass.Create(TextureWidth, TextureHeight, m_renderTargeto.m_CPURTVHandle, m_depthStencilOffscreen.m_CPURTVHandle, m_renderTargeto.m_texture.Get());
 
 		// Close the command list and execute it to begin the initial GPU setup.
-		ThrowIfFailed(m_commandList->Close());
-		ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+		//ThrowIfFailed(m_commandList->Close());
+		m_commandBuffer.End();
+		ID3D12CommandList* ppCommandLists[] = { m_commandBuffer.m_commandList.Get() };
 		m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 		WaitForPreviousFrame();
@@ -369,15 +370,20 @@ public:
 
 	virtual void BuildCommandBuffers()
 	{
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList = m_commandBuffer.m_commandList;
 		// Command list allocators can only be reset when the associated 
 	// command lists have finished execution on the GPU; apps should use 
 	// fences to determine GPU execution progress.
-		ThrowIfFailed(m_commandAllocator->Reset());
+		//ThrowIfFailed(m_commandBuffer.m_commandAllocator->Reset());
 
 		// However, when ExecuteCommandList() is called on a particular command 
 		// list, that command list can then be reset at any time and must be before 
 		// re-recording.
-		ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), pipelineOffscreen.m_pipelineState.Get()));
+		
+		//ThrowIfFailed(m_commandList->Reset(m_commandBuffer.m_commandAllocator.Get(), pipelineOffscreen.m_pipelineState.Get()));
+		m_commandBuffer.Begin();
+
+		m_commandList->SetPipelineState(pipelineOffscreen.m_pipelineState.Get());
 
 		// Set necessary state.
 		m_commandList->SetGraphicsRootSignature(pipelineOffscreen.m_rootSignature.Get());
@@ -465,7 +471,8 @@ public:
 		// Indicate that the back buffer will now be used to present.
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[currentBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-		ThrowIfFailed(m_commandList->Close());
+		//ThrowIfFailed(m_commandList->Close());
+		m_commandBuffer.End();
 	}
 
 	void updateUniformBuffers()
