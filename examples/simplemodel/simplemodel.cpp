@@ -87,7 +87,7 @@ public:
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
-		data.Destroy();
+		//data.Destroy();
 	}
 
 	void SetupUniforms()

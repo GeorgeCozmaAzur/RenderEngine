@@ -5,7 +5,7 @@ namespace engine
 {
 	namespace render
 	{
-		void D3D12Buffer::CreateGPUVisible(Microsoft::WRL::ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState)
+		void D3D12Buffer::CreateGPUVisible(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState)
 		{
             m_size = size;
             ThrowIfFailed(device->CreateCommittedResource(
@@ -45,7 +45,7 @@ namespace engine
             m_stagingBuffer.Reset();
         }
 
-		void D3D12UniformBuffer::Create(Microsoft::WRL::ComPtr<ID3D12Device> device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+		void D3D12UniformBuffer::Create(ID3D12Device* device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle)
 		{
 			m_size = size;
 			ThrowIfFailed(device->CreateCommittedResource(

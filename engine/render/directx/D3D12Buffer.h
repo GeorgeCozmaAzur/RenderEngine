@@ -20,7 +20,7 @@ namespace engine
 			Microsoft::WRL::ComPtr<ID3D12Resource> m_buffer;
 			Microsoft::WRL::ComPtr<ID3D12Resource> m_stagingBuffer;
 		public:
-			void CreateGPUVisible(Microsoft::WRL::ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState);
+			void CreateGPUVisible(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState);
 			void FreeStagingBuffer();
 		};
 
@@ -31,7 +31,7 @@ namespace engine
 		public:
 			CD3DX12_GPU_DESCRIPTOR_HANDLE m_GPUHandle;
 		
-			void Create(Microsoft::WRL::ComPtr<ID3D12Device> device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cupHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
+			void Create(ID3D12Device* device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cupHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
 		};
 
 		class D3D12VertexBuffer : public D3D12Buffer

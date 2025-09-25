@@ -8,14 +8,16 @@
 #include <shellapi.h>
 #include <vector>
 #include "render/directx/d3dx12.h"
+#include "render/CommandBuffer.h"
 
 namespace engine
 {
 	namespace render
 	{
-		class D3D12CommandBuffer
+		class D3D12CommandBuffer : public CommandBuffer
 		{
 		public:
+			~D3D12CommandBuffer();
 			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
 			Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 			void Create(ID3D12Device *device);

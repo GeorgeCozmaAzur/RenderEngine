@@ -17,23 +17,37 @@ namespace engine
 	{
 		class GraphicsDevice
 		{
-			virtual Buffer* GetBuffer(size_t size, void* data, DescriptorPool* descriptorPool) = 0;
+		protected:
+			std::vector<Buffer*> m_buffers;
+			std::vector<Texture*> m_textures;
+			std::vector<Mesh*> m_meshes;
+			std::vector<DescriptorSetLayout*> m_descriptorSetLayouts;
+			std::vector<DescriptorPool*> m_descriptorPools;
+			std::vector<DescriptorSet*> m_descriptorSets;
+			std::vector<RenderPass*> m_renderPasses;
+			std::vector<Pipeline*> m_pipelines;
+			std::vector<CommandBuffer*> m_commandBuffers;
+			
+		public:
+			virtual ~GraphicsDevice();
 
-			virtual Texture* GetTexture(TextureData* data, DescriptorPool *descriptorPool) = 0;
+			virtual Buffer* GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool) = 0;
 
-			virtual DescriptorPool* GetDescriptorPool() = 0;
+			virtual Texture* GetTexture(TextureData* data, DescriptorPool *descriptorPool, CommandBuffer* commandBuffer) = 0;
+
+			virtual DescriptorPool* GetDescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets) = 0;
 
 			virtual DescriptorSetLayout* GetDescriptorSetLayout(std::vector<LayoutBinding> bindings) = 0;
 
-			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, Buffer** buffers, Texture** textures) = 0;
+			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, std::vector<Buffer*> buffers, std::vector <Texture*> textures) = 0;
 
 			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, Texture *colorTexture, Texture *depthTexture) = 0;
 
-			virtual Pipeline* GetPipeLine(std::string vertexFile, std::string fragmentFile, VertexLayout vertexLayout, DescriptorSetLayout descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass) = 0;
+			virtual Pipeline* GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, DescriptorSetLayout descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass) = 0;
 
 			virtual CommandBuffer* GetCommandBuffer() = 0;
 
-			virtual Mesh* GetMesh(MeshData* data) = 0;
+			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer) = 0;
 		};
 	}
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "CommandBuffer.h"
+#include "VertexLayout.h"
 
 namespace engine
 {
@@ -21,6 +22,8 @@ namespace engine
 
 		class Mesh
 		{
+			VertexLayout* m_vlayout = nullptr;
+		public:
 			virtual void Draw(CommandBuffer *commandBuffer) = 0;
 		};
 	}

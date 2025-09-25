@@ -7,7 +7,8 @@ namespace engine
 	{
 		class CommandBuffer
 		{
-		
+		public:
+			virtual ~CommandBuffer() {}
 		};
 	}
 }

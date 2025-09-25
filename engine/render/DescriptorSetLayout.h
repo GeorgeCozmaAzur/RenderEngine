@@ -14,10 +14,13 @@ namespace engine
 
 		enum DescriptorType
 		{
-			TEXTURE,
 			UNIFORM_BUFFER,
+			IMAGE_SAMPLER,
 			STORAGE_BUFFER,
-			INPUT_ATTACHMENT
+			STORAGE_IMAGE,
+			INPUT_ATTACHMENT,
+			DSV,
+			RTV
 		};
 
 		struct LayoutBinding

@@ -8,12 +8,13 @@
 #include <shellapi.h>
 #include <vector>
 #include "render/directx/d3dx12.h"
+#include "render/RenderPass.h"
 
 namespace engine
 {
 	namespace render
 	{
-		class D3D12RenderPass
+		class D3D12RenderPass : public RenderPass
 		{
 			uint32_t m_width;
 			uint32_t m_height;
@@ -26,6 +27,8 @@ namespace engine
 			void Create(uint32_t width, uint32_t height, CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle, CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle, ID3D12Resource* colorTexture);
 			void Begin(ID3D12GraphicsCommandList* commandList);
 			void End(ID3D12GraphicsCommandList* commandList);
+			virtual void Begin(CommandBuffer* commandBuffer);
+			virtual void End(CommandBuffer* commandBuffer);
 		};
 	}
 }

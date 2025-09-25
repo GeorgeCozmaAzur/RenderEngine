@@ -24,7 +24,7 @@ class VulkanExample : public VulkanApplication
 public:
 
 	// Vertex layout for the models
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
@@ -128,7 +128,7 @@ public:
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
-		data.Destroy();
+		//data.Destroy();
 
 		colorTex = vulkanDevice->GetColorRenderTarget(FB_DIM, FB_DIM, FB_COLOR_FORMAT);
 		depthTex = vulkanDevice->GetDepthRenderTarget(FB_DIM, FB_DIM, false);

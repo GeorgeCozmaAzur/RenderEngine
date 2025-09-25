@@ -1,18 +1,40 @@
 #include "D3D12DescriptorHeap.h"
 #include "DXSampleHelper.h"
+#include <numeric>
+#include <algorithm>
 
 namespace engine
 {
 	namespace render
 	{
-		void D3D12DescriptorHeap::Create(Microsoft::WRL::ComPtr<ID3D12Device> device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT maxDescriptors)
+		void D3D12DescriptorHeap::Create(Microsoft::WRL::ComPtr<ID3D12Device> device)
 		{
-			D3D12_DESCRIPTOR_HEAP_DESC rtvoHeapDesc = {};
-			rtvoHeapDesc.NumDescriptors = maxDescriptors;
-			rtvoHeapDesc.Type = heapType;
-			rtvoHeapDesc.Flags = heapType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-			ThrowIfFailed(device->CreateDescriptorHeap(&rtvoHeapDesc, IID_PPV_ARGS(&m_heap)));
-			m_descriptorSize = device->GetDescriptorHandleIncrementSize(heapType);
+			D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+
+			int rtv_count = std::count_if(m_poolSizes.begin(), m_poolSizes.end(), [&](const DescriptorPoolSize& ps) {return ps.type == DescriptorType::RTV; });
+			int dsv_count = std::count_if(m_poolSizes.begin(), m_poolSizes.end(), [&](const DescriptorPoolSize& ps) {return ps.type == DescriptorType::DSV; });
+			if (rtv_count > 0)
+			{
+				heapDesc.NumDescriptors = rtv_count;
+				heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+			}
+			else
+			if(dsv_count > 0)
+			{
+				heapDesc.NumDescriptors = dsv_count;
+				heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+			}
+			else
+			{
+				heapDesc.NumDescriptors = std::accumulate(m_poolSizes.begin(), m_poolSizes.end(), 0 ,
+					[](int acc, const auto& thepair) {return acc + thepair.size; });
+				heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+			}
+
+			heapDesc.Flags = heapDesc.Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			ThrowIfFailed(device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_heap)));
+
+			m_descriptorSize = device->GetDescriptorHandleIncrementSize(heapDesc.Type);
 			m_usedDescriptors = 0;
 		}
 

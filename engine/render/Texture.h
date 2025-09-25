@@ -68,7 +68,7 @@ namespace engine
 			uint32_t m_mipLevelsCount = 1;
 			uint32_t m_layerCount = 1;
 
-			Texture::~Texture() { Destroy(); }
+			virtual Texture::~Texture() { Destroy(); }
 
 			/*void Create(VkDevice device, VkPhysicalDeviceMemoryProperties* memoryProperties, VkExtent3D extent, VkFormat format,
 				VkImageUsageFlags imageUsageFlags,

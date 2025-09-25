@@ -52,7 +52,7 @@ public:
 	ComPtr<ID3D12DescriptorHeap> m_rtvoHeap;
 	ComPtr<ID3D12DescriptorHeap> m_dsvoHeap;
 	//ComPtr<ID3D12DescriptorHeap> m_srvHeap;
-	render::D3D12DescriptorHeap m_srvHeap;
+	render::D3D12DescriptorHeap m_srvHeap = render::D3D12DescriptorHeap({ {render::DescriptorType::IMAGE_SAMPLER, 3},{render::DescriptorType::UNIFORM_BUFFER, 3} }, 6);
 
 	//ComPtr<ID3D12Resource> m_depthStencilOffscreen;
 	render::D3D12RenderTarget m_depthStencilOffscreen;
@@ -134,7 +134,7 @@ public:
 			srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 			srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 			ThrowIfFailed(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));*/
-			m_srvHeap.Create(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 6);
+			m_srvHeap.Create(m_device);
 
 			// Describe and create a constant buffer view (CBV) descriptor heap.
 			// Flags indicate that this descriptor heap can be bound to the pipeline 
@@ -227,13 +227,13 @@ public:
 		render::DescriptorSetLayout odsl({ {render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX} });
 
 		render::DescriptorSetLayout mdsl({ 
-						{render::DescriptorType::TEXTURE,render::ShaderStage::FRAGMENT } ,
+						{render::DescriptorType::IMAGE_SAMPLER,render::ShaderStage::FRAGMENT } ,
 						{render::DescriptorType::UNIFORM_BUFFER,render::ShaderStage::VERTEX }
 			});
 
 		render::DescriptorSetLayout pdsl({
-						{render::DescriptorType::TEXTURE, render::ShaderStage::FRAGMENT},
-						{render::DescriptorType::TEXTURE, render::ShaderStage::FRAGMENT},
+						{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT},
+						{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT},
 						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX}
 			});
 
@@ -281,7 +281,7 @@ public:
 			ThrowIfFailed(m_constantBuffer->Map(0, &readRange, &m_pCbvDataBegin));
 			memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));*/
 
-			m_constantBuffer.Create(m_device, sizeof(SceneConstantBuffer), &m_constantBufferData, cbvSrvHandle, cbvSrvHandleGPU);
+			m_constantBuffer.Create(m_device.Get(), sizeof(SceneConstantBuffer), &m_constantBufferData, cbvSrvHandle, cbvSrvHandleGPU);
 
 			//planetable.AddEntry(cbvSrvHandleGPU, 2);
 			//modeltable.AddEntry(cbvSrvHandleGPU, 1);
@@ -315,7 +315,7 @@ public:
 			//CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
 			//ThrowIfFailed(m_constantBufferOffscreen->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBeginOffscreen)));
 			//memcpy(m_pCbvDataBeginOffscreen, &m_constantBufferData2, sizeof(m_constantBufferData2));
-			m_constantBufferOffscreen.Create(m_device, sizeof(SceneConstantBuffer), &m_constantBufferData2, cbvSrvHandle, cbvSrvHandleGPU);
+			m_constantBufferOffscreen.Create(m_device.Get(), sizeof(SceneConstantBuffer), &m_constantBufferData2, cbvSrvHandle, cbvSrvHandleGPU);
 
 			//modeltableoffscreen.AddEntry(cbvSrvHandleGPU, 0);
 		}

@@ -5,6 +5,10 @@ namespace engine
 {
 	namespace render
 	{
+		D3D12CommandBuffer::~D3D12CommandBuffer()
+		{
+
+		}
 		void D3D12CommandBuffer::Create(ID3D12Device* device)
 		{
 			ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));

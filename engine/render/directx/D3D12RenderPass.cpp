@@ -1,4 +1,5 @@
 #include "D3D12RenderPass.h"
+#include "D3D12CommandBuffer.h"
 #include "DXSampleHelper.h"
 
 namespace engine
@@ -30,6 +31,18 @@ namespace engine
 		void D3D12RenderPass::End(ID3D12GraphicsCommandList* commandList)
 		{
 			commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_colorTexture, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+		}
+
+		void D3D12RenderPass::Begin(CommandBuffer* commandBuffer)
+		{
+			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			Begin(d3dcommandBuffer->m_commandList.Get());
+		}
+
+		void D3D12RenderPass::End(CommandBuffer* commandBuffer)
+		{
+			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			End(d3dcommandBuffer->m_commandList.Get());
 		}
 	}
 }
