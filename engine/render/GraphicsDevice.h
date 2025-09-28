@@ -35,6 +35,8 @@ namespace engine
 
 			virtual Texture* GetTexture(TextureData* data, DescriptorPool *descriptorPool, CommandBuffer* commandBuffer) = 0;
 
+			virtual Texture* GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool depthBuffer) = 0;
+
 			virtual DescriptorPool* GetDescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets) = 0;
 
 			virtual DescriptorSetLayout* GetDescriptorSetLayout(std::vector<LayoutBinding> bindings) = 0;
@@ -43,7 +45,7 @@ namespace engine
 
 			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, Texture *colorTexture, Texture *depthTexture) = 0;
 
-			virtual Pipeline* GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, DescriptorSetLayout descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass) = 0;
+			virtual Pipeline* GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass) = 0;
 
 			virtual CommandBuffer* GetCommandBuffer() = 0;
 

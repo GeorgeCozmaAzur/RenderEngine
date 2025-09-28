@@ -19,12 +19,15 @@ namespace engine
 			Microsoft::WRL::ComPtr<ID3D12Device> m_device;
 
 		public:
+			D3D12Device(Microsoft::WRL::ComPtr<ID3D12Device> device) : m_device(device) {};
 
 			~D3D12Device();
 
 			virtual Buffer* GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool);
 
 			virtual Texture* GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer);
+
+			virtual Texture* GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool depthBuffer);
 
 			virtual DescriptorPool* GetDescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets);
 
@@ -34,7 +37,7 @@ namespace engine
 
 			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, Texture* colorTexture, Texture* depthTexture);
 
-			virtual Pipeline* GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass);
+			virtual Pipeline* GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass);
 
 			virtual CommandBuffer* GetCommandBuffer();
 

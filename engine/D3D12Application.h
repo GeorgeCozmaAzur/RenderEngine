@@ -23,10 +23,10 @@ private:
 protected:
 	static const UINT FrameCount = 2;
 	Microsoft::WRL::ComPtr<IDXGISwapChain3> m_swapChain;
-	Microsoft::WRL::ComPtr<ID3D12Device> m_device;
+	Microsoft::WRL::ComPtr<ID3D12Device> m_d3ddevice;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencil;
-	render::D3D12CommandBuffer m_commandBuffer;
+	//render::D3D12CommandBuffer m_commandBuffer;
 	//Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	//Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
@@ -74,6 +74,8 @@ public:
 	// Called in case of an event where e.g. the framebuffer has to be rebuild and thus
 	// all command buffers that may reference this
 	virtual void BuildCommandBuffers();
+
+	virtual void SubmitOnQueue(class render::CommandBuffer *commandBuffer);
 
 	/** @brief (Virtual) Called after the physical device features have been read, can be used to set features to enable on the device */
 	virtual void GetEnabledFeatures();

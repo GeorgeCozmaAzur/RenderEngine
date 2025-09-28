@@ -1,8 +1,10 @@
 #include "D3D12Application.h"
+#include "D3D12CommandBuffer.h"
 #include "render/directx/d3dx12.h"
-
+#include "D3D12Device.h"
 
 using Microsoft::WRL::ComPtr;
+using namespace engine::render;
 
 D3D12Application::D3D12Application(bool enableValidation) : ApplicationBase(enableValidation)
 {
@@ -123,15 +125,17 @@ bool D3D12Application::InitAPI()
 	ThrowIfFailed(D3D12CreateDevice(
 		hardwareAdapter.Get(),
 		D3D_FEATURE_LEVEL_11_0,
-		IID_PPV_ARGS(&m_device)
+		IID_PPV_ARGS(&m_d3ddevice)
 	));
+
+	m_device = new render::D3D12Device(m_d3ddevice);
 
 	// Describe and create the command queue.
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-	ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+	ThrowIfFailed(m_d3ddevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
 
 	// Describe and create the swap chain.
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -166,16 +170,16 @@ bool D3D12Application::InitAPI()
 		rtvHeapDesc.NumDescriptors = FrameCount;
 		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
+		ThrowIfFailed(m_d3ddevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
 
-		m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		m_rtvDescriptorSize = m_d3ddevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 		// Describe and create a depth stencil view (DSV) descriptor heap.
 		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
 		dsvHeapDesc.NumDescriptors = 1;
 		dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
+		ThrowIfFailed(m_d3ddevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
 	}
 
 	// Create frame resources.
@@ -186,7 +190,7 @@ bool D3D12Application::InitAPI()
 		for (UINT n = 0; n < FrameCount; n++)
 		{
 			ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
-			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
+			m_d3ddevice->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
 			rtvHandle.Offset(1, m_rtvDescriptorSize);
 		}
 	}
@@ -202,7 +206,7 @@ bool D3D12Application::InitAPI()
 		depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 		depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
-		ThrowIfFailed(m_device->CreateCommittedResource(
+		ThrowIfFailed(m_d3ddevice->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
@@ -213,12 +217,12 @@ bool D3D12Application::InitAPI()
 
 		//NAME_D3D12_OBJECT(m_depthStencil);
 
-		m_device->CreateDepthStencilView(m_depthStencil.Get(), &depthStencilDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+		m_d3ddevice->CreateDepthStencilView(m_depthStencil.Get(), &depthStencilDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 	}
 
-	//ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
-	//ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
-	m_commandBuffer.Create(m_device.Get());
+	//ThrowIfFailed(m_d3ddevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
+	//ThrowIfFailed(m_d3ddevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
+	m_commandBuffer = m_device->GetCommandBuffer();
 
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.
@@ -226,7 +230,7 @@ bool D3D12Application::InitAPI()
 
 	// Create synchronization objects.
 	{
-		ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+		ThrowIfFailed(m_d3ddevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
 		m_fenceValue = 1;
 
 		// Create an event handle to use for frame synchronization.
@@ -337,7 +341,7 @@ void D3D12Application::Render()
 	BuildCommandBuffers();
 
 	// Execute the command list.
-	ID3D12CommandList* ppCommandLists[] = { m_commandBuffer.m_commandList.Get() };
+	ID3D12CommandList* ppCommandLists[] = { ((render::D3D12CommandBuffer*)m_commandBuffer)->m_commandList.Get() };
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Present the frame.
@@ -398,7 +402,7 @@ void D3D12Application::BuildCommandBuffers()
 	// Command list allocators can only be reset when the associated 
 	// command lists have finished execution on the GPU; apps should use 
 	// fences to determine GPU execution progress.
-	ThrowIfFailed(m_commandBuffer.m_commandAllocator->Reset());
+	/*ThrowIfFailed(m_commandBuffer.m_commandAllocator->Reset());
 
 	// However, when ExecuteCommandList() is called on a particular command 
 	// list, that command list can then be reset at any time and must be before 
@@ -417,7 +421,14 @@ void D3D12Application::BuildCommandBuffers()
 	// Indicate that the back buffer will now be used to present.
 	m_commandBuffer.m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[currentBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-	ThrowIfFailed(m_commandBuffer.m_commandList->Close());
+	ThrowIfFailed(m_commandBuffer.m_commandList->Close());*/
+}
+
+void D3D12Application::SubmitOnQueue(render::CommandBuffer* commandBuffer)
+{
+	render::D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<render::D3D12CommandBuffer*>(commandBuffer);
+	ID3D12CommandList* ppCommandLists[] = { d3dcommandBuffer->m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 }
 
 

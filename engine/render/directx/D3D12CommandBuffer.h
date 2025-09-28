@@ -21,8 +21,8 @@ namespace engine
 			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
 			Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 			void Create(ID3D12Device *device);
-			void Begin();
-			void End();
+			virtual void Begin();
+			virtual void End();
 		};
 	}
 }

@@ -1,4 +1,5 @@
 #include "D3D12DescriptorTable.h"
+#include "D3D12CommandBuffer.h"
 
 namespace engine
 {
@@ -22,12 +23,18 @@ namespace engine
 			}
 		}
 
-		void D3D12DescriptorTable::Draw(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList)
+		void D3D12DescriptorTable::Draw(ID3D12GraphicsCommandList* commandList)
 		{
 			for (int i = 0; i < m_entries.size(); i++)
 			{
 				commandList->SetGraphicsRootDescriptorTable(m_entries[i].parameterIndex, m_entries[i].gpuHandle);
 			}
+		}
+
+		void D3D12DescriptorTable::Draw(class CommandBuffer* commandBuffer)
+		{
+			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			Draw(d3dcommandBuffer->m_commandList.Get());
 		}
 	}
 }

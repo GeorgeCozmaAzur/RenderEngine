@@ -20,6 +20,7 @@ namespace engine
 			Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
 
 			void Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, DescriptorSetLayout* dlayout, PipelineProperties properties);
+			virtual void Draw(class CommandBuffer* commandBuffer);
 		};
 	}
 }

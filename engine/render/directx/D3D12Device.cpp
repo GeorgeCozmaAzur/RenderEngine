@@ -48,6 +48,26 @@ namespace engine
 			return texture;
 		}
 
+		Texture* D3D12Device::GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool depthBuffer)
+		{
+			D3D12RenderTarget* texture = new D3D12RenderTarget();
+
+			texture->Create(m_device.Get(), width, height, format, depthBuffer ? D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL : D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, depthBuffer? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(srvDescriptorPool);
+			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle{};
+			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU{};
+			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle{};
+			CD3DX12_GPU_DESCRIPTOR_HANDLE rtvGPUHandle{};
+			if(descHeap)
+			descHeap->GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
+			D3D12DescriptorHeap* rtvHeap = dynamic_cast<D3D12DescriptorHeap*>(rtvDescriptorPool);
+			descHeap->GetAvailableHandles(rtvHandle, rtvGPUHandle);
+			texture->CreateDescriptor(m_device.Get(), cbvSrvHandle, cbvSrvHandleGPU, rtvHandle);
+
+			m_textures.push_back(texture);
+			return texture;
+		}
+
 		DescriptorPool* D3D12Device::GetDescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets)
 		{
 			D3D12DescriptorHeap* pool = new D3D12DescriptorHeap(poolSizes, maxSets);
@@ -90,7 +110,7 @@ namespace engine
 			return pass;
 		}
 
-		Pipeline* D3D12Device::GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass)
+		Pipeline* D3D12Device::GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass)
 		{
 			D3D12Pipeline* pipeline = new D3D12Pipeline();
 			std::wstring ws(vertexFileName.begin(), vertexFileName.end());

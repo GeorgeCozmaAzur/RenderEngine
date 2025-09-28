@@ -61,6 +61,8 @@ namespace engine
 
 			void Draw(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindpoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
+			virtual void Draw(class CommandBuffer* commandBuffer) {};
+
 			void CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, PipelineProperties properties);
 		};
 	}

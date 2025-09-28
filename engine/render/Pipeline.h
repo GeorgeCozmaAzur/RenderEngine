@@ -47,7 +47,8 @@ namespace engine
 
 		class Pipeline
 		{
-			
+		public:
+			virtual void Draw(class CommandBuffer* commandBuffer) = 0;
 		};
 	}
 }

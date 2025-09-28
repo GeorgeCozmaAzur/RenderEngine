@@ -7,6 +7,7 @@ namespace engine
 	{
 		class RenderPass
 		{
+		public:
 			virtual void Begin(CommandBuffer *commandBuffer) = 0;
 			virtual void End(CommandBuffer *commandBuffer) = 0;
 		};

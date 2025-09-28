@@ -8,8 +8,9 @@ namespace engine
 	{
 		class DescriptorSet
 		{
+		public:
 			virtual void Create(DescriptorSetLayout& layout, DescriptorPool pool) {};
-			//virtual void Draw() = 0;
+			virtual void Draw(class CommandBuffer* commandBuffer) = 0;
 		};
 	}
 }

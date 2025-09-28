@@ -20,6 +20,7 @@
 #include <array>
 #include <numeric>
 
+#include "render/GraphicsDevice.h"
 #include "scene/Camera.h"
 
 using namespace engine;
@@ -39,6 +40,9 @@ protected:
 	uint32_t frameCounter = 0;
 	uint32_t lastFPS = 0;
 	std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp;
+
+	render::GraphicsDevice* m_device = nullptr;
+	render::CommandBuffer* m_commandBuffer = nullptr;
 
 	struct
 	{
@@ -149,6 +153,8 @@ public:
 	// Called in case of an event where e.g. the framebuffer has to be rebuild and thus
 	// all command buffers that may reference this
 	virtual void BuildCommandBuffers() = 0;
+
+	virtual void SubmitOnQueue(class render::CommandBuffer* commandBuffer) = 0;
 
 	/** @brief (Virtual) Called after the physical device features have been read, can be used to set features to enable on the device */
 	virtual void GetEnabledFeatures() = 0;

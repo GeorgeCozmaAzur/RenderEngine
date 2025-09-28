@@ -1,4 +1,5 @@
 #include "render/directx/D3D12Pipeline.h"
+#include "render/directx/D3D12CommandBuffer.h"
 #include "render/directx/DXSampleHelper.h"
 #include "render/directx/d3dx12.h"
 
@@ -138,6 +139,13 @@ namespace engine
                 psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
                 ThrowIfFailed(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
             }
+        }
+        void D3D12Pipeline::Draw(CommandBuffer* commandBuffer)
+        {
+            D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+            d3dcommandBuffer->m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            d3dcommandBuffer->m_commandList->SetPipelineState(m_pipelineState.Get());
+            d3dcommandBuffer->m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
         }
     }
 }

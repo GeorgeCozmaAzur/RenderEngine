@@ -28,7 +28,8 @@ namespace engine
 		public:
 
 			void Create(DescriptorSetLayout* layout, std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> buffers, std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> textures);
-			void Draw(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList);
+			void Draw(ID3D12GraphicsCommandList* commandList);
+			virtual void Draw(class CommandBuffer* commandBuffer);
 		};
 	}
 }
