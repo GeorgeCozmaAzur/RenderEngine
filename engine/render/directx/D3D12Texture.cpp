@@ -61,18 +61,23 @@ namespace engine
                 IID_PPV_ARGS(&m_texture));
         }
 
-        void D3D12Texture::Upload(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, TextureExtent** extents, void *data)
+        UINT64 D3D12Texture::GetSize()
         {
-            const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
+            return GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
+        }
+
+        void D3D12Texture::Upload(ID3D12Resource* staggingBuffer, ID3D12GraphicsCommandList* commandList, TextureExtent** extents, void *data)
+        {
+           // const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
 
             // Create the GPU upload buffer.
-            device->CreateCommittedResource(
+           /* device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
                 &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 nullptr,
-                IID_PPV_ARGS(&m_textureUploadHeap));
+                IID_PPV_ARGS(&m_textureUploadHeap));*/
 
             // Copy data to the intermediate upload heap and then schedule a copy 
             // from the upload heap to the Texture2D.
@@ -83,7 +88,7 @@ namespace engine
             textureData.RowPitch = extents[0][0].width * m_TexturePixelSize;
             textureData.SlicePitch = textureData.RowPitch * extents[0][0].height;
 
-            UpdateSubresources(commandList, m_texture.Get(), m_textureUploadHeap.Get(), 0, 0, 1, &textureData);
+            UpdateSubresources(commandList, m_texture.Get(), staggingBuffer, 0, 0, 1, &textureData);
             commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
         }
 
@@ -109,12 +114,12 @@ namespace engine
            // We will flush the GPU at the end of this method to ensure the resource is not
            // prematurely destroyed.
 
-            tdata = new Texture2DData();
+           /* tdata = new Texture2DData();
             tdata->LoadFromFile(fileName, GfxFormat::R8G8B8A8_UNORM);
 
             Create(device,tdata->m_width,tdata->m_height,tdata->m_format, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
-            Upload(device,commandList,tdata->m_extents,tdata->m_ram_data);
-            CreateDescriptor(device, descriptorHeapAdress, descriptorGPUHeapAdress);
+            Upload(device,commandList,tdata->m_extents,tdata->m_ram_data);//TODO george
+            CreateDescriptor(device, descriptorHeapAdress, descriptorGPUHeapAdress);*/
 
             /*int texChannels;
             stbi_uc* pixels = stbi_load(fileName.c_str(), &m_Width, &m_Height, &texChannels, STBI_rgb_alpha);
@@ -219,8 +224,8 @@ namespace engine
 
         void D3D12Texture::FreeRamData()
         {
-            m_textureUploadHeap.Reset();
-            delete tdata;
+            //m_textureUploadHeap.Reset();
+            //delete tdata;
             //delete[] m_ram_data;
         }
     }

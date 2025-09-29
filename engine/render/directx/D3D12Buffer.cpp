@@ -5,7 +5,19 @@ namespace engine
 {
 	namespace render
 	{
-		void D3D12Buffer::CreateGPUVisible(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState)
+        void D3D12Buffer::Create(ID3D12Device* device, size_t size, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES finalState)
+        {
+            m_size = size;
+            ThrowIfFailed(device->CreateCommittedResource(
+                &CD3DX12_HEAP_PROPERTIES(heapType),
+                D3D12_HEAP_FLAG_NONE,
+                &CD3DX12_RESOURCE_DESC::Buffer(m_size),
+                finalState,
+                nullptr,
+                IID_PPV_ARGS(&m_buffer)));
+        }
+
+		void D3D12Buffer::CreateGPUVisible(ID3D12Device* device, ID3D12Resource* staggingBuffer, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState)
 		{
             m_size = size;
             ThrowIfFailed(device->CreateCommittedResource(
@@ -23,26 +35,26 @@ namespace engine
                     D3D12_RESOURCE_STATE_COPY_DEST);
             commandList->ResourceBarrier(1, &barrier);
 
-            ThrowIfFailed(device->CreateCommittedResource(
-                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-                D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(m_size),
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr,
-                IID_PPV_ARGS(&m_stagingBuffer)));
+            //ThrowIfFailed(device->CreateCommittedResource(
+            //    &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+            //    D3D12_HEAP_FLAG_NONE,
+            //    &CD3DX12_RESOURCE_DESC::Buffer(m_size),
+            //    D3D12_RESOURCE_STATE_GENERIC_READ,
+            //    nullptr,
+            //    IID_PPV_ARGS(&m_stagingBuffer)));
 
             D3D12_SUBRESOURCE_DATA bufferData = {};
             bufferData.pData = data;
             bufferData.RowPitch = m_size;
             bufferData.SlicePitch = bufferData.RowPitch;
 
-            UpdateSubresources<1>(commandList, m_buffer.Get(), m_stagingBuffer.Get(), 0, 0, 1, &bufferData);
+            UpdateSubresources<1>(commandList, m_buffer.Get(), staggingBuffer, 0, 0, 1, &bufferData);
             commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, finalState));
 		}
 
         void D3D12Buffer::FreeStagingBuffer()
         {
-            m_stagingBuffer.Reset();
+            //m_stagingBuffer.Reset();
         }
 
 		void D3D12UniformBuffer::Create(ID3D12Device* device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle)

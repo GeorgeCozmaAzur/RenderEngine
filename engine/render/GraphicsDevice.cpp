@@ -25,5 +25,11 @@ namespace engine
             for (auto cb : m_commandBuffers)
                 delete cb;
 		}
+
+        void GraphicsDevice::FreeLoadStaggingBuffers()
+        {
+            for (auto buffer : m_loadStaggingBuffers)
+                delete buffer;
+        }
 	}
 }

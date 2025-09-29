@@ -491,6 +491,7 @@ void D3D12Application::WindowResized()
 
 D3D12Application::~D3D12Application()
 {
+	delete m_device;
 	// Clean up Vulkan resources
 	/*swapChain.CleanUp();
 	DestroyCommandBuffers();

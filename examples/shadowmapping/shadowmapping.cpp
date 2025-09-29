@@ -86,9 +86,9 @@ public:
 	} uboOffscreenVS;
 
 	struct {
-		VertexLayout *offscreen_vlayout;
+		VulkanVertexLayout*offscreen_vlayout;
 		VulkanDescriptorSetLayout *offscreen_layout;
-		VertexLayout *scene_vlayout;
+		VulkanVertexLayout *scene_vlayout;
 		VulkanDescriptorSetLayout *scene_layout;
 		VulkanDescriptorSetLayout *filter_layout;
 	} layouts;
@@ -178,8 +178,8 @@ public:
 	{
 		// Vertex layout for the models
 
-		layouts.offscreen_vlayout = new VertexLayout({ VERTEX_COMPONENT_POSITION }, {});
-		layouts.scene_vlayout = new VertexLayout({
+		layouts.offscreen_vlayout = new VulkanVertexLayout({ VERTEX_COMPONENT_POSITION }, {});
+		layouts.scene_vlayout = new VulkanVertexLayout({
 			VERTEX_COMPONENT_POSITION,
 			VERTEX_COMPONENT_UV,
 			VERTEX_COMPONENT_COLOR,

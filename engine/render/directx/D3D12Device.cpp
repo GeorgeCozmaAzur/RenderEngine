@@ -37,7 +37,10 @@ namespace engine
 			texture->Create(m_device.Get(), data->m_width, data->m_height, data->m_format, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
 
 			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
-			texture->Upload(m_device.Get(), d3dcommandBuffer->m_commandList.Get(), data->m_extents, data->m_ram_data);
+			D3D12Buffer* staggingBuffer = new D3D12Buffer();
+			staggingBuffer->Create(m_device.Get(), texture->GetSize(), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+			m_loadStaggingBuffers.push_back(staggingBuffer);
+			texture->Upload(staggingBuffer->GetD3DBuffer(), d3dcommandBuffer->m_commandList.Get(), data->m_extents, data->m_ram_data);
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(descriptorPool);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU;
@@ -61,7 +64,7 @@ namespace engine
 			if(descHeap)
 			descHeap->GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
 			D3D12DescriptorHeap* rtvHeap = dynamic_cast<D3D12DescriptorHeap*>(rtvDescriptorPool);
-			descHeap->GetAvailableHandles(rtvHandle, rtvGPUHandle);
+			rtvHeap->GetAvailableHandles(rtvHandle, rtvGPUHandle);
 			texture->CreateDescriptor(m_device.Get(), cbvSrvHandle, cbvSrvHandleGPU, rtvHandle);
 
 			m_textures.push_back(texture);
@@ -132,7 +135,20 @@ namespace engine
 			D3D12Mesh* mesh = new D3D12Mesh();
 			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
 
-			mesh->Create(m_device.Get(),data,vlayout, d3dcommandBuffer->m_commandList.Get());
+			//mesh->Create(m_device.Get(),data,vlayout, d3dcommandBuffer->m_commandList.Get());
+			const UINT vertexBufferSize = data->m_vertexCount * vlayout->GetVertexSize(0);
+			D3D12Buffer* staggingBuffer = new D3D12Buffer();
+			staggingBuffer->Create(m_device.Get(), vertexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+			m_loadStaggingBuffers.push_back(staggingBuffer);
+			mesh->m_vertexBuffer.CreateGPUVisible(m_device.Get(), staggingBuffer->GetD3DBuffer(), d3dcommandBuffer->m_commandList.Get(), vertexBufferSize, data->m_vertices, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+			mesh->m_vertexBuffer.CreateView(vlayout->GetVertexSize(0));
+
+			const UINT indexBufferSize = data->m_indexCount * sizeof(UINT);
+			staggingBuffer = new D3D12Buffer();
+			staggingBuffer->Create(m_device.Get(), indexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+			m_loadStaggingBuffers.push_back(staggingBuffer);
+			mesh->m_indexBuffer.CreateGPUVisible(m_device.Get(), staggingBuffer->GetD3DBuffer(), d3dcommandBuffer->m_commandList.Get(), indexBufferSize, data->m_indices, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+			mesh->m_indexBuffer.CreateView();
 
 			m_meshes.push_back(mesh);
 

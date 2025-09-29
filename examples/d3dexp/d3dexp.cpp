@@ -29,17 +29,17 @@ public:
 
 	struct Vertex
 	{
-		XMFLOAT3 position;
-		XMFLOAT2 uv;
+		glm::vec3 position;
+		glm::vec2 uv;
 	};
 
 	struct SceneConstantBuffer
 	{
 		//XMFLOAT4 offset;
 	   // float padding[60]; // Padding so the constant buffer is 256-byte aligned.
-		XMFLOAT4X4 mp;
-		XMFLOAT4X4 mv;
-		XMFLOAT4X4 mlv;
+		glm::mat4x4 mp;
+		glm::mat4x4 mv;
+		glm::mat4x4 mlv;
 		//XMFLOAT4 scale;
 		//XMFLOAT4 offset;
 		float padding[16];
@@ -114,7 +114,8 @@ public:
 
 	void init()
 	{	
-		m_dcommandBuffer.Create(m_d3ddevice.Get());
+		//m_dcommandBuffer.Create(m_d3ddevice.Get());
+		m_dcommandBuffer = *(dynamic_cast<render::D3D12CommandBuffer*>(m_commandBuffer));
 		m_viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height));
 		m_scissorRect = CD3DX12_RECT(0, 0, static_cast<LONG>(width), static_cast<LONG>(height));
 		{
@@ -185,7 +186,7 @@ public:
 			 // Create RTV.
 			//m_d3ddevice->CreateRenderTargetView(m_renderTargeto.Get(), nullptr, rtvHandle);
 
-			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle;// (m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
+			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle{};// (m_srvHeap->GetCPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
 			//CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU;// (m_srvHeap->GetGPUDescriptorHandleForHeapStart(), 2, m_cbvSrvDescriptorSize);
 			m_srvHeap.GetAvailableHandles(cbvSrvHandle, m_renderTargetoSRVHandleGPU);
 			// Create SRV.
@@ -495,33 +496,44 @@ public:
 	virtual void update(float dt)
 	{
 		float m_aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-		XMFLOAT3 lightpos(0.8, 1.0, 0.8);
-		XMFLOAT3 camerapos(0.0, 0.5, 1.5);
-		XMFLOAT3 lookatpoint(0.0, 0.0, 0.0);
-		XMVECTOR cameradir = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&lookatpoint), XMLoadFloat3(&camerapos)));
+		glm::vec3 lightpos(0.8, 1.0, 0.8);
+		glm::vec3 camerapos(0.0, 0.5, 1.5);
+		glm::vec3 lookatpoint(0.0, 0.0, 0.0);
+		//XMVECTOR cameradir = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&lookatpoint), XMLoadFloat3(&camerapos)));
 
 		// XMFLOAT3 cameradir = XMFLOAT3(0.0,0.0,0.0) - camerapos;//(0.0,0.0,-1.0);
-		XMFLOAT3 cameraup(0.0, 1.0, 0.0); 
-		XMMATRIX myviewmat = XMMatrixLookToRH(XMLoadFloat3(&camerapos), cameradir, XMLoadFloat3(&cameraup));
-		XMMATRIX projmat = XMMatrixPerspectiveFovRH(0.8f, m_aspectRatio, 0.1f, 300.0f);
-		cameradir = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&lookatpoint), XMLoadFloat3(&lightpos)));
-		XMMATRIX lightviewmat = XMMatrixLookToRH(XMLoadFloat3(&lightpos), cameradir, XMLoadFloat3(&cameraup));
+		//glm::vec3 cameraup(0.0, 1.0, 0.0);
+		//XMMATRIX myviewmat = XMMatrixLookToRH(XMLoadFloat3(&camerapos), cameradir, XMLoadFloat3(&cameraup));
+		//XMMATRIX projmat = XMMatrixPerspectiveFovRH(0.8f, m_aspectRatio, 0.1f, 300.0f);
+		//cameradir = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&lookatpoint), XMLoadFloat3(&lightpos)));
+		//XMMATRIX lightviewmat = XMMatrixLookToRH(XMLoadFloat3(&lightpos), cameradir, XMLoadFloat3(&cameraup));
 
+		//glm::mat4x4 myvm = camera.GetViewMatrix();
+		//myvm = glm::transpose(myvm);
+		//auto xmMatrix = XMFLOAT4X4(&myvm[0][0]);
+
+		//XMStoreFloat4x4(&m_constantBufferData.mp, XMMatrixTranspose(projmat));
+		//XMStoreFloat4x4(&m_constantBufferData.mv, XMMatrixTranspose(myviewmat));
+		//XMStoreFloat4x4(&m_constantBufferData.mlv, XMMatrixTranspose(lightviewmat));
+
+		//m_constantBufferData.mv = xmMatrix;
+
+		////   m_constantBufferData2.scale = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		////   m_constantBufferData2.offset = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+		//XMStoreFloat4x4(&m_constantBufferData2.mp, XMMatrixTranspose(projmat));
+		//XMStoreFloat4x4(&m_constantBufferData2.mv, XMMatrixTranspose(lightviewmat));
+		//XMStoreFloat4x4(&m_constantBufferData.mvp, XMMatrixTranspose(XMMatrixTranslation(offset, 0.0, 0.0)));
+
+		glm::mat4 depthProjectionMatrix = glm::perspective(0.8f, 1.0f, 0.1f, 300.0f);
+		glm::mat4 depthViewMatrix = glm::lookAt(lightpos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
 		glm::mat4x4 myvm = camera.GetViewMatrix();
 		myvm = glm::transpose(myvm);
-		auto xmMatrix = XMFLOAT4X4(&myvm[0][0]);
 
-		XMStoreFloat4x4(&m_constantBufferData.mp, XMMatrixTranspose(projmat));
-		XMStoreFloat4x4(&m_constantBufferData.mv, XMMatrixTranspose(myviewmat));
-		XMStoreFloat4x4(&m_constantBufferData.mlv, XMMatrixTranspose(lightviewmat));
-
-		m_constantBufferData.mv = xmMatrix;
-
-		//   m_constantBufferData2.scale = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		//   m_constantBufferData2.offset = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-		XMStoreFloat4x4(&m_constantBufferData2.mp, XMMatrixTranspose(projmat));
-		XMStoreFloat4x4(&m_constantBufferData2.mv, XMMatrixTranspose(lightviewmat));
-		//XMStoreFloat4x4(&m_constantBufferData.mvp, XMMatrixTranspose(XMMatrixTranslation(offset, 0.0, 0.0)));
+		m_constantBufferData.mp = glm::transpose(depthProjectionMatrix);
+		m_constantBufferData.mv = myvm;
+		m_constantBufferData.mlv = glm::transpose(depthViewMatrix);
+		m_constantBufferData2.mp = m_constantBufferData.mp;
+		m_constantBufferData2.mv = m_constantBufferData.mlv;
 
 		const float translationSpeed = 0.005f;
 		const float offsetBounds = 1.25f;

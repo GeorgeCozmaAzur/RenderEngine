@@ -164,13 +164,13 @@ namespace engine
         //}
         void D3D12Mesh::Create(ID3D12Device* device, MeshData* data, VertexLayout* vlayout, ID3D12GraphicsCommandList* commandList)
         {
-            const UINT vertexBufferSize = data->m_vertexCount * vlayout->GetVertexSize(0);
+           /* const UINT vertexBufferSize = data->m_vertexCount * vlayout->GetVertexSize(0);
             m_vertexBuffer.CreateGPUVisible(device, commandList, vertexBufferSize, data->m_vertices, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             m_vertexBuffer.CreateView(vlayout->GetVertexSize(0));
 
             const UINT indexBufferSize = data->m_indexCount * sizeof(UINT);
             m_indexBuffer.CreateGPUVisible(device, commandList, indexBufferSize, data->m_indices, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-            m_indexBuffer.CreateView();
+            m_indexBuffer.CreateView();*/
         }
 
         void D3D12Mesh::FreeRamData()

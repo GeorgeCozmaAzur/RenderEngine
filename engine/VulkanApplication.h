@@ -137,6 +137,8 @@ public:
 	// all command buffers that may reference this
 	virtual void BuildCommandBuffers();
 
+	virtual void SubmitOnQueue(class render::CommandBuffer* commandBuffer);
+
 	/** @brief (Virtual) Called after the physical device features have been read, can be used to set features to enable on the device */
 	virtual void GetEnabledFeatures();
 

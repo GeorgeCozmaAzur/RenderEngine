@@ -19,6 +19,7 @@ namespace engine
 		{
 		protected:
 			std::vector<Buffer*> m_buffers;
+			std::vector<Buffer*> m_loadStaggingBuffers;
 			std::vector<Texture*> m_textures;
 			std::vector<Mesh*> m_meshes;
 			std::vector<DescriptorSetLayout*> m_descriptorSetLayouts;
@@ -50,6 +51,8 @@ namespace engine
 			virtual CommandBuffer* GetCommandBuffer() = 0;
 
 			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer) = 0;
+
+			void FreeLoadStaggingBuffers();
 		};
 	}
 }

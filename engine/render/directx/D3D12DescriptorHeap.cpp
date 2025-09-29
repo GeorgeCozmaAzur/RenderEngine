@@ -1,4 +1,5 @@
 #include "D3D12DescriptorHeap.h"
+#include "D3D12CommandBuffer.h"
 #include "DXSampleHelper.h"
 #include <numeric>
 #include <algorithm>
@@ -43,6 +44,13 @@ namespace engine
 			cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_heap->GetCPUDescriptorHandleForHeapStart(), m_usedDescriptors, m_descriptorSize);
 			gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_heap->GetGPUDescriptorHandleForHeapStart(), m_usedDescriptors, m_descriptorSize);
 			m_usedDescriptors++;
+		}
+
+		void D3D12DescriptorHeap::Draw(render::CommandBuffer* commandBuffer)
+		{
+			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			ID3D12DescriptorHeap* ppHeaps[] = { m_heap.Get() };
+			d3dcommandBuffer->m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 		}
 	}
 }

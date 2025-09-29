@@ -6,14 +6,7 @@
 #include <vector>
 
 #include "D3D12Application.h"
-//#include "D3D12Texture.h"
 #include "Mesh.h"
-#include "render/directx/D3D12Pipeline.h"
-#include "render/directx/D3D12Texture.h"
-#include "render/directx/D3D12DescriptorHeap.h"
-#include "render/directx/D3D12DescriptorTable.h"
-#include "render/directx/D3D12Buffer.h"
-#include "render/directx/D3D12RenderPass.h"
 #include "render/GraphicsDevice.h"
 #include "DXSampleHelper.h"
 #include <assimp/Importer.hpp> 
@@ -54,7 +47,7 @@ public:
 
 	//ComPtr<ID3D12Resource> m_renderTargeto;
 	render::Texture* m_renderTargeto;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE m_renderTargetoSRVHandleGPU;
+	//CD3DX12_GPU_DESCRIPTOR_HANDLE m_renderTargetoSRVHandleGPU;
 	//ComPtr<ID3D12DescriptorHeap> m_rtvoHeap;
 	//ComPtr<ID3D12DescriptorHeap> m_dsvoHeap;
 	//ComPtr<ID3D12DescriptorHeap> m_srvHeap;
@@ -91,7 +84,7 @@ public:
 	render::DescriptorSet* modeltable;
 
 	//void* m_pCbvDataBegin;
-	UINT8* m_pCbvDataBeginOffscreen;
+	//UINT8* m_pCbvDataBeginOffscreen;
 
 	render::VertexLayout vertexLayout = render::VertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
@@ -195,7 +188,7 @@ public:
 				mesh->m_indices = new uint32_t[mesh->m_indexCount];
 				memcpy(mesh->m_vertices, vertices.data(), mesh->m_verticesSize);
 				memcpy(mesh->m_indices, modelindices.data(), mesh->m_indexCount * sizeof(uint32_t));
-				
+				meshes.push_back(mesh);
 			}
 		}
 		return meshes;
@@ -456,8 +449,8 @@ public:
 		m_texture1 = m_device->GetTexture(&tdata, m_srvHeap, m_commandBuffer);
 
 		planetable = m_device->GetDescriptorSet(&pdsl, { m_constantBuffer }, { m_texture , m_renderTargeto });
-		modeltable = m_device->GetDescriptorSet(&pdsl, { m_constantBuffer }, { m_texture });
-		modeltableoffscreen = m_device->GetDescriptorSet(&pdsl, { m_constantBufferOffscreen }, {  });
+		modeltable = m_device->GetDescriptorSet(&mdsl, { m_constantBuffer }, { m_texture });
+		modeltableoffscreen = m_device->GetDescriptorSet(&odsl, { m_constantBufferOffscreen }, {  });
 
 		//planetable.Create({ {m_texture.m_GPUHandle,0}, {m_renderTargetoSRVHandleGPU,1},{m_constantBuffer.m_GPUHandle,2} });
 		//planetable.Create(&pdsl, { m_constantBuffer.m_GPUHandle }, { m_texture.m_GPUHandle, m_renderTargetoSRVHandleGPU });
@@ -482,6 +475,8 @@ public:
 		//m_texture1.FreeRamData();
 		//geometry.FreeRamData();
 		//planegeometry.FreeRamData();
+
+		m_device->FreeLoadStaggingBuffers();
 
 		for (auto md : meshdatas)
 		{
@@ -523,9 +518,11 @@ public:
 		//m_commandList->SetGraphicsRootSignature(pipelineOffscreen.m_rootSignature.Get());
 		pipelineOffscreen->Draw(m_commandBuffer);
 
-		D3D12DescriptorHeap* dHeap = dynamic_cast<D3D12DescriptorHeap*>(m_srvHeap);
+		/*D3D12DescriptorHeap* dHeap = dynamic_cast<D3D12DescriptorHeap*>(m_srvHeap);
 		ID3D12DescriptorHeap* ppHeaps[] = { dHeap->m_heap.Get() };
-		m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+		m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);*/
+
+		m_srvHeap->Draw(m_commandBuffer);
 
 		offscreenPass->Begin(m_commandBuffer);
 
@@ -650,8 +647,8 @@ public:
 		glm::vec3 lookatpoint(0.0, 0.0, 0.0);
 		//XMVECTOR cameradir = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&lookatpoint), XMLoadFloat3(&camerapos)));
 
-		//// XMFLOAT3 cameradir = XMFLOAT3(0.0,0.0,0.0) - camerapos;//(0.0,0.0,-1.0);
-		//XMFLOAT3 cameraup(0.0, 1.0, 0.0); 
+		// XMFLOAT3 cameradir = XMFLOAT3(0.0,0.0,0.0) - camerapos;//(0.0,0.0,-1.0);
+		//glm::vec3 cameraup(0.0, 1.0, 0.0);
 		//XMMATRIX myviewmat = XMMatrixLookToRH(XMLoadFloat3(&camerapos), cameradir, XMLoadFloat3(&cameraup));
 		//XMMATRIX projmat = XMMatrixPerspectiveFovRH(0.8f, m_aspectRatio, 0.1f, 300.0f);
 		//cameradir = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&lookatpoint), XMLoadFloat3(&lightpos)));
@@ -672,6 +669,17 @@ public:
 		//XMStoreFloat4x4(&m_constantBufferData2.mp, XMMatrixTranspose(projmat));
 		//XMStoreFloat4x4(&m_constantBufferData2.mv, XMMatrixTranspose(lightviewmat));
 		//XMStoreFloat4x4(&m_constantBufferData.mvp, XMMatrixTranspose(XMMatrixTranslation(offset, 0.0, 0.0)));
+
+		glm::mat4 depthProjectionMatrix = glm::perspective(0.8f, 1.0f, 0.1f, 300.0f);
+		glm::mat4 depthViewMatrix = glm::lookAt(lightpos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+		glm::mat4x4 myvm = camera.GetViewMatrix();
+		myvm = glm::transpose(myvm);
+
+		m_constantBufferData.mp = glm::transpose(depthProjectionMatrix);
+		m_constantBufferData.mv = myvm;
+		m_constantBufferData.mlv = glm::transpose(depthViewMatrix);
+		m_constantBufferData2.mp = m_constantBufferData.mp;
+		m_constantBufferData2.mv = m_constantBufferData.mlv;
 
 		const float translationSpeed = 0.005f;
 		const float offsetBounds = 1.25f;

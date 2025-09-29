@@ -18,9 +18,12 @@ namespace engine
 		{
 		protected:
 			Microsoft::WRL::ComPtr<ID3D12Resource> m_buffer;
-			Microsoft::WRL::ComPtr<ID3D12Resource> m_stagingBuffer;
+			//Microsoft::WRL::ComPtr<ID3D12Resource> m_stagingBuffer;
 		public:
-			void CreateGPUVisible(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState);
+			~D3D12Buffer() { m_buffer.Reset(); }
+			ID3D12Resource* GetD3DBuffer() { return m_buffer.Get(); }
+			void Create(ID3D12Device* device, size_t size, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES finalState);
+			void CreateGPUVisible(ID3D12Device* device, ID3D12Resource* staggingBuffer, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState);
 			void FreeStagingBuffer();
 		};
 

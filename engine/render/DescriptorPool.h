@@ -20,6 +20,7 @@ namespace engine
 
 		public:
 			DescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets) : m_poolSizes(poolSizes), m_maxSets(maxSets) {}
+			virtual void Draw(class CommandBuffer* commandBuffer) {}
 			virtual ~DescriptorPool() = default;
 		};
 	}

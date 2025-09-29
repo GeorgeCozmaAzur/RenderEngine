@@ -347,6 +347,11 @@ void VulkanApplication::MouseMoved(double x, double y, bool & handled) {}
 
 void VulkanApplication::BuildCommandBuffers() {}
 
+void VulkanApplication::SubmitOnQueue(class render::CommandBuffer* commandBuffer)
+{
+	//TODO make me
+}
+
 
 void VulkanApplication::GetEnabledFeatures()
 {

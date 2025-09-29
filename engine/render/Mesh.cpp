@@ -7,9 +7,9 @@ namespace engine
 	{
 		MeshData::~MeshData()
 		{
-			if (!m_vertices)
+			if (m_vertices)
 				delete[]m_vertices;
-			if (!m_indices)
+			if (m_indices)
 				delete[]m_indices;
 		}
 	}

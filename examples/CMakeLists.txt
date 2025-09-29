@@ -51,6 +51,7 @@ endfunction(buildExamples)
 
 set(EXAMPLES
 	d3dexp
+	d3dexpgen
 	deferred
 	deferredlights
 	dfs
