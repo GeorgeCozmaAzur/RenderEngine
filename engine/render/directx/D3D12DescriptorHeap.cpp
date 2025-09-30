@@ -39,6 +39,12 @@ namespace engine
 			m_usedDescriptors = 0;
 		}
 
+		void D3D12DescriptorHeap::GetAvailableCPUHandle(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle)
+		{
+			cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_heap->GetCPUDescriptorHandleForHeapStart(), m_usedDescriptors, m_descriptorSize);
+			m_usedDescriptors++;
+		}
+
 		void D3D12DescriptorHeap::GetAvailableHandles(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
 		{
 			cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_heap->GetCPUDescriptorHandleForHeapStart(), m_usedDescriptors, m_descriptorSize);

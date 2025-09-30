@@ -25,6 +25,7 @@ namespace engine
 			D3D12DescriptorHeap(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets) : DescriptorPool(poolSizes, maxSets) {};
 
 			void Create(Microsoft::WRL::ComPtr<ID3D12Device> device);
+			void GetAvailableCPUHandle(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle);
 			void GetAvailableHandles(CD3DX12_CPU_DESCRIPTOR_HANDLE &cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &gpuHandle);
 
 			virtual void Draw(class render::CommandBuffer* commandBuffer);

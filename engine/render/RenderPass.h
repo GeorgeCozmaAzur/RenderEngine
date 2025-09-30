@@ -8,8 +8,9 @@ namespace engine
 		class RenderPass
 		{
 		public:
-			virtual void Begin(CommandBuffer *commandBuffer) = 0;
-			virtual void End(CommandBuffer *commandBuffer) = 0;
+			virtual ~RenderPass() {};
+			virtual void Begin(CommandBuffer *commandBuffer, uint32_t frameBufferIndex = 0) = 0;
+			virtual void End(CommandBuffer *commandBuffer, uint32_t frameBufferIndex = 0) = 0;
 		};
 	}
 }

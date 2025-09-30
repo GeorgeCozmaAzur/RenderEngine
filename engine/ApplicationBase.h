@@ -43,6 +43,7 @@ protected:
 
 	render::GraphicsDevice* m_device = nullptr;
 	render::CommandBuffer* m_commandBuffer = nullptr;
+	render::RenderPass* m_mainRenderPass = nullptr;
 
 	struct
 	{

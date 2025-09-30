@@ -48,6 +48,7 @@ namespace engine
 		class Pipeline
 		{
 		public:
+			virtual ~Pipeline() {}
 			virtual void Draw(class CommandBuffer* commandBuffer) = 0;
 		};
 	}

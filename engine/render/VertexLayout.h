@@ -31,6 +31,11 @@ namespace engine
 
 			}
 
+			virtual ~VertexLayout()
+			{
+
+			}
+
 			VertexLayout(std::initializer_list<Component> vComponents, std::initializer_list<Component> iComponents)
 			{
 				m_components.push_back(std::move(vComponents));

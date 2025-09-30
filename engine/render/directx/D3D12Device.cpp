@@ -60,11 +60,10 @@ namespace engine
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle{};
 			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU{};
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle{};
-			CD3DX12_GPU_DESCRIPTOR_HANDLE rtvGPUHandle{};
 			if(descHeap)
 			descHeap->GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
 			D3D12DescriptorHeap* rtvHeap = dynamic_cast<D3D12DescriptorHeap*>(rtvDescriptorPool);
-			rtvHeap->GetAvailableHandles(rtvHandle, rtvGPUHandle);
+			rtvHeap->GetAvailableCPUHandle(rtvHandle);
 			texture->CreateDescriptor(m_device.Get(), cbvSrvHandle, cbvSrvHandleGPU, rtvHandle);
 
 			m_textures.push_back(texture);
@@ -108,7 +107,7 @@ namespace engine
 		{
 			D3D12RenderPass* pass = new D3D12RenderPass();
 			D3D12RenderTarget* colorRT = dynamic_cast<D3D12RenderTarget*>(colorTexture);
-			pass->Create(width, height, colorRT->m_CPURTVHandle, dynamic_cast<D3D12RenderTarget*>(depthTexture)->m_CPURTVHandle, colorRT->m_texture.Get());
+			pass->Create(width, height, { { colorRT->m_CPURTVHandle, dynamic_cast<D3D12RenderTarget*>(depthTexture)->m_CPURTVHandle, colorRT->m_texture.Get() } });
 			m_renderPasses.push_back(pass);
 			return pass;
 		}

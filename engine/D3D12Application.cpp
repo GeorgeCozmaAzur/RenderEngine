@@ -1,5 +1,6 @@
 #include "D3D12Application.h"
 #include "D3D12CommandBuffer.h"
+#include "D3D12RenderPass.h"
 #include "render/directx/d3dx12.h"
 #include "D3D12Device.h"
 
@@ -182,6 +183,7 @@ bool D3D12Application::InitAPI()
 		ThrowIfFailed(m_d3ddevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
 	}
 
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> frameBuffersHandles;
 	// Create frame resources.
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
@@ -191,6 +193,7 @@ bool D3D12Application::InitAPI()
 		{
 			ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
 			m_d3ddevice->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
+			frameBuffersHandles.push_back(rtvHandle);
 			rtvHandle.Offset(1, m_rtvDescriptorSize);
 		}
 	}
@@ -219,6 +222,18 @@ bool D3D12Application::InitAPI()
 
 		m_d3ddevice->CreateDepthStencilView(m_depthStencil.Get(), &depthStencilDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 	}
+
+	D3D12RenderPass* pass = new D3D12RenderPass();
+	std::vector<FrameBufferObject> frameBuffers;
+	for (UINT n = 0; n < FrameCount; n++)
+	{
+		FrameBufferObject fb = { frameBuffersHandles[n], CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvHeap->GetCPUDescriptorHandleForHeapStart()), m_renderTargets[n].Get() };
+		frameBuffers.push_back(fb);
+	}
+			//D3D12RenderTarget* colorRT = dynamic_cast<D3D12RenderTarget*>(colorTexture);
+	pass->Create(width, height, frameBuffers, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+			//m_renderPasses.push_back(pass);
+	m_mainRenderPass = pass;
 
 	//ThrowIfFailed(m_d3ddevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 	//ThrowIfFailed(m_d3ddevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
@@ -267,6 +282,7 @@ void D3D12Application::WaitForDevice()
 	/*if (device != VK_NULL_HANDLE) {
 		vkDeviceWaitIdle(device);
 	}*/
+	WaitForPreviousFrame();
 }
 
 void D3D12Application::UpdateOverlay()
@@ -491,6 +507,7 @@ void D3D12Application::WindowResized()
 
 D3D12Application::~D3D12Application()
 {
+	delete m_mainRenderPass;//TODO the device should do that
 	delete m_device;
 	// Clean up Vulkan resources
 	/*swapChain.CleanUp();

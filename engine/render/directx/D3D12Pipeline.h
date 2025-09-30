@@ -16,6 +16,7 @@ namespace engine
 		class D3D12Pipeline : public Pipeline
 		{
 		public:
+			//~D3D12Pipeline() { m_rootSignature.Reset(); m_pipelineState.Reset(); }
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
 			Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
 

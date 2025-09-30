@@ -24,6 +24,7 @@ namespace engine
 		{
 			VertexLayout* m_vlayout = nullptr;
 		public:
+			virtual ~Mesh() {}
 			virtual void Draw(CommandBuffer *commandBuffer) = 0;
 		};
 	}
