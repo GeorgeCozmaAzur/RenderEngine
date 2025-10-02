@@ -1,5 +1,6 @@
 #pragma once
 #include <VulkanTools.h>
+#include <RenderPass.h>
 
 namespace engine
 {
@@ -27,7 +28,7 @@ namespace engine
 			std::vector<uint32_t> outputAttachmanets;
 		};
 
-		class VulkanRenderPass {
+		class VulkanRenderPass : public RenderPass {
 
 			VkDevice _device = VK_NULL_HANDLE;
 			std::vector <VkImageLayout> m_image_layouts;
@@ -53,6 +54,9 @@ namespace engine
 			void End(VkCommandBuffer command_buffer);
 			void SetClearColor(VkClearColorValue value, int attachment);
 			void Destroy();
+
+			virtual void Begin(CommandBuffer* commandBuffer, uint32_t frameBufferIndex = 0);
+			virtual void End(CommandBuffer* commandBuffer, uint32_t frameBufferIndex = 0);
 		};
 	}
 }

@@ -6,6 +6,8 @@ namespace engine
 	{
 		GraphicsDevice::~GraphicsDevice()
 		{
+            for (auto layout : m_vertexLayouts)
+                delete layout;
             for (auto layout : m_descriptorSetLayouts)
                 delete layout;
             for (auto desc : m_descriptorSets)

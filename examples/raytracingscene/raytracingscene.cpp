@@ -85,7 +85,7 @@ public:
 
 	engine::scene::SimpleModelRT scene;
 
-	render::VertexLayout vertexLayoutRT = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayoutRT = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV,

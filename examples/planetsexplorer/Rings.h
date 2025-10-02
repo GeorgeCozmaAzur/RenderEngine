@@ -15,7 +15,7 @@ namespace engine
 			render::VulkanBuffer* uniformBufferVS = nullptr;
 
 		public:
-			void Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<VkDescriptorImageInfo*> texturesDescriptors
+			void Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VulkanVertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<VkDescriptorImageInfo*> texturesDescriptors
 				, std::string vertexShaderFilename
 				, std::string fragmentShaderFilename
 				, VkRenderPass renderPass

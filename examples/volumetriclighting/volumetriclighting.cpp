@@ -131,7 +131,7 @@ public:
 		render::Texture2DData data;
 		data.LoadFromFiles(textureBlueNoiseFilenames, render::GfxFormat::R8G8B8A8_UNORM);
 		textureBlueNoise = vulkanDevice->GetTexture(&data, queue);
-		data.Destroy();
+		//data.Destroy();
 
 		computeUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(uboCompute));
 		VK_CHECK_RESULT(computeUniformBuffer->Map());
@@ -201,7 +201,7 @@ public:
 		render::Texture2DData data;
 		data.LoadFromFile(engine::tools::getAssetPath() + "textures/vulkan_11_rgba.ktx", render::GfxFormat::R8G8B8A8_UNORM);
 		textureColorMap = vulkanDevice->GetTexture(&data, queue, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-		data.Destroy();
+		//data.Destroy();
 
 		VkFormatProperties formatProperties;
 		vkGetPhysicalDeviceFormatProperties(vulkanDevice->physicalDevice, VK_FORMAT_R16G16B16A16_SFLOAT, &formatProperties);

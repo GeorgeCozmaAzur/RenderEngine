@@ -1,5 +1,6 @@
 #pragma once
 #include <VulkanTools.h>
+#include <DescriptorSet.h>
 #include <vector>
 
 namespace engine
@@ -10,7 +11,7 @@ namespace engine
 		//make all uniforms not own
 		//do we need to add multiple buffers
 		//add desc per swapchain image
-		class VulkanDescriptorSet
+		class VulkanDescriptorSet : public DescriptorSet
 		{
 			VkDevice _device = VK_NULL_HANDLE;
 			VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
@@ -36,6 +37,7 @@ namespace engine
 			void AddBufferDescriptor(VkDescriptorBufferInfo* desc) { _BuffersDescriptors.push_back(desc); };
 			void AddBufferDescriptors(std::vector<VkDescriptorBufferInfo*> inputArray) { _BuffersDescriptors.insert(_BuffersDescriptors.end(), inputArray.begin(), inputArray.end()); };
 
+			virtual void Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline = nullptr);
 		};
 	}
 }

@@ -1,5 +1,8 @@
 #include "VulkanDevice.h"
 #include "VulkanTools.h"
+#include "VulkanDescriptorPool.h"
+#include "VulkanMesh.h"
+#include "VulkanCommandBuffer.h"
 #include <set>
 
 namespace engine
@@ -293,7 +296,7 @@ namespace engine
 
         void VulkanDevice::DestroyBuffer(VulkanBuffer* buffer)
         {
-            std::vector<VulkanBuffer*>::iterator it;
+            std::vector<Buffer*>::iterator it;
             it = find(m_buffers.begin(), m_buffers.end(), buffer);
             if (it != m_buffers.end())
             {
@@ -413,7 +416,7 @@ namespace engine
 
         void VulkanDevice::DestroyTexture(VulkanTexture* texture)
         {
-            std::vector<VulkanTexture*>::iterator it;
+            std::vector<Texture*>::iterator it;
             for (it = m_textures.begin(); it != m_textures.end(); ++it)
             {
                 if (*it == texture)
@@ -503,9 +506,14 @@ namespace engine
 
             VkDescriptorPool pool;
 
+            VulkanDescriptorPool* dpool = new VulkanDescriptorPool({}, maxSets);//TODO  a lot
+
             VK_CHECK_RESULT(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, nullptr, &pool));
 
-            m_descriptorPools.push_back(pool);
+            dpool->m_vkPool = pool;
+            dpool->_device = logicalDevice;
+
+            m_descriptorPools.push_back(dpool);
 
             return pool;
         }
@@ -626,7 +634,7 @@ namespace engine
         {
             VkCommandPool commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
 
-            VkCommandBufferAllocateInfo cmdBufAllocateInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, level, 1 };// = commandBufferAllocateInfo(commandPool, level, 1);
+            VkCommandBufferAllocateInfo cmdBufAllocateInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, level, 1 };
 
             VkCommandBuffer cmdBuffer;
             VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &cmdBuffer));
@@ -770,10 +778,128 @@ namespace engine
             }
         }
 
+        Buffer* VulkanDevice::GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool)
+        {
+            VulkanBuffer* buffer = GetUniformBuffer(size,true,copyQueue,data);
+
+            //m_buffers.push_back(buffer);
+            return buffer;
+        }
+
+        Texture* VulkanDevice::GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer)
+        {
+            VulkanTexture* texture = GetTexture(data, copyQueue);
+           // m_textures.push_back(texture);
+            return texture;
+        }
+
+        Texture* VulkanDevice::GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer)
+        {
+            Texture* texture = GetColorRenderTarget(width, height, ToVkFormat(format));
+            //m_textures.push_back(texture);
+            return texture;
+        }
+
+        Texture* VulkanDevice::GetDepthRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool useInShaders, bool withStencil)
+        {
+            Texture* texture = GetDepthRenderTarget(width, height, useInShaders, VK_IMAGE_ASPECT_DEPTH_BIT, withStencil);
+           // m_textures.push_back(texture);
+            return texture;
+        }
+
+        DescriptorPool* VulkanDevice::GetDescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets)
+        {
+            VulkanDescriptorPool* pool = new VulkanDescriptorPool(poolSizes, maxSets);
+            pool->Create(logicalDevice);
+            m_descriptorPools.push_back(pool);
+            return pool;
+        }
+
+        VertexLayout* VulkanDevice::GetVertexLayout(std::initializer_list<Component> vComponents, std::initializer_list<Component> iComponents)
+        {
+            VulkanVertexLayout* vlayout = new VulkanVertexLayout(vComponents, iComponents);
+            m_vertexLayouts.push_back(vlayout);
+            return vlayout;
+        }
+
+        DescriptorSetLayout* VulkanDevice::GetDescriptorSetLayout(std::vector<LayoutBinding> bindings)
+        {
+            VulkanDescriptorSetLayout* layout = new VulkanDescriptorSetLayout(bindings);
+            layout->Create(logicalDevice);
+            m_descriptorSetLayouts.push_back(layout);
+            return layout;
+        }
+
+        DescriptorSet* VulkanDevice::GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures)
+        {
+            VulkanDescriptorSetLayout* vklayout = dynamic_cast<VulkanDescriptorSetLayout*>(layout);
+            VulkanDescriptorPool* vkpool = dynamic_cast<VulkanDescriptorPool*>(pool);
+            std::vector<VkDescriptorBufferInfo*> buffersDescriptors(buffers.size());
+            for (int i = 0; i < buffers.size(); i++)
+            {
+                VulkanBuffer* vkbuffer = dynamic_cast<VulkanBuffer*>(buffers[i]);
+                buffersDescriptors.push_back(&vkbuffer->m_descriptor);
+            }
+            std::vector<VkDescriptorImageInfo*> texturesDescriptors(textures.size());
+            for (int i = 0; i < textures.size(); i++)
+            {
+                VulkanTexture* vktexture = dynamic_cast<VulkanTexture*>(textures[i]);
+                texturesDescriptors.push_back(&vktexture->m_descriptor);
+            }
+            VulkanDescriptorSet* set = GetDescriptorSet(vkpool->m_vkPool, buffersDescriptors, texturesDescriptors, vklayout->m_descriptorSetLayout, vklayout->m_setLayoutBindings);
+            m_descriptorSets.push_back(set);
+            return set;
+        }
+
+        RenderPass* VulkanDevice::GetRenderPass(uint32_t width, uint32_t height, Texture* colorTexture, Texture* depthTexture)
+        {
+            VulkanTexture* vktexture = dynamic_cast<VulkanTexture*>(colorTexture);
+            VulkanTexture* vkdtexture = dynamic_cast<VulkanTexture*>(depthTexture);
+            VulkanRenderPass* scenepass = GetRenderPass({ vktexture , vkdtexture }, {});
+            VulkanFrameBuffer* fb = GetFrameBuffer(scenepass->GetRenderPass(), width, height, { vktexture->m_descriptor.imageView, vkdtexture->m_descriptor.imageView }, { { 0.0f, 0.0f, 0.0f, 1.0f } });
+            scenepass->AddFrameBuffer(fb);
+            m_renderPasses.push_back(scenepass);
+            return scenepass;
+        }
+
+        Pipeline* VulkanDevice::GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass)
+        {
+            VulkanVertexLayout* vkvlayout = dynamic_cast<VulkanVertexLayout*>(vertexLayout);
+            VulkanDescriptorSetLayout* vkdlayout = dynamic_cast<VulkanDescriptorSetLayout*>(descriptorSetlayout);
+            VulkanRenderPass* pass = dynamic_cast<VulkanRenderPass*>(renderPass);
+            VulkanPipeline* pipeline = GetPipeline(vkdlayout->m_descriptorSetLayout, vkvlayout->m_vertexInputBindings, vkvlayout->m_vertexInputAttributes, 
+                vertexFileName, fragmentFilename, pass->GetRenderPass(), pipelineCache, properties);
+            m_pipelines.push_back(pipeline);
+            return pipeline;
+        }
+
+        CommandBuffer* VulkanDevice::GetCommandBuffer()
+        {
+            VulkanCommandBuffer* vkcommandBuffer = new VulkanCommandBuffer();
+            vkcommandBuffer->_device = logicalDevice;
+            vkcommandBuffer->_commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
+            vkcommandBuffer->m_vkCommandBuffer = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
+            m_commandBuffers.push_back(vkcommandBuffer);
+            return vkcommandBuffer;
+        }
+
+        Mesh* VulkanDevice::GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commandBuffer)
+        {
+            VulkanVertexLayout* vkvlayout = dynamic_cast<VulkanVertexLayout*>(vlayout);
+            VulkanMesh* mesh = new VulkanMesh(logicalDevice, vkvlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX), vkvlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE));
+            mesh->_vertexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, data->m_indexCount * sizeof(uint32_t), data->m_indices);
+            mesh->_indexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, data->m_verticesSize * sizeof(float), data->m_vertices);
+            mesh->m_indexCount = data->m_indexCount;
+            m_meshes.push_back(mesh);
+            return mesh;
+        }
+
         VulkanDevice::~VulkanDevice()
         {
             FreeDrawCommandBuffers();
             FreeComputeCommandBuffer();
+            for (auto cmd : m_commandBuffers)
+                delete cmd;
             for (auto cmdPool : m_commandPools)
             {
                 vkDestroyCommandPool(logicalDevice, cmdPool.second, nullptr);
@@ -782,30 +908,41 @@ namespace engine
 
             for (auto layout : m_descriptorSetLayouts)
                 delete layout;
+            m_descriptorSetLayouts.clear();
             for (auto desc : m_descriptorSets)
                 delete desc;
+            m_descriptorSets.clear();
             for (auto pipeline : m_pipelines)
                 delete pipeline;
+            m_pipelines.clear();
             for (auto buffer : m_buffers)
                 delete buffer;
+            m_buffers.clear();
             for (auto buffer : m_stagingBuffers)
                 delete buffer;
+            m_stagingBuffers.clear();
             for (auto tex : m_textures)
                 delete tex;
+            m_textures.clear();
             for (auto pass : m_renderPasses)
                 delete pass;
+            m_renderPasses.clear();
             for (auto fb : m_frameBuffers)
                 delete fb;
+            m_frameBuffers.clear();
             for (auto sm : m_semaphores)
                 vkDestroySemaphore(logicalDevice, sm, nullptr);
             for (auto fence : m_fences)
                 vkDestroyFence(logicalDevice, fence, nullptr);
 
             for (auto pool : m_descriptorPools)
+                delete pool;
+            m_descriptorPools.clear();
+           /* for (auto pool : m_descriptorPools)
             if (pool != VK_NULL_HANDLE)
             {
                 vkDestroyDescriptorPool(logicalDevice, pool, nullptr);
-            }
+            }*/
 
             if (logicalDevice)
             {

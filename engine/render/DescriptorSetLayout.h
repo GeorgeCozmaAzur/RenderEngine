@@ -32,7 +32,9 @@ namespace engine
 		struct DescriptorSetLayout
 		{
 			std::vector<LayoutBinding> m_bindings;
-			DescriptorSetLayout(std::vector<LayoutBinding> bindings) : m_bindings(bindings) {};
+			DescriptorSetLayout() {}
+			DescriptorSetLayout(std::vector<LayoutBinding> bindings) : m_bindings(bindings) {}
+			virtual ~DescriptorSetLayout() {}
 		};
 	}
 }

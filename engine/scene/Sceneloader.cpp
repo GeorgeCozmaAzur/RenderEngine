@@ -255,7 +255,7 @@ namespace engine
 						render::Texture2DData data;
 						data.LoadFromFile(foldername + texfilename, texFormat);
 						render::VulkanTexture* tex = _device->GetTexture(&data, copyQueue);
-						data.Destroy();
+						//data.Destroy();
 
 						texturesDescriptors.push_back(&tex->m_descriptor);
 
@@ -266,7 +266,7 @@ namespace engine
 							render::Texture2DData data;
 							data.LoadFromFile(foldername + texfilenamen, texFormat);
 							render::VulkanTexture* tex = _device->GetTexture(&data, copyQueue);
-							data.Destroy();
+							//data.Destroy();
 							texturesDescriptors.push_back(&tex->m_descriptor);
 							for(auto tex : globalTextures)
 								texturesDescriptors.push_back(&tex->m_descriptor);

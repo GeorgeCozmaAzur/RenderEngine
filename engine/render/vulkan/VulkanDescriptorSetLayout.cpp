@@ -43,6 +43,19 @@ namespace engine
 			VK_CHECK_RESULT(vkCreateDescriptorSetLayout(_device, &descriptorLayoutCI, nullptr, &m_descriptorSetLayout));
 		}
 
+		void VulkanDescriptorSetLayout::Create(VkDevice device)
+		{
+			_device = device;
+
+			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> layoutBindigs(m_bindings.size());
+			for (int i = 0; i < m_bindings.size(); i++)
+			{
+				layoutBindigs[i].first = ToVkDescType(m_bindings[i].descriptorType);
+				layoutBindigs[i].second = ToVkShaderStage(m_bindings[i].stage);
+			}
+			Create(device, layoutBindigs);
+		}
+
 		void VulkanDescriptorSetLayout::Destroy()
 		{
 			vkDestroyDescriptorSetLayout(_device, m_descriptorSetLayout, nullptr);

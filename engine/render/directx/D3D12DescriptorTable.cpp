@@ -31,7 +31,7 @@ namespace engine
 			}
 		}
 
-		void D3D12DescriptorTable::Draw(class CommandBuffer* commandBuffer)
+		void D3D12DescriptorTable::Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline)
 		{
 			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
 			Draw(d3dcommandBuffer->m_commandList.Get());

@@ -78,5 +78,10 @@ namespace engine
 			uint32_t dynamicOffsetCount = m_dynamicAlignment > 0 ? 1 : 0;
 			vkCmdBindDescriptorSets(commandBuffer, pipelineBindpoint, pipelineLayout, 0, 1, &m_vkDescriptorSet, dynamicOffsetCount, &dynamicOffset);
 		}
+
+		void VulkanDescriptorSet::Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline)
+		{
+
+		}
 	}
 }

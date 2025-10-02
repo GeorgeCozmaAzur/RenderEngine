@@ -22,6 +22,7 @@ namespace engine
 			std::vector<Buffer*> m_loadStaggingBuffers;
 			std::vector<Texture*> m_textures;
 			std::vector<Mesh*> m_meshes;
+			std::vector<VertexLayout*> m_vertexLayouts;
 			std::vector<DescriptorSetLayout*> m_descriptorSetLayouts;
 			std::vector<DescriptorPool*> m_descriptorPools;
 			std::vector<DescriptorSet*> m_descriptorSets;
@@ -36,13 +37,17 @@ namespace engine
 
 			virtual Texture* GetTexture(TextureData* data, DescriptorPool *descriptorPool, CommandBuffer* commandBuffer) = 0;
 
-			virtual Texture* GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool depthBuffer) = 0;
+			virtual Texture* GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer) = 0;
+			
+			virtual Texture* GetDepthRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool useInShaders, bool withStencil) = 0;
 
 			virtual DescriptorPool* GetDescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets) = 0;
 
+			virtual VertexLayout* GetVertexLayout(std::initializer_list<Component> vComponents, std::initializer_list<Component> iComponents) = 0;
+
 			virtual DescriptorSetLayout* GetDescriptorSetLayout(std::vector<LayoutBinding> bindings) = 0;
 
-			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, std::vector<Buffer*> buffers, std::vector <Texture*> textures) = 0;
+			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures) = 0;
 
 			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, Texture *colorTexture, Texture *depthTexture) = 0;
 

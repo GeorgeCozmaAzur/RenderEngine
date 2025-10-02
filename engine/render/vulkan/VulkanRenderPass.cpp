@@ -260,5 +260,15 @@ namespace engine
 		{
 			m_currentClearValues[attachment].color = value;
 		}
+
+		void VulkanRenderPass::Begin(CommandBuffer* commandBuffer, uint32_t frameBufferIndex)
+		{
+
+		}
+
+		void VulkanRenderPass::End(CommandBuffer* commandBuffer, uint32_t frameBufferIndex)
+		{
+
+		}
 	}
 }

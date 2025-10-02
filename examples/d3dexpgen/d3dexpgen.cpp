@@ -35,13 +35,9 @@ public:
 
 	struct SceneConstantBuffer
 	{
-		//XMFLOAT4 offset;
-	   // float padding[60]; // Padding so the constant buffer is 256-byte aligned.
 		glm::mat4x4 mp;
 		glm::mat4x4 mv;
 		glm::mat4x4 mlv;
-		//XMFLOAT4 scale;
-		//XMFLOAT4 offset;
 		float padding[16];
 	};
 	static_assert((sizeof(SceneConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
@@ -127,9 +123,6 @@ public:
 		
 		if (pScene)
 		{
-
-			//  parts.clear();
-			//  parts.resize(pScene->mNumMeshes);
 			const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
 			// Load meshes
@@ -179,13 +172,13 @@ public:
 
 	void init()
 	{	
-
+		m_commandBuffers[currentBuffer]->Begin();
 		m_rtvoHeap = m_device->GetDescriptorPool({ {render::DescriptorType::RTV, 1} },1);
 		m_dsvoHeap = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 1} },1);
 		m_srvHeap = m_device->GetDescriptorPool({ {render::DescriptorType::IMAGE_SAMPLER, 3},{render::DescriptorType::UNIFORM_BUFFER, 3} }, 6);
 
-		m_renderTargeto = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::R8G8B8A8_UNORM, m_srvHeap, m_rtvoHeap, m_commandBuffer, false);
-		m_depthStencilOffscreen = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::D32_FLOAT, m_srvHeap, m_dsvoHeap, m_commandBuffer, true);
+		m_renderTargeto = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::R8G8B8A8_UNORM, m_srvHeap, m_rtvoHeap, m_commandBuffers[currentBuffer]);
+		m_depthStencilOffscreen = m_device->GetDepthRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::D32_FLOAT, m_srvHeap, m_dsvoHeap, m_commandBuffers[currentBuffer], false, true);
 		offscreenPass = m_device->GetRenderPass(TextureWidth, TextureHeight, m_renderTargeto, m_depthStencilOffscreen);
 
 		render::DescriptorSetLayout odsl({ {render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX} });
@@ -212,11 +205,11 @@ public:
 		std::vector<MeshData*> meshdatas2 = Load("./../data/models/plane.obj", glm::vec3(0.0, planey, 0.0), 0.1f, &vertexLayout);
 		for (auto md : meshdatas)
 		{
-			meshesmodel.push_back(m_device->GetMesh(md,&vertexLayout,m_commandBuffer));
+			meshesmodel.push_back(m_device->GetMesh(md,&vertexLayout,m_commandBuffers[currentBuffer]));
 		}
 		for (auto md : meshdatas2)
 		{
-			meshesplane.push_back(m_device->GetMesh(md, &vertexLayout, m_commandBuffer));
+			meshesplane.push_back(m_device->GetMesh(md, &vertexLayout, m_commandBuffers[currentBuffer]));
 		}
 
 		m_constantBuffer = m_device->GetUniformBuffer(sizeof(SceneConstantBuffer), &m_constantBufferData,m_srvHeap);
@@ -224,21 +217,18 @@ public:
 
 		Texture2DData tdata;
 		tdata.LoadFromFile("./../data/textures/compass.jpg", GfxFormat::R8G8B8A8_UNORM);
-		m_texture = m_device->GetTexture(&tdata, m_srvHeap, m_commandBuffer);
+		m_texture = m_device->GetTexture(&tdata, m_srvHeap, m_commandBuffers[currentBuffer]);
 		Texture2DData tdata2;
 		tdata2.LoadFromFile("./../data/textures/PlanksBare0002_1_S.jpg", GfxFormat::R8G8B8A8_UNORM);
-		m_texture1 = m_device->GetTexture(&tdata2, m_srvHeap, m_commandBuffer);
+		m_texture1 = m_device->GetTexture(&tdata2, m_srvHeap, m_commandBuffers[currentBuffer]);
 
-		planetable = m_device->GetDescriptorSet(&pdsl, { m_constantBuffer }, { m_texture , m_renderTargeto });
-		modeltable = m_device->GetDescriptorSet(&mdsl, { m_constantBuffer }, { m_texture });
-		modeltableoffscreen = m_device->GetDescriptorSet(&odsl, { m_constantBufferOffscreen }, {  });
-		
+		planetable = m_device->GetDescriptorSet(&pdsl, m_srvHeap,{ m_constantBuffer }, { m_texture , m_renderTargeto });
+		modeltable = m_device->GetDescriptorSet(&mdsl, m_srvHeap,{ m_constantBuffer }, { m_texture });
+		modeltableoffscreen = m_device->GetDescriptorSet(&odsl, m_srvHeap,{ m_constantBufferOffscreen }, {  });
 
 		// Close the command list and execute it to begin the initial GPU setup.
-		m_commandBuffer->End();
-		SubmitOnQueue(m_commandBuffer);
-		//ID3D12CommandList* ppCommandLists[] = { m_commandBuffer.m_commandList.Get() };
-		//m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+		m_commandBuffers[currentBuffer]->End();
+		SubmitOnQueue(m_commandBuffers[currentBuffer]);
 
 		WaitForDevice();
 
@@ -257,35 +247,35 @@ public:
 
 	virtual void BuildCommandBuffers()
 	{
-		m_commandBuffer->Begin();
+		m_commandBuffers[currentBuffer]->Begin();
 		
-		m_srvHeap->Draw(m_commandBuffer);
+		m_srvHeap->Draw(m_commandBuffers[currentBuffer]);
 
-		offscreenPass->Begin(m_commandBuffer);
-		pipelineOffscreen->Draw(m_commandBuffer);
-		modeltableoffscreen->Draw(m_commandBuffer);
+		offscreenPass->Begin(m_commandBuffers[currentBuffer]);
+		pipelineOffscreen->Draw(m_commandBuffers[currentBuffer]);
+		modeltableoffscreen->Draw(m_commandBuffers[currentBuffer]);
 		for (auto m : meshesmodel)
 		{
-			m->Draw(m_commandBuffer);
+			m->Draw(m_commandBuffers[currentBuffer]);
 		}
 		for (auto m : meshesplane)
 		{
-			m->Draw(m_commandBuffer);
+			m->Draw(m_commandBuffers[currentBuffer]);
 		}
-		offscreenPass->End(m_commandBuffer);
+		offscreenPass->End(m_commandBuffers[currentBuffer]);
 
-		m_mainRenderPass->Begin(m_commandBuffer, currentBuffer);
-		pipeline->Draw(m_commandBuffer);
-		modeltable->Draw(m_commandBuffer);
+		m_mainRenderPass->Begin(m_commandBuffers[currentBuffer], currentBuffer);
+		pipeline->Draw(m_commandBuffers[currentBuffer]);
+		modeltable->Draw(m_commandBuffers[currentBuffer]);
 		for (auto m : meshesmodel)
-			m->Draw(m_commandBuffer);
-		pipelineMT->Draw(m_commandBuffer);
-		planetable->Draw(m_commandBuffer);
+			m->Draw(m_commandBuffers[currentBuffer]);
+		pipelineMT->Draw(m_commandBuffers[currentBuffer]);
+		planetable->Draw(m_commandBuffers[currentBuffer]);
 		for (auto m : meshesplane)
-			m->Draw(m_commandBuffer);
-		m_mainRenderPass->End(m_commandBuffer, currentBuffer);
+			m->Draw(m_commandBuffers[currentBuffer]);
+		m_mainRenderPass->End(m_commandBuffers[currentBuffer], currentBuffer);
 
-		m_commandBuffer->End();
+		m_commandBuffers[currentBuffer]->End();
 	}
 
 	void updateUniformBuffers()
@@ -307,31 +297,7 @@ public:
 		glm::vec3 lightpos(0.8, 1.0, 0.8);
 		glm::vec3 camerapos(0.0, 0.5, 1.5);
 		glm::vec3 lookatpoint(0.0, 0.0, 0.0);
-		//XMVECTOR cameradir = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&lookatpoint), XMLoadFloat3(&camerapos)));
-
-		// XMFLOAT3 cameradir = XMFLOAT3(0.0,0.0,0.0) - camerapos;//(0.0,0.0,-1.0);
-		//glm::vec3 cameraup(0.0, 1.0, 0.0);
-		//XMMATRIX myviewmat = XMMatrixLookToRH(XMLoadFloat3(&camerapos), cameradir, XMLoadFloat3(&cameraup));
-		//XMMATRIX projmat = XMMatrixPerspectiveFovRH(0.8f, m_aspectRatio, 0.1f, 300.0f);
-		//cameradir = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&lookatpoint), XMLoadFloat3(&lightpos)));
-		//XMMATRIX lightviewmat = XMMatrixLookToRH(XMLoadFloat3(&lightpos), cameradir, XMLoadFloat3(&cameraup));
-
-		//glm::mat4x4 myvm = camera.GetViewMatrix();
-		//myvm = glm::transpose(myvm);
-		//auto xmMatrix = XMFLOAT4X4(&myvm[0][0]);
-
-		//XMStoreFloat4x4(&m_constantBufferData.mp, XMMatrixTranspose(projmat));
-		//XMStoreFloat4x4(&m_constantBufferData.mv, XMMatrixTranspose(myviewmat));
-		//XMStoreFloat4x4(&m_constantBufferData.mlv, XMMatrixTranspose(lightviewmat));
-
-		//m_constantBufferData.mv = xmMatrix;
-
-		////   m_constantBufferData2.scale = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		////   m_constantBufferData2.offset = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-		//XMStoreFloat4x4(&m_constantBufferData2.mp, XMMatrixTranspose(projmat));
-		//XMStoreFloat4x4(&m_constantBufferData2.mv, XMMatrixTranspose(lightviewmat));
-		//XMStoreFloat4x4(&m_constantBufferData.mvp, XMMatrixTranspose(XMMatrixTranslation(offset, 0.0, 0.0)));
-
+		
 		glm::mat4 depthProjectionMatrix = glm::perspective(0.8f, 1.0f, 0.1f, 300.0f);
 		glm::mat4 depthViewMatrix = glm::lookAt(lightpos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
 		glm::mat4x4 myvm = camera.GetViewMatrix();
@@ -346,20 +312,6 @@ public:
 		const float translationSpeed = 0.005f;
 		const float offsetBounds = 1.25f;
 
-		/*m_constantBufferData.offset.x += translationSpeed;
-		if (m_constantBufferData.offset.x > offsetBounds)
-		{
-			m_constantBufferData.offset.x = -offsetBounds;
-		}*/
-		/* XMFLOAT4X4 shit4;
-		 XMStoreFloat4x4(&shit4, XMMatrixTranslation(offset, 0.0, 0.0));
-
-		 XMFLOAT4 shit(0.0f,0.0f,0.0f,0.0f);
-		 FXMVECTOR KK = { 0.f, 0.f, 0.f, 0.f };;
-		 XMVECTOR kk = XMVector4Transform(KK, XMMatrixTranslation(offset, 0.0, 0.0));*/
-
-		 // = kk.x;
-		 //XMStoreFloat4(&m_constantBufferData.offset, kk);
 		offset += translationSpeed;
 		if (offset > offsetBounds)
 		{

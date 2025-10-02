@@ -155,6 +155,7 @@ bool VulkanApplication::InitAPI()
 	// and encapsulates functions related to a device
 	enabledDeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	vulkanDevice = new engine::render::VulkanDevice(instance, &enabledFeatures, enabledDeviceExtensions, swapChain.surface, deviceCreatepNextChain);
+	m_device = vulkanDevice;
 
 	device = vulkanDevice->logicalDevice;
 
@@ -164,6 +165,7 @@ bool VulkanApplication::InitAPI()
 		vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.presentFamily, 0, &presentationQueue);
 	else
 		presentationQueue = queue;
+	vulkanDevice->copyQueue = queue;
 
 	// Find a suitable depth format
 	VkBool32 validDepthFormat = vulkanDevice->GetSupportedDepthFormat(&depthFormat);

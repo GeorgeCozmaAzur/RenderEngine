@@ -51,17 +51,36 @@ namespace engine
 			return texture;
 		}
 
-		Texture* D3D12Device::GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool depthBuffer)
+		Texture* D3D12Device::GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer)
 		{
 			D3D12RenderTarget* texture = new D3D12RenderTarget();
 
-			texture->Create(m_device.Get(), width, height, format, depthBuffer ? D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL : D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, depthBuffer? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			texture->Create(m_device.Get(), width, height, format, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(srvDescriptorPool);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle{};
 			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU{};
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle{};
 			if(descHeap)
 			descHeap->GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
+			D3D12DescriptorHeap* rtvHeap = dynamic_cast<D3D12DescriptorHeap*>(rtvDescriptorPool);
+			rtvHeap->GetAvailableCPUHandle(rtvHandle);
+			texture->CreateDescriptor(m_device.Get(), cbvSrvHandle, cbvSrvHandleGPU, rtvHandle);
+
+			m_textures.push_back(texture);
+			return texture;
+		}
+
+		Texture* D3D12Device::GetDepthRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool useInShaders, bool withStencil)
+		{
+			D3D12RenderTarget* texture = new D3D12RenderTarget();
+
+			texture->Create(m_device.Get(), width, height, format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(srvDescriptorPool);
+			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle{};
+			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU{};
+			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle{};
+			if (descHeap)
+				descHeap->GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
 			D3D12DescriptorHeap* rtvHeap = dynamic_cast<D3D12DescriptorHeap*>(rtvDescriptorPool);
 			rtvHeap->GetAvailableCPUHandle(rtvHandle);
 			texture->CreateDescriptor(m_device.Get(), cbvSrvHandle, cbvSrvHandleGPU, rtvHandle);
@@ -78,6 +97,13 @@ namespace engine
 			return pool;
 		}
 
+		VertexLayout* D3D12Device::GetVertexLayout(std::initializer_list<Component> vComponents, std::initializer_list<Component> iComponents)
+		{
+			VertexLayout* vlayout = new VertexLayout(vComponents, iComponents);
+			m_vertexLayouts.push_back(vlayout);
+			return vlayout;
+		}
+
 		DescriptorSetLayout* D3D12Device::GetDescriptorSetLayout(std::vector<LayoutBinding> bindings)
 		{
 			DescriptorSetLayout* layout = new DescriptorSetLayout(bindings);
@@ -85,7 +111,7 @@ namespace engine
 			return layout;
 		}
 
-		DescriptorSet* D3D12Device::GetDescriptorSet(DescriptorSetLayout* layout, std::vector<Buffer*> buffers, std::vector <Texture*> textures)
+		DescriptorSet* D3D12Device::GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures)
 		{
 			D3D12DescriptorTable* table = new D3D12DescriptorTable();
 			std::vector <CD3DX12_GPU_DESCRIPTOR_HANDLE> bufferHandles(buffers.size());

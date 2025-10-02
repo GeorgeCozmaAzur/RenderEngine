@@ -22,6 +22,7 @@ namespace engine
 
 		class Mesh
 		{
+		protected:
 			VertexLayout* m_vlayout = nullptr;
 		public:
 			virtual ~Mesh() {}

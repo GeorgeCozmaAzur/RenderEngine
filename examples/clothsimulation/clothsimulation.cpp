@@ -31,7 +31,7 @@ public:
 	
 	scene::RenderObject clothobject;
 
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
@@ -152,7 +152,7 @@ public:
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			true);
-		data.Destroy();
+		//data.Destroy();
 	}
 
 	void SetupUniforms()

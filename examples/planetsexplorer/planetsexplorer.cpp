@@ -28,17 +28,17 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VertexLayout simpleVertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout simpleVertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION
 		}, {});
 
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
 		}, {});
 
-	render::VertexLayout vertexLayoutNM = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayoutNM = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV,
@@ -218,7 +218,7 @@ public:
 
 		data.LoadFromFile(engine::tools::getAssetPath() + "textures/blue_noise/LDR_LLL1_0.png", render::GfxFormat::R8G8B8A8_UNORM);
 		bluenoise = vulkanDevice->GetTexture(&data, queue);
-		data.Destroy();
+		//data.Destroy();
 
 		//envMap = vulkanDevice->GetTextureCubeMap(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, queue);
 

@@ -22,7 +22,7 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV,
@@ -30,7 +30,7 @@ public:
 		render::VERTEX_COMPONENT_BITANGENT
 		}, {});
 
-	render::VertexLayout simpleVertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout simpleVertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION
 		}, {});
 
@@ -141,7 +141,7 @@ public:
 
 		data.LoadFromFile(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/ao.png", render::GfxFormat::R8G8B8A8_UNORM);
 		aoMap = vulkanDevice->GetTexture(&data, queue);
-		data.Destroy();
+		//data.Destroy();
 
 		/*colorMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/albedo.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 		normalMap = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/normal.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
@@ -152,7 +152,7 @@ public:
 		render::TextureCubeMapData cdata;
 		cdata.LoadFromFile(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", render::GfxFormat::R16G16B16A16_SFLOAT);
 		envMap = vulkanDevice->GetTexture(&cdata, queue);
-		cdata.Destroy();
+		//cdata.Destroy();
 		//envMap = vulkanDevice->GetTextureCubeMap(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, queue);
 	}
 

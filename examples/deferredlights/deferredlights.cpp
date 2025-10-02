@@ -25,14 +25,14 @@ class VulkanExample : public VulkanApplication
 public:
 
 	// Vertex layout for the models
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
 		render::VERTEX_COMPONENT_NORMAL
 		}, {});
 
-	render::VertexLayout vertexLayoutInstanced = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayoutInstanced = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
@@ -197,7 +197,7 @@ public:
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
-		data.Destroy();
+		//data.Destroy();
 				
 		models_positions.resize(LIGHTS_NO);
 

@@ -6,13 +6,14 @@
 #include "render/vulkan/VulkanTexture.h"
 #include "scene/RenderObject.h"
 #include "VulkanRenderPass.h"
+#include "GraphicsDevice.h"
 #include "threadpool.hpp"
 
 namespace engine
 {
 	namespace render
 	{
-		class VulkanDevice
+		class VulkanDevice : public GraphicsDevice
 		{
 		public:
 			// Structure to store queue family indices
@@ -43,17 +44,20 @@ namespace engine
 			bool enableDebugMarkers = false;  // Indicates if debug markers extension is enabled
 			VkPipelineCache pipelineCache = VK_NULL_HANDLE;  // Pipeline cache object
 
-			std::vector<VkDescriptorPool> m_descriptorPools;  // Descriptor pools
-			std::vector<VulkanBuffer*> m_buffers;  // Graphical resources - buffers
+			//std::vector<VkDescriptorPool> m_descriptorPools;  // Descriptor pools
+			//std::vector<VulkanBuffer*> m_buffers;  // Graphical resources - buffers
 			std::vector<VulkanBuffer*> m_stagingBuffers;  // Graphical resources - staging buffers
-			std::vector<VulkanTexture*> m_textures;  // Graphical resources - textures
-			std::vector<VulkanPipeline*> m_pipelines;  // Graphical resources - pipelines
-			std::vector<VulkanDescriptorSet*> m_descriptorSets;  // Graphical resources - descriptor sets
-			std::vector<VulkanDescriptorSetLayout*> m_descriptorSetLayouts;  // Graphical resources - descriptor set layouts
-			std::vector<VulkanRenderPass*> m_renderPasses;  // Graphical resources - render passes
+			//std::vector<VulkanTexture*> m_textures;  // Graphical resources - textures
+			//std::vector<VulkanPipeline*> m_pipelines;  // Graphical resources - pipelines
+			//std::vector<VulkanDescriptorSet*> m_descriptorSets;  // Graphical resources - descriptor sets
+			//std::vector<VulkanDescriptorSetLayout*> m_descriptorSetLayouts;  // Graphical resources - descriptor set layouts
+			//std::vector<VulkanRenderPass*> m_renderPasses;  // Graphical resources - render passes
 			std::vector<VulkanFrameBuffer*> m_frameBuffers;  // Graphical resources - frame buffers
 			std::vector<VkSemaphore> m_semaphores;  // Semaphores
 			std::vector<VkFence> m_fences;  // Fences
+
+			VkQueue copyQueue;//queue used for data transfers
+			VkFence resourceLoadingFence;//fence used for loadings
 
 			// Typecast to VkDevice
 			operator VkDevice() { return logicalDevice; }
@@ -128,22 +132,6 @@ namespace engine
 			// Destroys the pipeline cache
 			void DestroyPipelineCache();
 
-			// Gets a graphics pipeline
-			/*VulkanPipeline* GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
-				std::vector<VkVertexInputBindingDescription> vertexInputBindings, std::vector<VkVertexInputAttributeDescription> vertexInputAttributes,
-				std::string vertexFile, std::string fragmentFile,
-				VkRenderPass renderPass, VkPipelineCache cache,
-				bool blendEnable = false,
-				VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-				uint32_t vertexConstantBlockSize = 0,
-				uint32_t* fConstants = nullptr,
-				uint32_t attachmentCount = 0,
-				const VkPipelineColorBlendAttachmentState* pAttachments = nullptr,
-				bool depthBias = false,
-				bool depthTestEnable = true,
-				bool depthWriteEnable = true,
-				uint32_t subpass = 0);*/
-
 			// Gets a graphics pipeline with additional properties
 			VulkanPipeline* GetPipeline(VkDescriptorSetLayout descriptorSetLayout,
 				std::vector<VkVertexInputBindingDescription> vertexInputBindings, std::vector<VkVertexInputAttributeDescription> vertexInputAttributes,
@@ -215,6 +203,30 @@ namespace engine
 
 			// Destroys a fence
 			void DestroyFence(VkFence fence);
+
+			virtual Buffer* GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool);
+
+			virtual Texture* GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer);
+
+			virtual Texture* GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer);
+			
+			virtual Texture* GetDepthRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool useInShaders, bool withStencil);
+
+			virtual DescriptorPool* GetDescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets);
+
+			virtual VertexLayout* GetVertexLayout(std::initializer_list<Component> vComponents, std::initializer_list<Component> iComponents);
+
+			virtual DescriptorSetLayout* GetDescriptorSetLayout(std::vector<LayoutBinding> bindings);
+
+			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures);
+
+			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, Texture* colorTexture, Texture* depthTexture);
+
+			virtual Pipeline* GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass);
+
+			virtual CommandBuffer* GetCommandBuffer();
+
+			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer);
 
 			// Destructor
 			~VulkanDevice();

@@ -237,7 +237,12 @@ bool D3D12Application::InitAPI()
 
 	//ThrowIfFailed(m_d3ddevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 	//ThrowIfFailed(m_d3ddevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
-	m_commandBuffer = m_device->GetCommandBuffer();
+	m_commandBuffers.resize(FrameCount);
+	for (int i = 0; i < m_commandBuffers.size(); i++)
+	{
+		m_commandBuffers[i] = m_device->GetCommandBuffer();
+	}
+	
 
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.
@@ -357,7 +362,7 @@ void D3D12Application::Render()
 	BuildCommandBuffers();
 
 	// Execute the command list.
-	ID3D12CommandList* ppCommandLists[] = { ((render::D3D12CommandBuffer*)m_commandBuffer)->m_commandList.Get() };
+	ID3D12CommandList* ppCommandLists[] = { ((render::D3D12CommandBuffer*)m_commandBuffers[currentBuffer])->m_commandList.Get()};
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Present the frame.
