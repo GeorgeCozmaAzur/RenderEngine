@@ -1,4 +1,5 @@
 #include "VulkanApplication.h"
+#include "VulkanCommandBuffer.h"
 
 VulkanApplication::VulkanApplication(bool enableValidation) : ApplicationBase(enableValidation)
 {
@@ -83,7 +84,13 @@ void VulkanApplication::CreateCommandBuffers()
 	if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
 		return;
 	// Create one command buffer for each swap chain image and reuse for rendering
-	drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+	//drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+	for (int i = 0; i < swapChain.swapChainImageViews.size(); i++)
+	{
+		render::VulkanCommandBuffer* vulkanBuffer = (render::VulkanCommandBuffer*)(vulkanDevice->GetCommandBuffer());
+		drawCommandBuffers.push_back(vulkanBuffer->m_vkCommandBuffer);
+		m_commandBuffers.push_back(vulkanBuffer);
+	}
 	allDrawCommandBuffers.push_back(drawCommandBuffers);
 }
 
@@ -116,6 +123,7 @@ void VulkanApplication::SetupFrameBuffer()
 void VulkanApplication::SetupRenderPass()
 {
 	mainRenderPass = vulkanDevice->GetRenderPass({ {swapChain.m_surfaceFormat.format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR}, {depthFormat, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL} });
+	m_mainRenderPass = mainRenderPass;
 }
 
 void VulkanApplication::CreatePipelineCache()

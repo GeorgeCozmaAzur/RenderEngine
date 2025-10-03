@@ -63,7 +63,7 @@ namespace engine
 				modelsTextures[i] = _device->GetTexture(&data, queue,
 					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);	
-				data.Destroy();
+				//data.Destroy();
 
 				if (deleteBuffer) {
 					delete[] buffer;
@@ -72,7 +72,7 @@ namespace engine
 			render::Texture2DData data;
 			data.LoadFromFile(engine::tools::getAssetPath() + "textures/white_placeholder.png", render::GfxFormat::R8G8B8A8_UNORM);
 			m_placeholder = _device->GetTexture(&data, queue);
-			data.Destroy();
+			//data.Destroy();
 			//m_placeholder = _device->GetTexture(engine::tools::getAssetPath() + "textures/white_placeholder.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 
 			modelsTexturesIds.resize(input.textures.size());

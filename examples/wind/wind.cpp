@@ -21,7 +21,7 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
@@ -122,7 +122,7 @@ public:
 
 		data.LoadFromFile(engine::tools::getAssetPath() + "textures/oak_leafs.ktx", render::GfxFormat::R8G8B8A8_UNORM);
 		leavestex = vulkanDevice->GetTexture(&data, queue);
-		data.Destroy();
+		//data.Destroy();
 		//perlinnoise = vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/PerlinExample.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 	}
 

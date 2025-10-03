@@ -1,4 +1,5 @@
 #include "VulkanPipeline.h"
+#include "VulkanCommandBuffer.h"
 #include <array>
 namespace engine
 {
@@ -182,6 +183,7 @@ namespace engine
 
 			if (properties.depthBias)
 			{
+				m_depthBias = true;
 				// Cull front faces
 				depthStencilStateCI.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 				// Enable depth bias
@@ -235,6 +237,22 @@ namespace engine
 		void VulkanPipeline::Draw(VkCommandBuffer command_buffer, VkPipelineBindPoint bindpoint)
 		{
 			vkCmdBindPipeline(command_buffer, bindpoint, m_vkPipeline);
+		}
+
+		void VulkanPipeline::Draw(CommandBuffer* commandBuffer)
+		{
+			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+
+			float depthBiasConstant = 0.5f;
+			float depthBiasSlope = 0.75f;
+			if(m_depthBias)
+			vkCmdSetDepthBias(
+				cb->m_vkCommandBuffer,
+				depthBiasConstant,
+				0.0f,
+				depthBiasSlope);
+			
+			Draw(cb->m_vkCommandBuffer);
 		}
 
 		void VulkanPipeline::CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, PipelineProperties properties)

@@ -1,4 +1,6 @@
 #include "VulkanDescriptorSet.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanPipeline.h"
 
 namespace engine
 {
@@ -81,7 +83,9 @@ namespace engine
 
 		void VulkanDescriptorSet::Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline)
 		{
-
+			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			VulkanPipeline* p = dynamic_cast<VulkanPipeline*>(pipeline);
+			Draw(cb->m_vkCommandBuffer, p->getPipelineLayout(), 0);
 		}
 	}
 }

@@ -37,7 +37,7 @@ namespace engine
 
 			VkPipelineShaderStageCreateInfo LoadShader(std::string fileName, VkShaderStageFlagBits stage);
 
-			//bool m_blendEnable = false;
+			bool m_depthBias = false;
 
 		public:
 			VulkanPipeline() {};
@@ -61,7 +61,7 @@ namespace engine
 
 			void Draw(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindpoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-			virtual void Draw(class CommandBuffer* commandBuffer) {};
+			virtual void Draw(class CommandBuffer* commandBuffer);
 
 			void CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, PipelineProperties properties);
 		};

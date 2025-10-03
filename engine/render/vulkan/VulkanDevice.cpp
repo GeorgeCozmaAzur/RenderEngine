@@ -652,28 +652,39 @@ namespace engine
 
         std::vector<VkCommandBuffer> VulkanDevice::CreatedrawCommandBuffers(uint32_t size, uint32_t queueFamilyIndex)
         {
-            VkCommandPool commandPool = GetCommandPool(queueFamilyIndex);
+            std::vector<VkCommandBuffer> newCommandBuffers(size);
+
+            for (int i = 0; i < size; i++)
+            {
+                VulkanCommandBuffer* vkcommandBuffer = new VulkanCommandBuffer();
+                vkcommandBuffer->_device = logicalDevice;
+                vkcommandBuffer->_commandPool = GetCommandPool(queueFamilyIndex);
+                vkcommandBuffer->m_vkCommandBuffer = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
+                m_commandBuffers.push_back(vkcommandBuffer);
+                newCommandBuffers[i] = vkcommandBuffer->m_vkCommandBuffer;
+            }
+            
+
+           /* VkCommandPool commandPool = GetCommandPool(queueFamilyIndex);
 
             drawCommandBuffersPoolIndex = queueFamilyIndex;
 
-            std::vector<VkCommandBuffer> newCommandBuffers(size);
-
-            VkCommandBufferAllocateInfo cmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(newCommandBuffers.size()) };// = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(drawCommandBuffers.size()));
+            VkCommandBufferAllocateInfo cmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(newCommandBuffers.size()) };
 
             VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, newCommandBuffers.data()));
 
-            drawCommandBuffers.insert(drawCommandBuffers.end(), newCommandBuffers.begin(), newCommandBuffers.end());
+            drawCommandBuffers.insert(drawCommandBuffers.end(), newCommandBuffers.begin(), newCommandBuffers.end());*/
 
             return newCommandBuffers;
         }
 
         void VulkanDevice::FreeDrawCommandBuffers()
         {
-            if (drawCommandBuffers.empty())
+            /*if (drawCommandBuffers.empty())
                 return;
             VkCommandPool commandPool = GetCommandPool(drawCommandBuffersPoolIndex);
             vkFreeCommandBuffers(logicalDevice, commandPool, static_cast<uint32_t>(drawCommandBuffers.size()), drawCommandBuffers.data());
-            drawCommandBuffers.clear();
+            drawCommandBuffers.clear();*/
         }
 
         VkCommandBuffer VulkanDevice::CreateComputeCommandBuffer(uint32_t queueFamilyIndex)
@@ -781,7 +792,7 @@ namespace engine
         Buffer* VulkanDevice::GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool)
         {
             VulkanBuffer* buffer = GetUniformBuffer(size,true,copyQueue,data);
-
+            buffer->Map();
             //m_buffers.push_back(buffer);
             return buffer;
         }
@@ -838,16 +849,16 @@ namespace engine
             for (int i = 0; i < buffers.size(); i++)
             {
                 VulkanBuffer* vkbuffer = dynamic_cast<VulkanBuffer*>(buffers[i]);
-                buffersDescriptors.push_back(&vkbuffer->m_descriptor);
+                buffersDescriptors[i] = &vkbuffer->m_descriptor;
             }
             std::vector<VkDescriptorImageInfo*> texturesDescriptors(textures.size());
             for (int i = 0; i < textures.size(); i++)
             {
                 VulkanTexture* vktexture = dynamic_cast<VulkanTexture*>(textures[i]);
-                texturesDescriptors.push_back(&vktexture->m_descriptor);
+                texturesDescriptors[i]= &vktexture->m_descriptor;
             }
             VulkanDescriptorSet* set = GetDescriptorSet(vkpool->m_vkPool, buffersDescriptors, texturesDescriptors, vklayout->m_descriptorSetLayout, vklayout->m_setLayoutBindings);
-            m_descriptorSets.push_back(set);
+            //m_descriptorSets.push_back(set);
             return set;
         }
 
@@ -858,7 +869,7 @@ namespace engine
             VulkanRenderPass* scenepass = GetRenderPass({ vktexture , vkdtexture }, {});
             VulkanFrameBuffer* fb = GetFrameBuffer(scenepass->GetRenderPass(), width, height, { vktexture->m_descriptor.imageView, vkdtexture->m_descriptor.imageView }, { { 0.0f, 0.0f, 0.0f, 1.0f } });
             scenepass->AddFrameBuffer(fb);
-            m_renderPasses.push_back(scenepass);
+            //m_renderPasses.push_back(scenepass);
             return scenepass;
         }
 
@@ -869,7 +880,7 @@ namespace engine
             VulkanRenderPass* pass = dynamic_cast<VulkanRenderPass*>(renderPass);
             VulkanPipeline* pipeline = GetPipeline(vkdlayout->m_descriptorSetLayout, vkvlayout->m_vertexInputBindings, vkvlayout->m_vertexInputAttributes, 
                 vertexFileName, fragmentFilename, pass->GetRenderPass(), pipelineCache, properties);
-            m_pipelines.push_back(pipeline);
+            //m_pipelines.push_back(pipeline);
             return pipeline;
         }
 
@@ -887,8 +898,9 @@ namespace engine
         {
             VulkanVertexLayout* vkvlayout = dynamic_cast<VulkanVertexLayout*>(vlayout);
             VulkanMesh* mesh = new VulkanMesh(logicalDevice, vkvlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX), vkvlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE));
-            mesh->_vertexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, data->m_indexCount * sizeof(uint32_t), data->m_indices);
-            mesh->_indexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, data->m_verticesSize * sizeof(float), data->m_vertices);
+            mesh->_indexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, data->m_indexCount * sizeof(uint32_t), data->m_indices);
+            VkDeviceSize vertexBufferSize = data->m_vertexCount * vlayout->GetVertexSize(0);
+            mesh->_vertexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, vertexBufferSize, data->m_vertices);
             mesh->m_indexCount = data->m_indexCount;
             m_meshes.push_back(mesh);
             return mesh;
@@ -900,6 +912,7 @@ namespace engine
             FreeComputeCommandBuffer();
             for (auto cmd : m_commandBuffers)
                 delete cmd;
+            m_commandBuffers.clear();
             for (auto cmdPool : m_commandPools)
             {
                 vkDestroyCommandPool(logicalDevice, cmdPool.second, nullptr);

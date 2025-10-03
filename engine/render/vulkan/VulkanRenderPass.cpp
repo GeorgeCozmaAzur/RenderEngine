@@ -1,4 +1,5 @@
 #include "VulkanRenderPass.h"
+#include "VulkanCommandBuffer.h"
 #include <array>
 
 namespace engine
@@ -263,12 +264,14 @@ namespace engine
 
 		void VulkanRenderPass::Begin(CommandBuffer* commandBuffer, uint32_t frameBufferIndex)
 		{
-
+			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			Begin(cb->m_vkCommandBuffer, frameBufferIndex);
 		}
 
 		void VulkanRenderPass::End(CommandBuffer* commandBuffer, uint32_t frameBufferIndex)
 		{
-
+			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			End(cb->m_vkCommandBuffer);
 		}
 	}
 }

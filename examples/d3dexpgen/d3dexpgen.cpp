@@ -69,10 +69,11 @@ public:
 	render::DescriptorSet* modeltableoffscreen;
 	render::DescriptorSet* modeltable;
 
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VertexLayout* vertexLayout = nullptr;
+		/*render::VertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV
-		}, {});
+		}, {});*/
 
 	float planey = -0.5f;
 
@@ -84,6 +85,7 @@ public:
 		title = "Render Engine First Generic";
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
+		//camera.SetFlipY(true);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		camera.SetPosition(glm::vec3(0.0f, 0.0f, -5.0f));
@@ -181,35 +183,33 @@ public:
 		m_depthStencilOffscreen = m_device->GetDepthRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::D32_FLOAT, m_srvHeap, m_dsvoHeap, m_commandBuffers[currentBuffer], false, true);
 		offscreenPass = m_device->GetRenderPass(TextureWidth, TextureHeight, m_renderTargeto, m_depthStencilOffscreen);
 
-		render::DescriptorSetLayout odsl({ {render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX} });
+		render::DescriptorSetLayout* odsl = m_device->GetDescriptorSetLayout({ {render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX} });
 
-		render::DescriptorSetLayout mdsl({ 
+		render::DescriptorSetLayout* mdsl = m_device->GetDescriptorSetLayout({
 						{render::DescriptorType::IMAGE_SAMPLER,render::ShaderStage::FRAGMENT } ,
 						{render::DescriptorType::UNIFORM_BUFFER,render::ShaderStage::VERTEX }
 			});
 
-		render::DescriptorSetLayout pdsl({
+		render::DescriptorSetLayout* pdsl = m_device->GetDescriptorSetLayout({
+						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX},
 						{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT},
-						{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT},
-						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX}
+						{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT}
 			});
 
-		render::PipelineProperties props;
-		props.depthBias = true;
-		pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainOffscreen", &vertexLayout, &odsl, props, nullptr);
-		props.depthBias = false;
-		pipeline = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMain", &vertexLayout, &mdsl, props, nullptr);
-		pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", &vertexLayout, &pdsl, props, nullptr);
+		vertexLayout = m_device->GetVertexLayout({
+		render::VERTEX_COMPONENT_POSITION,
+		render::VERTEX_COMPONENT_UV
+			}, {});
 
-		std::vector<MeshData*> meshdatas = Load("./../data/models/venus.fbx", glm::vec3(0.0, -0.5, 0.0), 0.03f, &vertexLayout);
-		std::vector<MeshData*> meshdatas2 = Load("./../data/models/plane.obj", glm::vec3(0.0, planey, 0.0), 0.1f, &vertexLayout);
+		std::vector<MeshData*> meshdatas = Load("./../data/models/venus.fbx", glm::vec3(0.0, -0.5, 0.0), 0.03f, vertexLayout);
+		std::vector<MeshData*> meshdatas2 = Load("./../data/models/plane.obj", glm::vec3(0.0, planey, 0.0), 0.1f, vertexLayout);
 		for (auto md : meshdatas)
 		{
-			meshesmodel.push_back(m_device->GetMesh(md,&vertexLayout,m_commandBuffers[currentBuffer]));
+			meshesmodel.push_back(m_device->GetMesh(md, vertexLayout,m_commandBuffers[currentBuffer]));
 		}
 		for (auto md : meshdatas2)
 		{
-			meshesplane.push_back(m_device->GetMesh(md, &vertexLayout, m_commandBuffers[currentBuffer]));
+			meshesplane.push_back(m_device->GetMesh(md, vertexLayout, m_commandBuffers[currentBuffer]));
 		}
 
 		m_constantBuffer = m_device->GetUniformBuffer(sizeof(SceneConstantBuffer), &m_constantBufferData,m_srvHeap);
@@ -222,9 +222,17 @@ public:
 		tdata2.LoadFromFile("./../data/textures/PlanksBare0002_1_S.jpg", GfxFormat::R8G8B8A8_UNORM);
 		m_texture1 = m_device->GetTexture(&tdata2, m_srvHeap, m_commandBuffers[currentBuffer]);
 
-		planetable = m_device->GetDescriptorSet(&pdsl, m_srvHeap,{ m_constantBuffer }, { m_texture , m_renderTargeto });
-		modeltable = m_device->GetDescriptorSet(&mdsl, m_srvHeap,{ m_constantBuffer }, { m_texture });
-		modeltableoffscreen = m_device->GetDescriptorSet(&odsl, m_srvHeap,{ m_constantBufferOffscreen }, {  });
+		planetable = m_device->GetDescriptorSet(pdsl, m_srvHeap,{ m_constantBuffer }, { m_texture , m_renderTargeto });
+		//modeltable = m_device->GetDescriptorSet(mdsl, m_srvHeap,{ m_constantBuffer }, { m_texture });
+		modeltableoffscreen = m_device->GetDescriptorSet(odsl, m_srvHeap,{ m_constantBufferOffscreen }, {  });
+
+		render::PipelineProperties props;
+		props.depthBias = true;
+		pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainOffscreen", vertexLayout, odsl, props, m_mainRenderPass);
+		//pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/offscreen.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/offscreenvariancecolor.frag.spv"), "PSMainOffscreen",vertexLayout, odsl, props, offscreenPass);
+		props.depthBias = false;
+		pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
+		//pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/scene.frag.spv"), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
 
 		// Close the command list and execute it to begin the initial GPU setup.
 		m_commandBuffers[currentBuffer]->End();
@@ -247,35 +255,41 @@ public:
 
 	virtual void BuildCommandBuffers()
 	{
-		m_commandBuffers[currentBuffer]->Begin();
-		
-		m_srvHeap->Draw(m_commandBuffers[currentBuffer]);
-
-		offscreenPass->Begin(m_commandBuffers[currentBuffer]);
-		pipelineOffscreen->Draw(m_commandBuffers[currentBuffer]);
-		modeltableoffscreen->Draw(m_commandBuffers[currentBuffer]);
-		for (auto m : meshesmodel)
+		/*for (int32_t i = 0; i < m_commandBuffers.size(); ++i)
 		{
-			m->Draw(m_commandBuffers[currentBuffer]);
-		}
-		for (auto m : meshesplane)
-		{
-			m->Draw(m_commandBuffers[currentBuffer]);
-		}
-		offscreenPass->End(m_commandBuffers[currentBuffer]);
+			currentBuffer = i;*/
+			m_commandBuffers[currentBuffer]->Begin();
 
-		m_mainRenderPass->Begin(m_commandBuffers[currentBuffer], currentBuffer);
-		pipeline->Draw(m_commandBuffers[currentBuffer]);
-		modeltable->Draw(m_commandBuffers[currentBuffer]);
-		for (auto m : meshesmodel)
-			m->Draw(m_commandBuffers[currentBuffer]);
-		pipelineMT->Draw(m_commandBuffers[currentBuffer]);
-		planetable->Draw(m_commandBuffers[currentBuffer]);
-		for (auto m : meshesplane)
-			m->Draw(m_commandBuffers[currentBuffer]);
-		m_mainRenderPass->End(m_commandBuffers[currentBuffer], currentBuffer);
+			m_srvHeap->Draw(m_commandBuffers[currentBuffer]);
 
-		m_commandBuffers[currentBuffer]->End();
+			offscreenPass->Begin(m_commandBuffers[currentBuffer]);
+			pipelineOffscreen->Draw(m_commandBuffers[currentBuffer]);
+			modeltableoffscreen->Draw(m_commandBuffers[currentBuffer], pipelineOffscreen);
+			for (auto m : meshesmodel)
+			{
+				m->Draw(m_commandBuffers[currentBuffer]);
+			}
+			for (auto m : meshesplane)
+			{
+				m->Draw(m_commandBuffers[currentBuffer]);
+			}
+			offscreenPass->End(m_commandBuffers[currentBuffer]);
+
+			m_mainRenderPass->Begin(m_commandBuffers[currentBuffer], currentBuffer);
+			//pipeline->Draw(m_commandBuffers[currentBuffer]);
+			//modeltable->Draw(m_commandBuffers[currentBuffer]);
+			pipelineMT->Draw(m_commandBuffers[currentBuffer]);
+			planetable->Draw(m_commandBuffers[currentBuffer], pipelineMT);
+			for (auto m : meshesmodel)
+				m->Draw(m_commandBuffers[currentBuffer]);
+
+			for (auto m : meshesplane)
+				m->Draw(m_commandBuffers[currentBuffer]);
+			m_mainRenderPass->End(m_commandBuffers[currentBuffer], currentBuffer);
+
+			m_commandBuffers[currentBuffer]->End();
+		//}
+		//currentBuffer = 0;
 	}
 
 	void updateUniformBuffers()
@@ -287,7 +301,7 @@ public:
 	{
 		init();
 		PrepareUI();
-		//BuildCommandBuffers();
+		BuildCommandBuffers();
 		prepared = true;
 	}
 	float offset = 0;
@@ -304,8 +318,11 @@ public:
 		myvm = glm::transpose(myvm);
 
 		m_constantBufferData.mp = glm::transpose(depthProjectionMatrix);
-		m_constantBufferData.mv = myvm;
+		m_constantBufferData.mv = glm::transpose(camera.GetViewMatrix());
 		m_constantBufferData.mlv = glm::transpose(depthViewMatrix);
+		/*m_constantBufferData.mp = depthProjectionMatrix;
+		m_constantBufferData.mv = camera.GetViewMatrix();
+		m_constantBufferData.mlv = depthViewMatrix;*/
 		m_constantBufferData2.mp = m_constantBufferData.mp;
 		m_constantBufferData2.mv = m_constantBufferData.mlv;
 
@@ -321,6 +338,8 @@ public:
 		m_constantBuffer->MemCopy(&m_constantBufferData, sizeof(m_constantBufferData));
 		m_constantBufferOffscreen->MemCopy(&m_constantBufferData2, sizeof(m_constantBufferData2));
 		//memcpy(m_pCbvDataBeginOffscreen, &m_constantBufferData2, sizeof(m_constantBufferData2));
+
+		//BuildCommandBuffers();
 	}
 
 	virtual void ViewChanged()

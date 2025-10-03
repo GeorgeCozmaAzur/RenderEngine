@@ -27,7 +27,7 @@ namespace engine
             VulkanMesh(VkDevice device, uint32_t vertexInputBinding, uint32_t instanceInputBinding) :
                 _device(device), m_vertexInputBinding(vertexInputBinding), m_instanceInputBinding(instanceInputBinding) {}
 
-            void Draw(VkCommandBuffer* commandBuffer);
+            void Draw(VkCommandBuffer commandBuffer);
             virtual void Draw(CommandBuffer* commandBuffer);
         };
     }
