@@ -9,7 +9,22 @@ namespace engine
 {
     namespace render
     {
-        void D3D12Pipeline::Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, DescriptorSetLayout* dlayout, PipelineProperties properties)
+        inline DXGI_FORMAT GetVertexFormat(uint32_t size)
+        {
+            switch (size)
+            {
+            case 4:     return DXGI_FORMAT_R32_FLOAT;
+
+            case 8:     return DXGI_FORMAT_R32G32_FLOAT;
+
+            case 12:    return DXGI_FORMAT_R32G32B32_FLOAT;
+
+            case 16:	
+            default:    return DXGI_FORMAT_R32G32B32A32_FLOAT;
+            }
+        }
+
+        void D3D12Pipeline::Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, VertexLayout* vlayout, DescriptorSetLayout* dlayout, PipelineProperties properties)
         {
             // Create the root signature.
             {
@@ -106,16 +121,28 @@ namespace engine
                 }
                 ThrowIfFailed(hr);
 
+                //vlayout->GetComponentSize()
+                std::vector<std::string> componentNames(vlayout->m_components[0].size());
+
+                std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs(vlayout->m_components[0].size());
+                for (int i = 0; i < inputElementDescs.size(); i++)
+                {
+                    UINT offset = i == 0 ? 0 : vlayout->GetComponentSize(vlayout->m_components[0][i-1]);
+                    componentNames[i] = vlayout->GetComponentName(vlayout->m_components[0][i]);
+                    DXGI_FORMAT format = GetVertexFormat(vlayout->GetComponentSize(vlayout->m_components[0][i]));
+                    inputElementDescs[i] = { componentNames[i].c_str(), 0, format, 0, offset, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+                }
+
                 // Define the vertex input layout.
-                D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
+              /*  D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =cdfvx f m vgc gfcvnmny bhjugtvjyv ouyvu jbbmn 
                 {
                     { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
                     { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-                };
+                };*/
 
                 // Describe and create the graphics pipeline state object (PSO).
                 D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-                psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
+                psoDesc.InputLayout = { inputElementDescs.data(), (UINT)inputElementDescs.size() };
                 psoDesc.pRootSignature = m_rootSignature.Get();
                 psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
                 psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());

@@ -27,11 +27,11 @@ public:
 	static const UINT TextureHeight = 1024;
 	static const UINT TexturePixelSize = 4;    // The number of bytes used to represent a pixel in the texture.
 
-	struct Vertex
+	/*struct Vertex
 	{
 		glm::vec3 position;
 		glm::vec2 uv;
-	};
+	};*/
 
 	struct SceneConstantBuffer
 	{
@@ -85,8 +85,8 @@ public:
 		title = "Render Engine First Generic";
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
-		//camera.SetFlipY(true);
-		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
+		camera.SetFlipY(false);
+		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 100.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		camera.SetPosition(glm::vec3(0.0f, 0.0f, -5.0f));
 	}
@@ -130,21 +130,73 @@ public:
 			// Load meshes
 			for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
 			{
-				std::vector<Vertex> vertices;
+				float verticesSize = pScene->mMeshes[i]->mNumVertices * vlayout->GetVertexSize(0) / sizeof(float);
+				//geometry->m_vertices = new float[geometry->m_verticesSize];
+
+				std::vector<float> vertices(verticesSize);
 				std::vector<UINT> modelindices;
 				const aiMesh* paiMesh = pScene->mMeshes[i];
+				int vertex_index = 0;
+				aiColor3D pColor(0.f, 0.f, 0.f);
 				for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
 				{
 					const aiVector3D* pPos = &(paiMesh->mVertices[j]);
 					const aiVector3D* pNormal = paiMesh->HasNormals() ? &(paiMesh->mNormals[j]) : &Zero3D;
 					const aiVector3D* pTexCoord = (paiMesh->HasTextureCoords(0)) ? &(paiMesh->mTextureCoords[0][j]) : &Zero3D;
-					Vertex v;
-					v.position.x = pPos->x * scale + atPosition.x;
+					const aiVector3D* pTangent = (paiMesh->HasTangentsAndBitangents()) ? &(paiMesh->mTangents[j]) : &Zero3D;
+					const aiVector3D* pBiTangent = (paiMesh->HasTangentsAndBitangents()) ? &(paiMesh->mBitangents[j]) : &Zero3D;
+
+					for (auto& component : vlayout->m_components[0])
+					{
+						switch (component) {
+						case render::VERTEX_COMPONENT_POSITION:
+							vertices[vertex_index++] = atPosition.x + pPos->x * scale;
+							vertices[vertex_index++] = atPosition.y + pPos->y * scale;
+							vertices[vertex_index++] = atPosition.z + pPos->z * scale;
+							break;
+						case render::VERTEX_COMPONENT_NORMAL:
+							vertices[vertex_index++] = pNormal->x ;
+							vertices[vertex_index++] = pNormal->y ;
+							vertices[vertex_index++] = pNormal->z ;
+							break;
+						case render::VERTEX_COMPONENT_UV:
+							vertices[vertex_index++] = pTexCoord->x ;
+							vertices[vertex_index++] = pTexCoord->y ;
+							break;
+						case render::VERTEX_COMPONENT_COLOR:
+							vertices[vertex_index++] = pColor.r;
+							vertices[vertex_index++] = pColor.g;
+							vertices[vertex_index++] = pColor.b;
+							break;
+						case render::VERTEX_COMPONENT_TANGENT:
+							vertices[vertex_index++] = pTangent->x;
+							vertices[vertex_index++] = pTangent->y;
+							vertices[vertex_index++] = pTangent->z;
+							break;
+						case render::VERTEX_COMPONENT_BITANGENT:
+							vertices[vertex_index++] = pBiTangent->x;
+							vertices[vertex_index++] = pBiTangent->y;
+							vertices[vertex_index++] = pBiTangent->z;
+							break;
+							// Dummy components for padding
+						case render::VERTEX_COMPONENT_DUMMY_FLOAT:
+							vertices[vertex_index++] = 0.0f;
+							break;
+						case render::VERTEX_COMPONENT_DUMMY_VEC4:
+							vertices[vertex_index++] = 0.0f;
+							vertices[vertex_index++] = 0.0f;
+							vertices[vertex_index++] = 0.0f;
+							vertices[vertex_index++] = 0.0f;
+							break;
+						};
+					}
+
+					/*v.position.x = pPos->x * scale + atPosition.x;
 					v.position.y = pPos->y * scale + atPosition.y;
 					v.position.z = pPos->z * scale + atPosition.z;
 					v.uv.x = pTexCoord->x;
 					v.uv.y = pTexCoord->y;
-					vertices.push_back(v);
+					vertices.push_back(v);*/
 				}
 
 				int indexBase = 0;
@@ -158,7 +210,7 @@ public:
 					modelindices.push_back(indexBase + Face.mIndices[2]);
 				}
 				MeshData* mesh = new MeshData();
-				mesh->m_verticesSize = vertices.size() * sizeof(Vertex);
+				mesh->m_verticesSize = vertices.size() * sizeof(float);
 				mesh->m_vertexCount = paiMesh->mNumVertices;
 				mesh->m_indexCount = modelindices.size();
 				uint32_t floatsno = mesh->m_verticesSize / sizeof(float);
@@ -317,7 +369,7 @@ public:
 		glm::mat4x4 myvm = camera.GetViewMatrix();
 		myvm = glm::transpose(myvm);
 
-		m_constantBufferData.mp = glm::transpose(depthProjectionMatrix);
+		m_constantBufferData.mp = glm::transpose(camera.GetPerspectiveMatrix());
 		m_constantBufferData.mv = glm::transpose(camera.GetViewMatrix());
 		m_constantBufferData.mlv = glm::transpose(depthViewMatrix);
 		/*m_constantBufferData.mp = depthProjectionMatrix;

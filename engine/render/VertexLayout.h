@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 namespace engine
 {
@@ -58,6 +59,26 @@ namespace engine
 				case VERTEX_COMPONENT_DUMMY_VEC4:	return 4 * sizeof(float);
 
 				default:							return 3 * sizeof(float);
+				}
+			}
+
+			std::string GetComponentName(Component component)
+			{
+				switch (component)
+				{
+					case VERTEX_COMPONENT_POSITION:	return "POSITION";
+
+					case VERTEX_COMPONENT_UV:			return "TEXCOORD";
+				
+					case VERTEX_COMPONENT_NORMAL:	return "NORMAl";
+
+					case VERTEX_COMPONENT_COLOR:		return "COLOR";
+
+					case VERTEX_COMPONENT_TANGENT:	return "TANGENT";
+
+					case VERTEX_COMPONENT_BITANGENT:	return "BITANGENT";
+
+					default:							return "WHATEVER";
 				}
 			}
 

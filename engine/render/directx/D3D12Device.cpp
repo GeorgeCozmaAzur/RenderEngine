@@ -142,7 +142,7 @@ namespace engine
 		{
 			D3D12Pipeline* pipeline = new D3D12Pipeline();
 			std::wstring ws(vertexFileName.begin(), vertexFileName.end());
-			pipeline->Load(m_device.Get(), ws, vertexEntry,fragmentEntry, descriptorSetlayout, properties);
+			pipeline->Load(m_device.Get(), ws, vertexEntry, fragmentEntry, vertexLayout, descriptorSetlayout, properties);
 			m_pipelines.push_back(pipeline);
 			return pipeline;
 		}
