@@ -86,9 +86,9 @@ public:
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
 		camera.SetFlipY(false);
-		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 100.0f);
+		camera.SetPerspective(60.0f, (float)width / (float)height, 1.0f, 30.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, 0.0f, -5.0f));
+		camera.SetPosition(glm::vec3(-8.8, -10.0, -8.8));
 	}
 
 	~VulkanExample()
@@ -226,13 +226,15 @@ public:
 
 	void init()
 	{	
-		m_commandBuffers[currentBuffer]->Begin();
+		if(m_loadingCommandBuffer)
+			m_loadingCommandBuffer->Begin();
+
 		m_rtvoHeap = m_device->GetDescriptorPool({ {render::DescriptorType::RTV, 1} },1);
 		m_dsvoHeap = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 1} },1);
 		m_srvHeap = m_device->GetDescriptorPool({ {render::DescriptorType::IMAGE_SAMPLER, 3},{render::DescriptorType::UNIFORM_BUFFER, 3} }, 6);
 
-		m_renderTargeto = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::R8G8B8A8_UNORM, m_srvHeap, m_rtvoHeap, m_commandBuffers[currentBuffer]);
-		m_depthStencilOffscreen = m_device->GetDepthRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::D32_FLOAT, m_srvHeap, m_dsvoHeap, m_commandBuffers[currentBuffer], false, true);
+		m_renderTargeto = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::R32G32B32A32_SFLOAT, m_srvHeap, m_rtvoHeap, m_loadingCommandBuffer);
+		m_depthStencilOffscreen = m_device->GetDepthRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::D32_FLOAT, m_srvHeap, m_dsvoHeap, m_loadingCommandBuffer, false, true);
 		offscreenPass = m_device->GetRenderPass(TextureWidth, TextureHeight, m_renderTargeto, m_depthStencilOffscreen);
 
 		render::DescriptorSetLayout* odsl = m_device->GetDescriptorSetLayout({ {render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX} });
@@ -253,15 +255,15 @@ public:
 		render::VERTEX_COMPONENT_UV
 			}, {});
 
-		std::vector<MeshData*> meshdatas = Load("./../data/models/venus.fbx", glm::vec3(0.0, -0.5, 0.0), 0.03f, vertexLayout);
-		std::vector<MeshData*> meshdatas2 = Load("./../data/models/plane.obj", glm::vec3(0.0, planey, 0.0), 0.1f, vertexLayout);
+		std::vector<MeshData*> meshdatas = Load("./../data/models/venus.fbx", glm::vec3(0.0, -0.5, 0.0), 0.3f, vertexLayout);
+		std::vector<MeshData*> meshdatas2 = Load("./../data/models/plane.obj", glm::vec3(0.0, planey, 0.0), 1.0f, vertexLayout);
 		for (auto md : meshdatas)
 		{
-			meshesmodel.push_back(m_device->GetMesh(md, vertexLayout,m_commandBuffers[currentBuffer]));
+			meshesmodel.push_back(m_device->GetMesh(md, vertexLayout, m_loadingCommandBuffer));
 		}
 		for (auto md : meshdatas2)
 		{
-			meshesplane.push_back(m_device->GetMesh(md, vertexLayout, m_commandBuffers[currentBuffer]));
+			meshesplane.push_back(m_device->GetMesh(md, vertexLayout, m_loadingCommandBuffer));
 		}
 
 		m_constantBuffer = m_device->GetUniformBuffer(sizeof(SceneConstantBuffer), &m_constantBufferData,m_srvHeap);
@@ -269,10 +271,10 @@ public:
 
 		Texture2DData tdata;
 		tdata.LoadFromFile("./../data/textures/compass.jpg", GfxFormat::R8G8B8A8_UNORM);
-		m_texture = m_device->GetTexture(&tdata, m_srvHeap, m_commandBuffers[currentBuffer]);
+		m_texture = m_device->GetTexture(&tdata, m_srvHeap, m_loadingCommandBuffer);
 		Texture2DData tdata2;
 		tdata2.LoadFromFile("./../data/textures/PlanksBare0002_1_S.jpg", GfxFormat::R8G8B8A8_UNORM);
-		m_texture1 = m_device->GetTexture(&tdata2, m_srvHeap, m_commandBuffers[currentBuffer]);
+		m_texture1 = m_device->GetTexture(&tdata2, m_srvHeap, m_loadingCommandBuffer);
 
 		planetable = m_device->GetDescriptorSet(pdsl, m_srvHeap,{ m_constantBuffer }, { m_texture , m_renderTargeto });
 		//modeltable = m_device->GetDescriptorSet(mdsl, m_srvHeap,{ m_constantBuffer }, { m_texture });
@@ -286,9 +288,12 @@ public:
 		pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
 		//pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/scene.frag.spv"), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
 
-		// Close the command list and execute it to begin the initial GPU setup.
-		m_commandBuffers[currentBuffer]->End();
-		SubmitOnQueue(m_commandBuffers[currentBuffer]);
+		if (m_loadingCommandBuffer)	
+		{
+			// Close the command list and execute it to begin the initial GPU setup.
+			m_loadingCommandBuffer->End();
+			SubmitOnQueue(m_loadingCommandBuffer);
+		}
 
 		WaitForDevice();
 
@@ -307,41 +312,39 @@ public:
 
 	virtual void BuildCommandBuffers()
 	{
-		/*for (int32_t i = 0; i < m_commandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_commandBuffers.size(); ++i)
 		{
-			currentBuffer = i;*/
-			m_commandBuffers[currentBuffer]->Begin();
+			m_commandBuffers[i]->Begin();
 
-			m_srvHeap->Draw(m_commandBuffers[currentBuffer]);
+			m_srvHeap->Draw(m_commandBuffers[i]);
 
-			offscreenPass->Begin(m_commandBuffers[currentBuffer]);
-			pipelineOffscreen->Draw(m_commandBuffers[currentBuffer]);
-			modeltableoffscreen->Draw(m_commandBuffers[currentBuffer], pipelineOffscreen);
+			offscreenPass->Begin(m_commandBuffers[i]);
+			pipelineOffscreen->Draw(m_commandBuffers[i]);
+			modeltableoffscreen->Draw(m_commandBuffers[i], pipelineOffscreen);
 			for (auto m : meshesmodel)
 			{
-				m->Draw(m_commandBuffers[currentBuffer]);
+				m->Draw(m_commandBuffers[i]);
 			}
 			for (auto m : meshesplane)
 			{
-				m->Draw(m_commandBuffers[currentBuffer]);
+				m->Draw(m_commandBuffers[i]);
 			}
-			offscreenPass->End(m_commandBuffers[currentBuffer]);
+			offscreenPass->End(m_commandBuffers[i]);
 
-			m_mainRenderPass->Begin(m_commandBuffers[currentBuffer], currentBuffer);
-			//pipeline->Draw(m_commandBuffers[currentBuffer]);
-			//modeltable->Draw(m_commandBuffers[currentBuffer]);
-			pipelineMT->Draw(m_commandBuffers[currentBuffer]);
-			planetable->Draw(m_commandBuffers[currentBuffer], pipelineMT);
+			m_mainRenderPass->Begin(m_commandBuffers[i], i);
+			//pipeline->Draw(m_commandBuffers[i]);
+			//modeltable->Draw(m_commandBuffers[i]);
+			pipelineMT->Draw(m_commandBuffers[i]);
+			planetable->Draw(m_commandBuffers[i], pipelineMT);
 			for (auto m : meshesmodel)
-				m->Draw(m_commandBuffers[currentBuffer]);
+				m->Draw(m_commandBuffers[i]);
 
 			for (auto m : meshesplane)
-				m->Draw(m_commandBuffers[currentBuffer]);
-			m_mainRenderPass->End(m_commandBuffers[currentBuffer], currentBuffer);
+				m->Draw(m_commandBuffers[i]);
+			m_mainRenderPass->End(m_commandBuffers[i], i);
 
-			m_commandBuffers[currentBuffer]->End();
-		//}
-		//currentBuffer = 0;
+			m_commandBuffers[i]->End();
+		}
 	}
 
 	void updateUniformBuffers()
@@ -360,7 +363,7 @@ public:
 	virtual void update(float dt)
 	{
 		float m_aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-		glm::vec3 lightpos(0.8, 1.0, 0.8);
+		glm::vec3 lightpos(8.8, 10.0, 8.8);
 		glm::vec3 camerapos(0.0, 0.5, 1.5);
 		glm::vec3 lookatpoint(0.0, 0.0, 0.0);
 		
@@ -372,7 +375,7 @@ public:
 		m_constantBufferData.mp = glm::transpose(camera.GetPerspectiveMatrix());
 		m_constantBufferData.mv = glm::transpose(camera.GetViewMatrix());
 		m_constantBufferData.mlv = glm::transpose(depthViewMatrix);
-		/*m_constantBufferData.mp = depthProjectionMatrix;
+		/*m_constantBufferData.mp = camera.GetPerspectiveMatrix();
 		m_constantBufferData.mv = camera.GetViewMatrix();
 		m_constantBufferData.mlv = depthViewMatrix;*/
 		m_constantBufferData2.mp = m_constantBufferData.mp;

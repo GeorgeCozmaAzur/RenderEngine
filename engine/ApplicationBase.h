@@ -43,6 +43,7 @@ protected:
 
 	render::GraphicsDevice* m_device = nullptr;
 	std::vector<render::CommandBuffer*> m_commandBuffers;
+	render::CommandBuffer* m_loadingCommandBuffer = nullptr;
 	render::RenderPass* m_mainRenderPass = nullptr;
 
 	struct

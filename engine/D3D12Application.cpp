@@ -242,7 +242,7 @@ bool D3D12Application::InitAPI()
 	{
 		m_commandBuffers[i] = m_device->GetCommandBuffer();
 	}
-	
+	m_loadingCommandBuffer = m_device->GetCommandBuffer();
 
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.
@@ -359,7 +359,7 @@ void D3D12Application::Render()
 		return;
 
 	// Record all the commands we need to render the scene into the command list.
-	BuildCommandBuffers();
+	//BuildCommandBuffers();
 
 	// Execute the command list.
 	ID3D12CommandList* ppCommandLists[] = { ((render::D3D12CommandBuffer*)m_commandBuffers[currentBuffer])->m_commandList.Get()};

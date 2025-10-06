@@ -243,7 +243,7 @@ namespace engine
 		{
 			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
 
-			float depthBiasConstant = 0.5f;
+			float depthBiasConstant = 1.25f;
 			float depthBiasSlope = 0.75f;
 			if(m_depthBias)
 			vkCmdSetDepthBias(
