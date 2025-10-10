@@ -19,7 +19,7 @@ using Microsoft::WRL::ComPtr;
 using namespace engine;
 using namespace engine::render;
 
-class VulkanExample : public D3D12Application
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -77,7 +77,7 @@ public:
 
 	float planey = -0.5f;
 
-	VulkanExample() : D3D12Application(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -85,10 +85,10 @@ public:
 		title = "Render Engine First Generic";
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
-		camera.SetFlipY(false);
+		camera.SetFlipY(true);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 1.0f, 30.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(-8.8, -10.0, -8.8));
+		camera.SetPosition(glm::vec3(0.8, 5.0, -1.0));
 	}
 
 	~VulkanExample()
@@ -233,7 +233,7 @@ public:
 		m_dsvoHeap = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 1} },1);
 		m_srvHeap = m_device->GetDescriptorPool({ {render::DescriptorType::IMAGE_SAMPLER, 3},{render::DescriptorType::UNIFORM_BUFFER, 3} }, 6);
 
-		m_renderTargeto = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::R32G32B32A32_SFLOAT, m_srvHeap, m_rtvoHeap, m_loadingCommandBuffer);
+		m_renderTargeto = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::R8G8B8A8_UNORM, m_srvHeap, m_rtvoHeap, m_loadingCommandBuffer);
 		m_depthStencilOffscreen = m_device->GetDepthRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::D32_FLOAT, m_srvHeap, m_dsvoHeap, m_loadingCommandBuffer, false, true);
 		offscreenPass = m_device->GetRenderPass(TextureWidth, TextureHeight, m_renderTargeto, m_depthStencilOffscreen);
 
@@ -282,11 +282,12 @@ public:
 
 		render::PipelineProperties props;
 		props.depthBias = true;
-		pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainOffscreen", vertexLayout, odsl, props, m_mainRenderPass);
-		//pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/offscreen.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/offscreenvariancecolor.frag.spv"), "PSMainOffscreen",vertexLayout, odsl, props, offscreenPass);
+		//pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainOffscreen", vertexLayout, odsl, props, m_mainRenderPass);
+		pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/offscreen.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/offscreenvariancecolor.frag.spv"), "PSMainOffscreen",vertexLayout, odsl, props, offscreenPass);
 		props.depthBias = false;
-		pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
-		//pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/scene.frag.spv"), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
+		props.vertexConstantBlockSize = sizeof(glm::vec4);
+		//pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
+		pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/scene.frag.spv"), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
 
 		if (m_loadingCommandBuffer)	
 		{
@@ -312,6 +313,7 @@ public:
 
 	virtual void BuildCommandBuffers()
 	{
+		int i = currentBuffer;
 		for (int32_t i = 0; i < m_commandBuffers.size(); ++i)
 		{
 			m_commandBuffers[i]->Begin();
@@ -334,7 +336,8 @@ public:
 			m_mainRenderPass->Begin(m_commandBuffers[i], i);
 			//pipeline->Draw(m_commandBuffers[i]);
 			//modeltable->Draw(m_commandBuffers[i]);
-			pipelineMT->Draw(m_commandBuffers[i]);
+			float colorDwords[4] = { 0.5f,0.5f,0.5f,1.0f };
+			pipelineMT->Draw(m_commandBuffers[i], colorDwords);
 			planetable->Draw(m_commandBuffers[i], pipelineMT);
 			for (auto m : meshesmodel)
 				m->Draw(m_commandBuffers[i]);
@@ -372,12 +375,12 @@ public:
 		glm::mat4x4 myvm = camera.GetViewMatrix();
 		myvm = glm::transpose(myvm);
 
-		m_constantBufferData.mp = glm::transpose(camera.GetPerspectiveMatrix());
+		/*m_constantBufferData.mp = glm::transpose(camera.GetPerspectiveMatrix());
 		m_constantBufferData.mv = glm::transpose(camera.GetViewMatrix());
-		m_constantBufferData.mlv = glm::transpose(depthViewMatrix);
-		/*m_constantBufferData.mp = camera.GetPerspectiveMatrix();
+		m_constantBufferData.mlv = glm::transpose(depthViewMatrix);*/
+		m_constantBufferData.mp = camera.GetPerspectiveMatrix();
 		m_constantBufferData.mv = camera.GetViewMatrix();
-		m_constantBufferData.mlv = depthViewMatrix;*/
+		m_constantBufferData.mlv = depthViewMatrix;
 		m_constantBufferData2.mp = m_constantBufferData.mp;
 		m_constantBufferData2.mv = m_constantBufferData.mlv;
 

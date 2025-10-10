@@ -67,15 +67,17 @@ namespace engine
 			VkPipelineLayoutCreateInfo pipelineLayoutCI{};
 			pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
+			VkPushConstantRange pushConstantRange{};
 			if (properties.vertexConstantBlockSize > 0)
-			{
-				VkPushConstantRange pushConstantRange{};
+			{				
 				pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 				pushConstantRange.offset = 0;
 				pushConstantRange.size = properties.vertexConstantBlockSize;						
 
 				pipelineLayoutCI.pushConstantRangeCount = 1;
 				pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
+
+				m_constantBlockSize = properties.vertexConstantBlockSize;
 				std::cout << " " << properties.vertexConstantBlockSize;
 			}
 
@@ -95,7 +97,7 @@ namespace engine
 			VkPipelineRasterizationStateCreateInfo rasterizationStateCI{};
 			rasterizationStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 			rasterizationStateCI.polygonMode = VK_POLYGON_MODE_FILL;
-			rasterizationStateCI.cullMode = properties.cullMode;
+			rasterizationStateCI.cullMode = ToVkCullMode(properties.cullMode);
 			rasterizationStateCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
 			rasterizationStateCI.flags = 0;
 			rasterizationStateCI.depthClampEnable = VK_FALSE;
@@ -239,7 +241,7 @@ namespace engine
 			vkCmdBindPipeline(command_buffer, bindpoint, m_vkPipeline);
 		}
 
-		void VulkanPipeline::Draw(CommandBuffer* commandBuffer)
+		void VulkanPipeline::Draw(CommandBuffer* commandBuffer, void* constantData)
 		{
 			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
 
@@ -253,6 +255,9 @@ namespace engine
 				depthBiasSlope);
 			
 			Draw(cb->m_vkCommandBuffer);
+
+			if(m_constantBlockSize > 0)
+				vkCmdPushConstants(cb->m_vkCommandBuffer, getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_constantBlockSize, constantData);
 		}
 
 		void VulkanPipeline::CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, PipelineProperties properties)

@@ -15,6 +15,11 @@ layout (binding = 2) uniform UboView
 	int technique;
 } ubo;*/
 
+layout(push_constant) uniform PushConsts 
+{
+	vec4 color;
+} pushConsts;
+
 layout (location = 0) out vec4 outFragColor;
 
 #define ambient 0.1
@@ -103,5 +108,5 @@ void main()
 	vec3 diffuse = max(dot(N, L), ambient) * inColor;*/
 	vec3 diffuse = texture( colorMap, inuv ).rgb;
 
-	outFragColor = vec4(diffuse * shadow, 1.0);
+	outFragColor = vec4(diffuse * shadow, 1.0) * pushConsts.color;
 }

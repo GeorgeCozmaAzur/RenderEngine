@@ -8,6 +8,7 @@
 // PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
 //
 //*********************************************************
+#pragma pack_matrix(row_major)
 
 struct VSInput
 {
@@ -38,6 +39,11 @@ cbuffer cb0 : register(b0)
 Texture2D g_texture : register(t0);
 Texture2D g_texture1 : register(t1);
 SamplerState g_sampler : register(s0);
+
+cbuffer cb1 : register(b1)
+{
+	float4 color;
+}
 
 float LinearizeDepth(float depth)
 {
@@ -113,5 +119,5 @@ float4 PSMainMT(PSInput input) : SV_TARGET
     //shadow = LinearizeDepth(dist);
 
     //return float4(shadow, shadow, shadow, 1.0);//(g_texture.Sample(g_sampler, input.uv) * 0.1 + g_texture1.Sample(g_sampler, input.uv)) * 0.5;
-    return (float4(shadow, shadow, shadow, 1.0) + g_texture.Sample(g_sampler, input.uv)) * 0.5;
+    return (float4(shadow, shadow, shadow, 1.0) + g_texture.Sample(g_sampler, input.uv)) * 0.5 * color;
 }

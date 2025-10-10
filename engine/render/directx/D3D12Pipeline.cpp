@@ -39,10 +39,11 @@ namespace engine
                 }
 
                 std::vector<CD3DX12_DESCRIPTOR_RANGE1> ranges(dlayout->m_bindings.size());
-                std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters(dlayout->m_bindings.size());
+                std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters(dlayout->m_bindings.size() + (properties.vertexConstantBlockSize > 0 ? 1 : 0));
                 UINT bsrsrv = 0;
                 UINT bsrcvb = 0;
-                for (int i = 0; i < dlayout->m_bindings.size(); i++)
+                int i = 0;
+                for (i=0; i < dlayout->m_bindings.size(); i++)
                 {
                     D3D12_DESCRIPTOR_RANGE_TYPE rangeType;
                     if(dlayout->m_bindings[i].descriptorType == DescriptorType::UNIFORM_BUFFER)
@@ -56,6 +57,16 @@ namespace engine
                     
                     D3D12_SHADER_VISIBILITY sv = dlayout->m_bindings[i].stage == ShaderStage::VERTEX ? D3D12_SHADER_VISIBILITY_ALL : D3D12_SHADER_VISIBILITY_PIXEL;
                     rootParameters[i].InitAsDescriptorTable(1, &ranges[i], sv);
+                }
+
+                if (properties.vertexConstantBlockSize > 0)
+                {
+                    m_constantBlockSize = properties.vertexConstantBlockSize;
+                    rootParameters[i].InitAsConstants(
+                        properties.vertexConstantBlockSize / 4,   // number of 32-bit values
+                        bsrcvb,    // register (b1)
+                        0,    // space
+                        D3D12_SHADER_VISIBILITY_PIXEL);
                 }
 
                 //CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
@@ -167,12 +178,17 @@ namespace engine
                 ThrowIfFailed(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
             }
         }
-        void D3D12Pipeline::Draw(CommandBuffer* commandBuffer)
+        void D3D12Pipeline::Draw(CommandBuffer* commandBuffer, void* constData)
         {
             D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
             d3dcommandBuffer->m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             d3dcommandBuffer->m_commandList->SetPipelineState(m_pipelineState.Get());
             d3dcommandBuffer->m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+            if (m_constantBlockSize > 0)
+            {
+               // float colorDwords[4] = { 1.0f,0.0f,0.5f,1.0f };
+                d3dcommandBuffer->m_commandList->SetGraphicsRoot32BitConstants(3, 4, constData, 0);
+            }
         }
     }
 }
