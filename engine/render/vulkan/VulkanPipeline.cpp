@@ -241,7 +241,7 @@ namespace engine
 			vkCmdBindPipeline(command_buffer, bindpoint, m_vkPipeline);
 		}
 
-		void VulkanPipeline::Draw(CommandBuffer* commandBuffer, void* constantData)
+		void VulkanPipeline::Draw(CommandBuffer* commandBuffer)
 		{
 			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
 
@@ -255,9 +255,13 @@ namespace engine
 				depthBiasSlope);
 			
 			Draw(cb->m_vkCommandBuffer);
+		}
 
-			if(m_constantBlockSize > 0)
-				vkCmdPushConstants(cb->m_vkCommandBuffer, getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_constantBlockSize, constantData);
+		void VulkanPipeline::PushConstants(class CommandBuffer* commandBuffer, void* constantsData)
+		{
+			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			if (m_constantBlockSize > 0)
+				vkCmdPushConstants(cb->m_vkCommandBuffer, getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_constantBlockSize, constantsData);
 		}
 
 		void VulkanPipeline::CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, PipelineProperties properties)

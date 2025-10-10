@@ -81,11 +81,11 @@ namespace engine
 			vkCmdBindDescriptorSets(commandBuffer, pipelineBindpoint, pipelineLayout, 0, 1, &m_vkDescriptorSet, dynamicOffsetCount, &dynamicOffset);
 		}
 
-		void VulkanDescriptorSet::Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline)
+		void VulkanDescriptorSet::Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline, uint32_t indexInDynamicUniformBuffer)
 		{
 			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
 			VulkanPipeline* p = dynamic_cast<VulkanPipeline*>(pipeline);
-			Draw(cb->m_vkCommandBuffer, p->getPipelineLayout(), 0);
+			Draw(cb->m_vkCommandBuffer, p->getPipelineLayout(), indexInDynamicUniformBuffer);
 		}
 	}
 }

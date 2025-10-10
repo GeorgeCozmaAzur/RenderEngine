@@ -29,7 +29,7 @@ namespace engine
 
 			void Create(DescriptorSetLayout* layout, std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> buffers, std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> textures);
 			void Draw(ID3D12GraphicsCommandList* commandList);
-			virtual void Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline = nullptr);
+			virtual void Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline = nullptr, uint32_t indexInDynamicUniformBuffer = 0);
 		};
 	}
 }

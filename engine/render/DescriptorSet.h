@@ -12,7 +12,7 @@ namespace engine
 		public:
 			virtual ~DescriptorSet() {}
 			virtual void Create(DescriptorSetLayout& layout, DescriptorPool pool) {};
-			virtual void Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline = nullptr) = 0;
+			virtual void Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline = nullptr, uint32_t indexInDynamicUniformBuffer = 0) = 0;
 		};
 	}
 }

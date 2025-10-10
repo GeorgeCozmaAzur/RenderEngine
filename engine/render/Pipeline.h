@@ -51,7 +51,8 @@ namespace engine
 			uint32_t m_constantBlockSize = 0;
 		public:
 			virtual ~Pipeline() {}
-			virtual void Draw(class CommandBuffer* commandBuffer, void* constantData = nullptr) = 0;
+			virtual void Draw(class CommandBuffer* commandBuffer) = 0;
+			virtual void PushConstants(class CommandBuffer* commandBuffer, void* constantsData = nullptr) = 0;
 		};
 	}
 }

@@ -21,8 +21,11 @@ namespace engine
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
 			Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
 
+			UINT m_constantsShaderRegister;
+
 			void Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, VertexLayout* vlayout, DescriptorSetLayout* dlayout, PipelineProperties properties);
-			virtual void Draw(class CommandBuffer* commandBuffer, void* constantData = nullptr);
+			virtual void Draw(class CommandBuffer* commandBuffer);
+			virtual void PushConstants(class CommandBuffer* commandBuffer, void* constantsData = nullptr);
 		};
 	}
 }

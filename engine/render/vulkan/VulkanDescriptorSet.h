@@ -37,7 +37,7 @@ namespace engine
 			void AddBufferDescriptor(VkDescriptorBufferInfo* desc) { _BuffersDescriptors.push_back(desc); };
 			void AddBufferDescriptors(std::vector<VkDescriptorBufferInfo*> inputArray) { _BuffersDescriptors.insert(_BuffersDescriptors.end(), inputArray.begin(), inputArray.end()); };
 
-			virtual void Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline = nullptr);
+			virtual void Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline = nullptr, uint32_t indexInDynamicUniformBuffer = 0);
 		};
 	}
 }

@@ -19,7 +19,7 @@ using Microsoft::WRL::ComPtr;
 using namespace engine;
 using namespace engine::render;
 
-class VulkanExample : public VulkanApplication
+class VulkanExample : public D3D12Application
 {
 public:
 
@@ -77,7 +77,7 @@ public:
 
 	float planey = -0.5f;
 
-	VulkanExample() : VulkanApplication(true)
+	VulkanExample() : D3D12Application(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -85,10 +85,10 @@ public:
 		title = "Render Engine First Generic";
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
-		camera.SetFlipY(true);
+		camera.SetFlipY(false);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 1.0f, 30.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.8, 5.0, -1.0));
+		camera.SetPosition(glm::vec3(0.8, 0.0, -1.0));
 	}
 
 	~VulkanExample()
@@ -282,12 +282,12 @@ public:
 
 		render::PipelineProperties props;
 		props.depthBias = true;
-		//pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainOffscreen", vertexLayout, odsl, props, m_mainRenderPass);
-		pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/offscreen.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/offscreenvariancecolor.frag.spv"), "PSMainOffscreen",vertexLayout, odsl, props, offscreenPass);
+		pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainOffscreen", vertexLayout, odsl, props, m_mainRenderPass);
+		//pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/offscreen.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/offscreenvariancecolor.frag.spv"), "PSMainOffscreen",vertexLayout, odsl, props, offscreenPass);
 		props.depthBias = false;
 		props.vertexConstantBlockSize = sizeof(glm::vec4);
-		//pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
-		pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/scene.frag.spv"), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
+		pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
+		//pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/scene.frag.spv"), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
 
 		if (m_loadingCommandBuffer)	
 		{
@@ -336,8 +336,9 @@ public:
 			m_mainRenderPass->Begin(m_commandBuffers[i], i);
 			//pipeline->Draw(m_commandBuffers[i]);
 			//modeltable->Draw(m_commandBuffers[i]);
-			float colorDwords[4] = { 0.5f,0.5f,0.5f,1.0f };
-			pipelineMT->Draw(m_commandBuffers[i], colorDwords);
+			float colorDwords[4] = { 0.5f,1.0f,0.5f,1.0f };
+			pipelineMT->Draw(m_commandBuffers[i]);
+			pipelineMT->PushConstants(m_commandBuffers[i], colorDwords);
 			planetable->Draw(m_commandBuffers[i], pipelineMT);
 			for (auto m : meshesmodel)
 				m->Draw(m_commandBuffers[i]);

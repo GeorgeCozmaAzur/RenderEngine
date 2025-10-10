@@ -67,6 +67,7 @@ namespace engine
                         bsrcvb,    // register (b1)
                         0,    // space
                         D3D12_SHADER_VISIBILITY_PIXEL);
+                    m_constantsShaderRegister = i;
                 }
 
                 //CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
@@ -178,16 +179,20 @@ namespace engine
                 ThrowIfFailed(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
             }
         }
-        void D3D12Pipeline::Draw(CommandBuffer* commandBuffer, void* constData)
+        void D3D12Pipeline::Draw(CommandBuffer* commandBuffer)
         {
             D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
             d3dcommandBuffer->m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             d3dcommandBuffer->m_commandList->SetPipelineState(m_pipelineState.Get());
             d3dcommandBuffer->m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+        }
+
+        void D3D12Pipeline::PushConstants(CommandBuffer* commandBuffer, void* constantsData)
+        {
             if (m_constantBlockSize > 0)
             {
-               // float colorDwords[4] = { 1.0f,0.0f,0.5f,1.0f };
-                d3dcommandBuffer->m_commandList->SetGraphicsRoot32BitConstants(3, 4, constData, 0);
+                D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+                d3dcommandBuffer->m_commandList->SetGraphicsRoot32BitConstants(m_constantsShaderRegister, m_constantBlockSize/4, constantsData, 0);
             }
         }
     }
