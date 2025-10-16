@@ -39,6 +39,7 @@ namespace engine
 			void End(ID3D12GraphicsCommandList* commandList, uint32_t frameBufferIndex = 0);
 			virtual void Begin(CommandBuffer* commandBuffer, uint32_t frameBufferIndex = 0);
 			virtual void End(CommandBuffer* commandBuffer, uint32_t frameBufferIndex = 0);
+			virtual void NextSubPass(CommandBuffer* commandBuffer);
 		};
 	}
 }

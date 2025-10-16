@@ -8,6 +8,7 @@
 
 #include "UIOverlay.h"
 #include "render/vulkan/VulkanTexture.h"
+#include "VulkanCommandBuffer.h"
 
 namespace engine 
 {
@@ -117,7 +118,7 @@ namespace engine
 			std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
 			};
-			descriptorPool = _device->CreateDescriptorSetsPool(poolSizes, 1);
+			descriptorPool = _device->GetDescriptorPool({ {render::DescriptorType::IMAGE_SAMPLER, 1} }, 1);
 
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> setLayoutBindings
 			{
@@ -126,12 +127,15 @@ namespace engine
 			_descriptorLayout = _device->GetDescriptorSetLayout(setLayoutBindings);
 
 			// Descriptor set
-			VkDescriptorImageInfo fontDescriptorImageInfo{};
+			/*VkDescriptorImageInfo fontDescriptorImageInfo{};
 			fontDescriptorImageInfo.sampler = m_fontTexture->m_descriptor.sampler;
 			fontDescriptorImageInfo.imageView = m_fontTexture->m_descriptor.imageView;
-			fontDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			fontDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;*/
+			m_fontTexture->m_descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-			render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, {}, { &fontDescriptorImageInfo }, _descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings);
+			//render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, {}, { &fontDescriptorImageInfo }, _descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings);
+			render::DescriptorSet* set = _device->GetDescriptorSet(_descriptorLayout, descriptorPool, {}, { m_fontTexture });
+
 			m_descriptorSets.push_back(set);
 
 			m_geometries.push_back(new Geometry);
@@ -142,12 +146,12 @@ namespace engine
 		/** Prepare a separate pipeline for the UI overlay rendering decoupled from the main application */
 		void UIOverlay::preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass)
 		{
-			render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
+			/*render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 			render::VERTEX_COMPONENT_POSITION,
 			render::VERTEX_COMPONENT_UV,
 			render::VERTEX_COMPONENT_COLOR,
 			render::VERTEX_COMPONENT_NORMAL
-				}, {});
+				}, {});*/
 
 			std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
 			   	VkVertexInputBindingDescription{0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -160,7 +164,8 @@ namespace engine
 			render::PipelineProperties props;
 			props.blendEnable = true;
 			props.vertexConstantBlockSize = sizeof(pushConstBlock);
-			_pipeline = _device->GetPipeline(_descriptorLayout->m_descriptorSetLayout, vertexInputBindings, vertexInputAttributes,
+			render::VulkanDescriptorSetLayout* vklo = dynamic_cast<render::VulkanDescriptorSetLayout*>(_descriptorLayout);
+			_pipeline = _device->GetPipeline(vklo->m_descriptorSetLayout, vertexInputBindings, vertexInputAttributes,
 				engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", renderPass, pipelineCache, props);
 		}
 
@@ -254,7 +259,7 @@ namespace engine
 			return updateCmdBuffers;
 		}
 
-		void UIOverlay::draw(const VkCommandBuffer commandBuffer)
+		void UIOverlay::draw(render::CommandBuffer* commandBuffer)
 		{
 			ImDrawData* imDrawData = ImGui::GetDrawData();
 			int32_t vertexOffset = 0;
@@ -269,14 +274,16 @@ namespace engine
 			_pipeline->Draw(commandBuffer);
 			pushConstBlock.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
 			pushConstBlock.translate = glm::vec2(-1.0f);
-			vkCmdPushConstants(commandBuffer, _pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
+			_pipeline->PushConstants(commandBuffer , &pushConstBlock);
+			//vkCmdPushConstants(commandBuffer, _pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
 
-			m_descriptorSets[0]->Draw(commandBuffer, _pipeline->getPipelineLayout(), 0);
+			m_descriptorSets[0]->Draw(commandBuffer, _pipeline, 0);
 
+			render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
 			VkDeviceSize offsets[1] = { 0 };
 			const VkBuffer vertexBuffer = m_geometries[0]->_vertexBuffer->GetVkBuffer();
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
-			vkCmdBindIndexBuffer(commandBuffer, m_geometries[0]->_indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
+			vkCmdBindVertexBuffers(vkcmd->m_vkCommandBuffer, 0, 1, &vertexBuffer, offsets);
+			vkCmdBindIndexBuffer(vkcmd->m_vkCommandBuffer, m_geometries[0]->_indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 			for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
 			{
@@ -289,8 +296,8 @@ namespace engine
 					scissorRect.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
 					scissorRect.extent.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
 					scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
-					vkCmdSetScissor(commandBuffer, 0, 1, &scissorRect);
-					vkCmdDrawIndexed(commandBuffer, pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
+					vkCmdSetScissor(vkcmd->m_vkCommandBuffer, 0, 1, &scissorRect);
+					vkCmdDrawIndexed(vkcmd->m_vkCommandBuffer, pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
 					indexOffset += pcmd->ElemCount;
 				}
 				vertexOffset += cmd_list->VtxBuffer.Size;

@@ -25,22 +25,24 @@ class VulkanExample : public VulkanApplication
 public:
 
 	// Vertex layout for the models
-	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
+	render::VertexLayout* vertexLayout = nullptr;
+		/*render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
 		render::VERTEX_COMPONENT_NORMAL
-		}, {});
+		}, {});*/
 
-	render::VulkanVertexLayout vertexLayoutInstanced = render::VulkanVertexLayout({
+	render::VertexLayout* vertexLayoutInstanced = nullptr;
+		/*render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
 		render::VERTEX_COMPONENT_NORMAL
 		},
-		{ render::VERTEX_COMPONENT_POSITION });
+		{ render::VERTEX_COMPONENT_POSITION });*/
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	struct {
 		scene::SimpleModel example;
@@ -94,17 +96,17 @@ public:
 	} layouts;
 
 	struct {
-		render::VulkanPipeline* plane;
-		render::VulkanPipeline* model;
-		render::VulkanPipeline* deferred;
-		render::VulkanPipeline* simpletexture;
+		render::Pipeline* plane;
+		render::Pipeline* model;
+		render::Pipeline* deferred;
+		render::Pipeline* simpletexture;
 	} pipelines;
 
 	struct {
-		render::VulkanDescriptorSet* plane;
-		render::VulkanDescriptorSet* model;
-		render::VulkanDescriptorSet* deferred;
-		render::VulkanDescriptorSet* simpletexture;
+		render::DescriptorSet* plane;
+		render::DescriptorSet* model;
+		render::DescriptorSet* deferred;
+		render::DescriptorSet* simpletexture;
 	} descriptorSets;
 
 	glm::vec3 meshPos = glm::vec3(0.0f, -1.5f, 0.0f);
@@ -144,6 +146,22 @@ public:
 
 	void init()
 	{
+		vertexLayout = m_device->GetVertexLayout(
+			{
+				render::VERTEX_COMPONENT_POSITION,
+				render::VERTEX_COMPONENT_UV,
+				render::VERTEX_COMPONENT_COLOR,
+				render::VERTEX_COMPONENT_NORMAL	
+			}, {});
+		vertexLayoutInstanced = m_device->GetVertexLayout(
+			{
+				render::VERTEX_COMPONENT_POSITION,
+				render::VERTEX_COMPONENT_UV,
+				render::VERTEX_COMPONENT_COLOR,
+				render::VERTEX_COMPONENT_NORMAL
+			}, 
+			{ render::VERTEX_COMPONENT_POSITION });
+
 		scenecolor = vulkanDevice->GetRenderTarget(width, height, FB_COLOR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
@@ -167,9 +185,9 @@ public:
 		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f }, 2);
 		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f }, 3);
 
-		models.plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 10.0f, 1, glm::vec3(0.0,1.5,0.0));
+		models.plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", vertexLayout, 10.0f, 1, glm::vec3(0.0,1.5,0.0));
 		//models.example.LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0));
-		models.example.LoadGeometry(engine::tools::getAssetPath() + "models/armor/armor.dae", &vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 1.0, 1.0), glm::vec2(1.0,-1.0));
+		models.example.LoadGeometry(engine::tools::getAssetPath() + "models/armor/armor.dae", vertexLayoutInstanced, 0.3f, LIGHTS_NO, glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 1.0, 1.0), glm::vec2(1.0,-1.0));
 		//models.example.LoadGeometry(engine::tools::getAssetPath() + "models/medieval/Medieval_House.obj", &vertexLayoutInstanced, 0.01f, MODELS_NO, glm::vec3(0.0, 2.0, 0.0));
 
 		render::Texture2DData data;
@@ -263,12 +281,18 @@ public:
 	void setupDescriptorPool()
 	{
 		// Example uses three ubos and two image samplers
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool(
+			{ 
+			{render::DescriptorType::UNIFORM_BUFFER, 8},
+			{render::DescriptorType::IMAGE_SAMPLER, 10},
+			{render::DescriptorType::INPUT_ATTACHMENT, 4}
+			}, 6);
 	}
 
 	void prepareUniformBuffers()
@@ -289,7 +313,7 @@ public:
 		VK_CHECK_RESULT(uniformBuffers.fsdeferred->Map());
 		updateUniformBuffers();
 
-		deferredLights.Init(uniformBuffers.vsModelLights,vulkanDevice, descriptorPool, queue, scenepass->GetRenderPass(), pipelineCache, LIGHTS_NO, scenepositions, scenenormals);
+		deferredLights.Init(uniformBuffers.vsModelLights,vulkanDevice, descriptorPool, queue, scenepass, pipelineCache, LIGHTS_NO, scenepositions, scenenormals);
 	}
 
 	void updateUniformBuffers()
@@ -320,19 +344,18 @@ public:
 
 	void setupDescriptors()
 	{
-		descriptorSets.plane = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.vsModel->m_descriptor }, {&colorMap->m_descriptor},
-			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
+		descriptorSets.plane = vulkanDevice->GetDescriptorSet(layouts.model, descriptorPool, { uniformBuffers.vsModel }, { colorMap });
 
-		descriptorSets.model = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.vsModel->m_descriptor }, { &colorMap2->m_descriptor },
-			layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
+		descriptorSets.model = vulkanDevice->GetDescriptorSet(layouts.model, descriptorPool, { uniformBuffers.vsModel }, { colorMap2 });
+			//layouts.model->m_descriptorSetLayout, layouts.model->m_setLayoutBindings);
 
 		models.plane.AddDescriptor(descriptorSets.plane);
 		models.example.AddDescriptor(descriptorSets.model);	
 
-		descriptorSets.deferred = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.fsdeferred->m_descriptor },
-			{ &scenecolor->m_descriptor , &scenepositions->m_descriptor, &scenenormals->m_descriptor }, layouts.deferred->m_descriptorSetLayout, layouts.deferred->m_setLayoutBindings);
+		descriptorSets.deferred = vulkanDevice->GetDescriptorSet(layouts.deferred, descriptorPool, { uniformBuffers.fsdeferred },
+			{ scenecolor , scenepositions, scenenormals });
 
-		descriptorSets.simpletexture = vulkanDevice->GetDescriptorSet(descriptorPool, {}, { &scenecolor->m_descriptor , &sceneLightscolor->m_descriptor }, layouts.simpletexture->m_descriptorSetLayout, layouts.simpletexture->m_setLayoutBindings);
+		descriptorSets.simpletexture = vulkanDevice->GetDescriptorSet(layouts.simpletexture, descriptorPool, {}, { scenecolor , sceneLightscolor });
 	}
 
 	void setupPipelines()
@@ -348,12 +371,13 @@ public:
 		props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 		props.pAttachments = blendAttachmentStates.data();
 
-		pipelines.plane = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.frag.spv", 
-			scenepass->GetRenderPass(), pipelineCache, props);
-		pipelines.model = vulkanDevice->GetPipeline(layouts.model->m_descriptorSetLayout, vertexLayoutInstanced.m_vertexInputBindings, vertexLayoutInstanced.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcoloredinstanced.vert.spv", engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.frag.spv",
-			scenepass->GetRenderPass(), pipelineCache, props);
+		pipelines.plane = vulkanDevice->GetPipeline(//layouts.model->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.vert.spv","", engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.frag.spv","",
+			vertexLayout, layouts.model, props, scenepass);
+		pipelines.model = vulkanDevice->GetPipeline(//layouts.model->m_descriptorSetLayout, vertexLayoutInstanced.m_vertexInputBindings, vertexLayoutInstanced.m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcoloredinstanced.vert.spv","", engine::tools::getAssetPath() + "shaders/basicdeferred/basictexturedcolored.frag.spv","",
+			vertexLayoutInstanced, layouts.model, props, scenepass);
+			//scenepass->GetRenderPass(), pipelineCache, props);
 		models.example.AddPipeline(pipelines.model);
 		models.plane.AddPipeline(pipelines.plane);
 
@@ -376,34 +400,38 @@ public:
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		//cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			scenepass->Begin(drawCommandBuffers[i], 0);
-			models.example.Draw(drawCommandBuffers[i]);
-			models.plane.Draw(drawCommandBuffers[i]);
+			scenepass->Begin(m_drawCommandBuffers[i], 0);
+			models.example.Draw(m_drawCommandBuffers[i]);
+			models.plane.Draw(m_drawCommandBuffers[i]);
 
-			vkCmdNextSubpass(drawCommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
+			//vkCmdNextSubpass(drawCommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
+			scenepass->NextSubPass(m_drawCommandBuffers[i]);
 			//vkCmdSetDepthTestEnable(drawCmdBuffers[i],true);
-			deferredLights.Draw(drawCommandBuffers[i]);
+			deferredLights.Draw(m_drawCommandBuffers[i]);
 
-			scenepass->End(drawCommandBuffers[i]);
+			scenepass->End(m_drawCommandBuffers[i]);
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 			
 			//draw here
-			pipelines.simpletexture->Draw(drawCommandBuffers[i]);
-			descriptorSets.simpletexture->Draw(drawCommandBuffers[i], pipelines.simpletexture->getPipelineLayout(), 0);
-			vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			pipelines.simpletexture->Draw(m_drawCommandBuffers[i]);
+			descriptorSets.simpletexture->Draw(m_drawCommandBuffers[i], pipelines.simpletexture);//pipelines.simpletexture->getPipelineLayout(), 0);
+			//vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			DrawFullScreenQuad(m_drawCommandBuffers[i]);
 
 			//deferredLights.Draw(drawCmdBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

@@ -25,7 +25,7 @@ namespace engine
 
         void VulkanMesh::Draw(CommandBuffer* commandBuffer)
         {
-			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
 			Draw(cb->m_vkCommandBuffer);
         }
     }

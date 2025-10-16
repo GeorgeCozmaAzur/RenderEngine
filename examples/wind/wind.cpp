@@ -21,13 +21,9 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
-		render::VERTEX_COMPONENT_POSITION,
-		render::VERTEX_COMPONENT_NORMAL,
-		render::VERTEX_COMPONENT_UV
-		}, {});
+	render::VertexLayout* vertexLayout = nullptr;
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	engine::scene::SimpleModel plane;
 	engine::scene::SimpleModel trunk;
@@ -74,20 +70,27 @@ public:
 
 	void setupGeometry()
 	{
+		vertexLayout = m_device->GetVertexLayout(
+			{
+				render::VERTEX_COMPONENT_POSITION,
+				render::VERTEX_COMPONENT_NORMAL,
+				render::VERTEX_COMPONENT_UV
+			}, {});
+
 		//Geometry
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 0.1f, 1);
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", vertexLayout, 0.1f, 1);
 		for (auto geo : plane.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 		}
-		trunk.LoadGeometry(engine::tools::getAssetPath() + "models/oak_trunk.dae", &vertexLayout, 1.0f, 1);
+		trunk.LoadGeometry(engine::tools::getAssetPath() + "models/oak_trunk.dae", vertexLayout, 1.0f, 1);
 		for (auto geo : trunk.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 		}
-		leaves.LoadGeometry(engine::tools::getAssetPath() + "models/oak_leafs.dae", &vertexLayout, 1.0f, 1);
+		leaves.LoadGeometry(engine::tools::getAssetPath() + "models/oak_leafs.dae", vertexLayout, 1.0f, 1);
 		for (auto geo : leaves.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
@@ -144,11 +147,14 @@ public:
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool(
+			{ {render::DescriptorType::UNIFORM_BUFFER, 6},
+			{render::DescriptorType::IMAGE_SAMPLER, 6} }, 6);
 	}
 
 	void SetupDescriptors()
@@ -177,25 +183,22 @@ public:
 		trunk.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(treebindings));
 		leaves.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(leavesbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
-			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
-		trunk.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor }, { &trunktex->m_descriptor },
-			trunk._descriptorLayout->m_descriptorSetLayout, trunk._descriptorLayout->m_setLayoutBindings));
-		leaves.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor }, { &leavestex->m_descriptor, /*&perlinnoise->m_descriptor*/ },
-			leaves._descriptorLayout->m_descriptorSetLayout, leaves._descriptorLayout->m_setLayoutBindings));
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(plane._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer }, {colorMap}));
+		trunk.AddDescriptor(vulkanDevice->GetDescriptorSet(trunk._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer, modelVertexUniformBuffer }, { trunktex }));
+		leaves.AddDescriptor(vulkanDevice->GetDescriptorSet(leaves._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer, modelVertexUniformBuffer, modelFragmentUniformBuffer }, { leavestex, /*&perlinnoise->m_descriptor*/ }));
 	}
 
 	void setupPipelines()
 	{
 		render::PipelineProperties props;
-		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		plane.AddPipeline(vulkanDevice->GetPipeline(engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv","", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv","",
+			vertexLayout, plane._descriptorLayout, props, mainRenderPass));
 
-		trunk.AddPipeline(vulkanDevice->GetPipeline(trunk._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/wind/tree.vert.spv", engine::tools::getAssetPath() + "shaders/wind/tree.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		trunk.AddPipeline(vulkanDevice->GetPipeline(engine::tools::getAssetPath() + "shaders/wind/tree.vert.spv","", engine::tools::getAssetPath() + "shaders/wind/tree.frag.spv","",
+			vertexLayout, trunk._descriptorLayout, props, mainRenderPass));
 
-		leaves.AddPipeline(vulkanDevice->GetPipeline(leaves._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/wind/leaves.vert.spv", engine::tools::getAssetPath() + "shaders/wind/leaves.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		leaves.AddPipeline(vulkanDevice->GetPipeline(engine::tools::getAssetPath() + "shaders/wind/leaves.vert.spv","", engine::tools::getAssetPath() + "shaders/wind/leaves.frag.spv","",
+			vertexLayout, leaves._descriptorLayout, props, mainRenderPass));
 	}
 
 	void init()
@@ -215,22 +218,24 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 			//draw here
-			plane.Draw(drawCommandBuffers[i]);
-			trunk.Draw(drawCommandBuffers[i]);
-			leaves.Draw(drawCommandBuffers[i]);
+			plane.Draw(m_drawCommandBuffers[i]);
+			trunk.Draw(m_drawCommandBuffers[i]);
+			leaves.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

@@ -17,6 +17,7 @@
 #include "scene/DrawDebug.h"
 #include "scene/SceneLoader.h"
 #include "scene/SimpleModel.h"
+#include "render/vulkan/VulkanCommandBuffer.h"
 
 #define TEX_WIDTH 128
 #define TEX_HEIGHT 128
@@ -35,12 +36,14 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
+	render::VertexLayout* vertexLayout = nullptr;
+		/*render::VulkanVertexLayout(
+			{
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
 
-		}, {});
+		}, {});*/
 
 	//scene::SceneLoader scene;
 	//std::vector<scene::RenderObject*> scene_render_objects;
@@ -48,7 +51,7 @@ public:
 	render::VulkanBuffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	render::VulkanDescriptorSetLayout* lightinjectiondescriptorSetLayout;
 	//render::VulkanDescriptorSetLayout* raymarchdescriptorSetLayout;
@@ -95,8 +98,8 @@ public:
 
 	float lightAngle = glm::radians(-45.0f);
 
-	std::vector<VkCommandBuffer> drawShadowCmdBuffers;
-	std::vector<VkCommandBuffer> drawComputeCmdBuffers;
+	//std::vector<VkCommandBuffer> drawShadowCmdBuffers;
+	std::vector<render::CommandBuffer*> drawComputeCmdBuffers;
 
 	engine::scene::SimpleModel model;
 
@@ -140,9 +143,11 @@ public:
 			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT}
 		};
 		lightinjectiondescriptorSetLayout = vulkanDevice->GetDescriptorSetLayout(computebindings);
-		lightinjectiondescriptorSet = vulkanDevice->GetDescriptorSet(descriptorPool,
+		/*lightinjectiondescriptorSet = vulkanDevice->GetDescriptorSet(descriptorPool,
 			{ &vertexStorageBuffer->m_descriptor, &indexStorageBuffer->m_descriptor, &computeUniformBuffer->m_descriptor }, { &textureDFS->m_descriptor },
-			lightinjectiondescriptorSetLayout->m_descriptorSetLayout, lightinjectiondescriptorSetLayout->m_setLayoutBindings);
+			lightinjectiondescriptorSetLayout->m_descriptorSetLayout, lightinjectiondescriptorSetLayout->m_setLayoutBindings);*/
+		lightinjectiondescriptorSet = (render::VulkanDescriptorSet*)vulkanDevice->GetDescriptorSet(lightinjectiondescriptorSetLayout, descriptorPool,
+			{ vertexStorageBuffer, indexStorageBuffer, computeUniformBuffer }, { textureDFS });
 
 		/*std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> rmbindings
 		{
@@ -165,7 +170,7 @@ public:
 	{
 		std::vector<glm::vec4> vertexBuffer;
 		std::vector<uint32_t> indexBuffer;
-		int vertexSize = vertexLayout.GetVertexSize(0)/sizeof(float);
+		int vertexSize = vertexLayout->GetVertexSize(0)/sizeof(float);
 		for(auto geo : geos)
 		for (int i = 0; i < geo->m_verticesSize; i += vertexSize)
 		{
@@ -208,22 +213,36 @@ public:
 
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool({
+			{ render::DescriptorType::UNIFORM_BUFFER, 1 },
+			{render::DescriptorType::IMAGE_SAMPLER, 2 },
+			{render::DescriptorType::STORAGE_BUFFER, 2 },
+			{render::DescriptorType::STORAGE_IMAGE, 2 }
+			}, 4);
 	}
 
 	void init()
 	{	
+		vertexLayout = m_device->GetVertexLayout(
+			{
+				render::VERTEX_COMPONENT_POSITION,
+					render::VERTEX_COMPONENT_NORMAL,
+					render::VERTEX_COMPONENT_UV
+
+			}, {});
+
 		setupDescriptorPool();
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 1.1f, 1, glm::vec3(0.0f, 1.0f,0.0f));
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", vertexLayout, 1.1f, 1, glm::vec3(0.0f, 1.0f,0.0f));
 		//plane.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.02f, 1, glm::vec3(-0.7f, 0.0f, 0.0f));
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", &vertexLayout, 0.1f, 1, glm::vec3(-0.7f, 1.0f, 0.0f));
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/teapot.dae", &vertexLayout, 0.05f, 1, glm::vec3(0.7f, 0.0f, 0.0f));
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", vertexLayout, 0.1f, 1, glm::vec3(-0.7f, 1.0f, 0.0f));
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/teapot.dae", vertexLayout, 0.05f, 1, glm::vec3(0.7f, 0.0f, 0.0f));
 
 		for (auto geo : plane.m_geometries)
 		{
@@ -257,11 +276,15 @@ public:
 		};
 		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, { &textureDFS->m_descriptor },
-			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
+		/*plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, { &textureDFS->m_descriptor },
+			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));*/
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(plane._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer }, { textureDFS }));
 		render::PipelineProperties props;
-		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basic/dfs.vert.spv", engine::tools::getAssetPath() + "shaders/basic/dfs.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		/*plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/basic/dfs.vert.spv", engine::tools::getAssetPath() + "shaders/basic/dfs.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));*/
+		plane.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/basic/dfs.vert.spv","", engine::tools::getAssetPath() + "shaders/basic/dfs.frag.spv","",
+			vertexLayout,plane._descriptorLayout, props, mainRenderPass));
 
 		/*textureCompute3dTargets[0] = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
 		textureCompute3dTargets[1] = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
@@ -298,24 +321,25 @@ public:
 		
 		//scene.Update(timer * 0.05f, queue);
 
-		dbgtex.Init(vulkanDevice, descriptorPool, textureDFS, queue, mainRenderPass->GetRenderPass(), pipelineCache);
+		dbgtex.Init(vulkanDevice, descriptorPool, textureDFS, queue, mainRenderPass, pipelineCache);
 
 		initComputeObjects();
 	}
 
-	virtual void CreateCommandBuffers()
+	virtual void CreateAllCommandBuffers()
 	{
-		if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
-			return;
+		/*if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
+			return;*/
 		// Create one command buffer for each swap chain image and reuse for rendering
 		
-		//drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
-		drawComputeCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+		/*drawComputeCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 		drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 
-		//allDrawCommandBuffers.push_back(drawShadowCmdBuffers);
 		allDrawCommandBuffers.push_back(drawComputeCmdBuffers);
-		allDrawCommandBuffers.push_back(drawCommandBuffers);
+		allDrawCommandBuffers.push_back(drawCommandBuffers);*/
+
+		drawComputeCmdBuffers = CreateCommandBuffers();
+		m_drawCommandBuffers = CreateCommandBuffers();
 		
 	}
 
@@ -368,7 +392,9 @@ public:
 
 		for (int32_t i = 0; i < drawComputeCmdBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawComputeCmdBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawComputeCmdBuffers[i], &cmdBufInfo));
+			drawComputeCmdBuffers[i]->Begin();
+			VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)drawComputeCmdBuffers[i])->m_vkCommandBuffer;
 
 			// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
 			/*scene.shadowmap->PipelineBarrier(drawComputeCmdBuffers[i],
@@ -377,11 +403,12 @@ public:
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
 				);*/
 
-			lightinjectionpipeline->Draw(drawComputeCmdBuffers[i], VK_PIPELINE_BIND_POINT_COMPUTE);
-			lightinjectiondescriptorSet->Draw(drawComputeCmdBuffers[i], lightinjectionpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
-			vkCmdDispatch(drawComputeCmdBuffers[i], TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, TEX_DEPTH / COMPUTE_GROUP_SIZE_Z);
+			lightinjectionpipeline->Draw(vkbuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
+			lightinjectiondescriptorSet->Draw(vkbuffer, lightinjectionpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
+			vkCmdDispatch(vkbuffer, TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, TEX_DEPTH / COMPUTE_GROUP_SIZE_Z);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawComputeCmdBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawComputeCmdBuffers[i]));
+			drawComputeCmdBuffers[i]->End();
 		}
 
 		/*VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
@@ -398,32 +425,35 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
+			VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)m_drawCommandBuffers[i])->m_vkCommandBuffer;
 
 			// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
-			textureDFS->PipelineBarrier(drawCommandBuffers[i],
+			textureDFS->PipelineBarrier(vkbuffer,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
 				);
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
-			plane.Draw(drawCommandBuffers[i]);
+			plane.Draw(m_drawCommandBuffers[i]);
 
 			/*for (int j = 0; j < scene_render_objects.size(); j++) {
 				if(scene_render_objects[j])
 				scene_render_objects[j]->Draw(drawCommandBuffers[i]);
 			}*/
 
-			dbgtex.Draw(drawCommandBuffers[i]);
+			dbgtex.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 
@@ -537,10 +567,10 @@ public:
 
 		int dif = framesno > 2 ? 1 : 0;
 
-		std::vector<VkCommandBuffer> submitCommandBuffers(allDrawCommandBuffers.size()-dif);
+		std::vector<VkCommandBuffer> submitCommandBuffers(allvkDrawCommandBuffers[currentBuffer].size() - dif);
 		for (int i = 0; i < submitCommandBuffers.size(); i++)
 		{
-			submitCommandBuffers[i] = allDrawCommandBuffers[i+dif][currentBuffer];
+			submitCommandBuffers[i] = allvkDrawCommandBuffers[currentBuffer][i + dif];
 		}
 		submitInfo.pWaitSemaphores = &presentCompleteSemaphores[currentBuffer];
 		submitInfo.pSignalSemaphores = &renderCompleteSemaphores[currentBuffer];

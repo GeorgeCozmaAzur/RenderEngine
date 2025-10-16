@@ -31,26 +31,28 @@ public:
 
 	const float GRAVITY = 8.0f;
 
-	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
+	render::VertexLayout* vertexLayout = nullptr;
+		/*render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
-		}, {});
+		}, {});*/
 
-	render::VulkanVertexLayout vertexLayoutInstanced = render::VulkanVertexLayout({
+	render::VertexLayout* vertexLayoutInstanced = nullptr;
+		/*render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
 		render::VERTEX_COMPONENT_NORMAL
 		},
-		{ render::VERTEX_COMPONENT_POSITION });
+		{ render::VERTEX_COMPONENT_POSITION });*/
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	struct ThreadData {
 		VkCommandPool commandPool;
 		// One command buffer per render object
-		std::vector<VkCommandBuffer> commandBuffer;
+		std::vector<render::CommandBuffer*> commandBuffer;
 		std::vector<engine::scene::SimpleModel*> objects;
 	};
 	std::vector<ThreadData> threadData;
@@ -81,8 +83,8 @@ public:
 	std::vector<render::VulkanBuffer*> vert_uniform_buffers;
 	std::vector<UBOVS*> vert_ram_uniform_buffers;
 
-	render::VulkanDescriptorSetLayout *objectslayout;
-	render::VulkanPipeline* objectsPipeline;
+	render::DescriptorSetLayout *objectslayout;
+	render::Pipeline* objectsPipeline;
 
 	std::vector<scene::BoundingSphere*> balls;
 	std::vector<glm::vec3> balls_positions;
@@ -144,11 +146,26 @@ public:
 
 	void setupGeometry()
 	{
+		vertexLayout = m_device->GetVertexLayout(
+			{
+				render::VERTEX_COMPONENT_POSITION,
+				render::VERTEX_COMPONENT_NORMAL,
+				render::VERTEX_COMPONENT_UV
+			}, {});
+		vertexLayoutInstanced = m_device->GetVertexLayout(
+			{
+		render::VERTEX_COMPONENT_POSITION,
+		render::VERTEX_COMPONENT_UV,
+		render::VERTEX_COMPONENT_COLOR,
+		render::VERTEX_COMPONENT_NORMAL
+			},
+			{ render::VERTEX_COMPONENT_POSITION });
+
 		objects.resize(objectsNo);
 		//Geometry
 		for (int i = 0;i < objectsNo;i++)
 		{
-			objects[i].LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.01f * randomFloatRange(0.5, 1.0), 1);
+			objects[i].LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.01f * randomFloatRange(0.5, 1.0), 1);
 			for (auto geo : objects[i].m_geometries)
 			{
 				geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
@@ -246,11 +263,14 @@ public:
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 * static_cast<uint32_t>(objectsNo) + 2},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * static_cast<uint32_t>(objectsNo)}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2 * objectsNo+2);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2 * objectsNo+2);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool(
+			{ {render::DescriptorType::UNIFORM_BUFFER, 2 * static_cast<uint32_t>(objectsNo) + 2},
+			{render::DescriptorType::IMAGE_SAMPLER, 2 * static_cast<uint32_t>(objectsNo)} }, 2 * objectsNo + 2);
 	}
 
 	void SetupDescriptors()
@@ -267,16 +287,20 @@ public:
 		for (int i = 0;i < objectsNo;i++)
 		{
 			objects[i].SetDescriptorSetLayout(objectslayout);
-			objects[i].AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &vert_uniform_buffers[i]->m_descriptor }, { &colorMap->m_descriptor },
-				objects[i]._descriptorLayout->m_descriptorSetLayout, objects[i]._descriptorLayout->m_setLayoutBindings));
+			/*objects[i].AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &vert_uniform_buffers[i]->m_descriptor }, { &colorMap->m_descriptor },
+				objects[i]._descriptorLayout->m_descriptorSetLayout, objects[i]._descriptorLayout->m_setLayoutBindings));*/
+			objects[i].AddDescriptor(vulkanDevice->GetDescriptorSet(objects[i]._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer, vert_uniform_buffers[i] }, { colorMap }));
 		}
 	}
 
 	void setupPipelines()
 	{
 		render::PipelineProperties props;
-		objectsPipeline = vulkanDevice->GetPipeline(objectslayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/multithreaded/phong.vert.spv", engine::tools::getAssetPath() + "shaders/multithreaded/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props);
+		/*objectsPipeline = vulkanDevice->GetPipeline(objectslayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/multithreaded/phong.vert.spv", engine::tools::getAssetPath() + "shaders/multithreaded/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props);*/
+		objectsPipeline = vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/multithreaded/phong.vert.spv","", engine::tools::getAssetPath() + "shaders/multithreaded/phongtextured.frag.spv","",
+			vertexLayout, objectslayout, props, mainRenderPass);
 
 		for (int i = 0;i < objectsNo;i++)
 		{
@@ -297,7 +321,7 @@ public:
 
 		std::vector <std::vector<glm::vec3>> boundries;
 		tree->GatherAllBoundries(boundries);
-		dbgbb.Init(boundries, vulkanDevice, descriptorPool, sceneVertexUniformBuffer, queue, mainRenderPass->GetRenderPass(), pipelineCache, sizeof(float));
+		dbgbb.Init(boundries, vulkanDevice, descriptorPool, sceneVertexUniformBuffer, queue, mainRenderPass, pipelineCache, sizeof(float));
 		
 		constants.resize(boundries.size());
 		std::fill(constants.begin(), constants.end(), 1.0f);
@@ -310,24 +334,26 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 			//draw here
 			for (int j = 0;j < objectsNo;j++)
 			{
-				objects[j].Draw(drawCommandBuffers[i]);
+				objects[j].Draw(m_drawCommandBuffers[i]);
 			}
-			dbgbb.Draw(drawCommandBuffers[i]);
+			dbgbb.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

@@ -492,7 +492,7 @@ namespace engine
 				RenderObject* ro = render_objects[ro_index];
 				if (!ro)
 					continue;
-				render::VulkanVertexLayout* l = ro->_vertexLayout;
+				render::VulkanVertexLayout* l = (render::VulkanVertexLayout*)ro->_vertexLayout;//george bad
 				//it = std::find(vlayouts.begin(), vlayouts.end(), l);
 				int index = -1;
 				for (int i = 0; i < vlayouts.size(); i++)
@@ -570,7 +570,7 @@ namespace engine
 			}
 		}
 
-		void SceneLoaderGltf::DrawShadowsInSeparatePass(VkCommandBuffer command_buffer)
+		void SceneLoaderGltf::DrawShadowsInSeparatePass(render::CommandBuffer* command_buffer)
 		{
 			float depthBiasConstant = 0.25f;
 			// Slope depth bias factor, applied depending on polygon's slope
@@ -579,11 +579,11 @@ namespace engine
 
 			// Set depth bias (aka "Polygon offset")
 			// Required to avoid shadow mapping artefacts
-			vkCmdSetDepthBias(
+			/*vkCmdSetDepthBias(
 				command_buffer,
 				depthBiasConstant,
 				0.0f,
-				depthBiasSlope);
+				depthBiasSlope);*/
 
 			for (auto obj : shadow_objects)
 				obj->Draw(command_buffer);

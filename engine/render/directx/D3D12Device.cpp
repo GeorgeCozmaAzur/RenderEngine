@@ -138,7 +138,7 @@ namespace engine
 			return pass;
 		}
 
-		Pipeline* D3D12Device::GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass)
+		Pipeline* D3D12Device::GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass)
 		{
 			D3D12Pipeline* pipeline = new D3D12Pipeline();
 			std::wstring ws(vertexFileName.begin(), vertexFileName.end());

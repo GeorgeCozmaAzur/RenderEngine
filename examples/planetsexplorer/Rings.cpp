@@ -49,7 +49,7 @@ namespace engine
 			return indices;
 		}
 
-		void Rings::Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool, render::VulkanVertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<VkDescriptorImageInfo*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, VkRenderPass renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue)
+		void Rings::Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<render::Texture*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, render::RenderPass* renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue)
 		{
 			_vertexLayout = vertex_layout;
 
@@ -158,11 +158,15 @@ namespace engine
 
 			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(bindings);
 
-			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &globalUniformBufferVS->m_descriptor, &uniformBufferVS->m_descriptor }, texturesDescriptors,
-				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
+			/*m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &globalUniformBufferVS->m_descriptor, &uniformBufferVS->m_descriptor }, texturesDescriptors,
+				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));*/
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(_descriptorLayout, descriptorPool, { globalUniformBufferVS, uniformBufferVS }, texturesDescriptors));
 
-			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/" + vertexShaderFilename + ".vert.spv", engine::tools::getAssetPath() + "shaders/" + fragmentShaderFilename + ".frag.spv", renderPass, pipelineCache, pipelineProperties);
+			/*_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
+				engine::tools::getAssetPath() + "shaders/" + vertexShaderFilename + ".vert.spv", engine::tools::getAssetPath() + "shaders/" + fragmentShaderFilename + ".frag.spv", renderPass, pipelineCache, pipelineProperties);*/
+			_pipeline = vulkanDevice->GetPipeline(
+				engine::tools::getAssetPath() + "shaders/" + vertexShaderFilename + ".vert.spv","", engine::tools::getAssetPath() + "shaders/" + fragmentShaderFilename + ".frag.spv","",
+				_vertexLayout, _descriptorLayout, pipelineProperties, renderPass);
 
 		}
 

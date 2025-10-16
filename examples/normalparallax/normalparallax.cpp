@@ -21,15 +21,10 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VertexLayout vertexLayout = render::VertexLayout({
-		render::VERTEX_COMPONENT_POSITION,
-		render::VERTEX_COMPONENT_NORMAL,
-		render::VERTEX_COMPONENT_UV,
-		render::VERTEX_COMPONENT_TANGENT,
-		render::VERTEX_COMPONENT_BITANGENT
-		}, {});
+	render::VertexLayout* vertexLayout = nullptr;
+		
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool = nullptr;
 
 	engine::scene::SimpleModel plane;
 	render::VulkanTexture* colorMap;
@@ -71,6 +66,13 @@ public:
 
 	void setupGeometry()
 	{
+		vertexLayout = m_device->GetVertexLayout({
+		render::VERTEX_COMPONENT_POSITION,
+		render::VERTEX_COMPONENT_NORMAL,
+		render::VERTEX_COMPONENT_UV,
+		render::VERTEX_COMPONENT_TANGENT,
+		render::VERTEX_COMPONENT_BITANGENT
+			}, {});
 		//Geometry
 		/*plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 1.0f, 1);
 		for (auto geo : plane.m_geometries)
@@ -109,7 +111,7 @@ public:
 
 		geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), indices.data()));
 		geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, vertices.size() * sizeof(Vertex), vertices.data()));
-		plane._vertexLayout = &vertexLayout;
+		plane._vertexLayout = vertexLayout;
 		plane.m_geometries.push_back(geo);
 	}
 
@@ -135,7 +137,7 @@ public:
 
 		data.LoadFromFile(engine::tools::getAssetPath() + "textures/StoneBricksBeige015/StoneBricksBeige015_GLOSS_4K.jpg", render::GfxFormat::R8G8B8A8_UNORM);
 		glossMap = vulkanDevice->GetTexture(&data, queue);
-		data.Destroy();
+		//data.Destroy();
 	}
 
 	void SetupUniforms()
@@ -158,7 +160,11 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		//descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		descriptorPool = vulkanDevice->GetDescriptorPool({ 
+			{ render::DescriptorType::UNIFORM_BUFFER, 2 },
+			{render::DescriptorType::IMAGE_SAMPLER, 5 }
+			}, 5);
 	}
 
 	void SetupDescriptors()
@@ -175,15 +181,22 @@ public:
 		};
 		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor, &normalMap->m_descriptor, &dispMap->m_descriptor, &glossMap->m_descriptor, },
-			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
+		/*plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor, &normalMap->m_descriptor, &dispMap->m_descriptor, &glossMap->m_descriptor, },
+			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));*/
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(plane._descriptorLayout, descriptorPool, 
+			{ sceneVertexUniformBuffer, modelVertexUniformBuffer }, 
+			{colorMap, normalMap, dispMap, glossMap }));
 	}
 
 	void setupPipelines()
 	{
 		render::PipelineProperties props;
-		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/normalparallax/normalparallaxmap.vert.spv", engine::tools::getAssetPath() + "shaders/normalparallax/normalparallaxmap.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		/*plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/normalparallax/normalparallaxmap.vert.spv", engine::tools::getAssetPath() + "shaders/normalparallax/normalparallaxmap.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));*/
+		plane.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/normalparallax/normalparallaxmap.vert.spv","", engine::tools::getAssetPath() + "shaders/normalparallax/normalparallaxmap.frag.spv","",
+			plane._vertexLayout,plane._descriptorLayout, props, mainRenderPass));
+
 	}
 
 	void init()
@@ -203,20 +216,22 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(m_commandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 			//draw here
-			plane.Draw(drawCommandBuffers[i]);
+			plane.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
+			//VK_CHECK_RESULT(vkEndCommandBuffer(m_commandBuffers[i]));
 		}
 	}
 

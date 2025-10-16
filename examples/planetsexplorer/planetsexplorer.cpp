@@ -28,25 +28,28 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VulkanVertexLayout simpleVertexLayout = render::VulkanVertexLayout({
+	render::VertexLayout* simpleVertexLayout = nullptr;
+		/*render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION
-		}, {});
+		}, {});*/
 
-	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
+	render::VertexLayout* vertexLayout = nullptr;
+		/*render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
-		}, {});
+		}, {});*/
 
-	render::VulkanVertexLayout vertexLayoutNM = render::VulkanVertexLayout({
+	render::VertexLayout* vertexLayoutNM = nullptr;
+		/*render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_TANGENT,
 		render::VERTEX_COMPONENT_BITANGENT
-		}, {});
+		}, {});*/
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	engine::scene::SimpleModel sun;
 	engine::scene::SimpleModel saturn;
@@ -111,7 +114,7 @@ public:
 
 	render::VulkanRenderPass* scenepass = nullptr;
 	render::VulkanPipeline* peffpipeline = nullptr;
-	render::VulkanDescriptorSet* peffdesc = nullptr;
+	render::DescriptorSet* peffdesc = nullptr;
 	render::VulkanTexture* scenecolor;
 	render::VulkanTexture* scenepositions;
 	render::VulkanTexture* scenedepth;
@@ -159,14 +162,30 @@ public:
 
 	void setupGeometry()
 	{
+		simpleVertexLayout = m_device->GetVertexLayout({
+		render::VERTEX_COMPONENT_POSITION
+			}, {});
+		vertexLayout = m_device->GetVertexLayout({
+		render::VERTEX_COMPONENT_POSITION,
+		render::VERTEX_COMPONENT_NORMAL,
+		render::VERTEX_COMPONENT_UV
+			}, {});
+		vertexLayoutNM = m_device->GetVertexLayout({
+		render::VERTEX_COMPONENT_POSITION,
+		render::VERTEX_COMPONENT_NORMAL,
+		render::VERTEX_COMPONENT_UV,
+		render::VERTEX_COMPONENT_TANGENT,
+		render::VERTEX_COMPONENT_BITANGENT
+			}, {});
+
 		//Geometry
-		saturn.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 300.0f, 1);
+		saturn.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 300.0f, 1);
 		for (auto geo : saturn.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices),true);
 		}
-		sun.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 100.0f, 1, glm::vec3(0.0,0,0.0));
+		sun.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 100.0f, 1, glm::vec3(0.0,0,0.0));
 		for (auto geo : sun.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
@@ -251,11 +270,16 @@ public:
 
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 17},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 10);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 10);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool(
+			{
+			{render::DescriptorType::UNIFORM_BUFFER, 17},
+			{render::DescriptorType::IMAGE_SAMPLER, 10}
+			}, 10);
 	}
 
 	void SetupDescriptors()
@@ -269,12 +293,16 @@ public:
 		};
 
 		sun.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		sun.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &uniformBufferSunVS->m_descriptor }, { &sunMap->m_descriptor },
-			sun._descriptorLayout->m_descriptorSetLayout, sun._descriptorLayout->m_setLayoutBindings));
+		/*sun.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &uniformBufferSunVS->m_descriptor }, { &sunMap->m_descriptor },
+			sun._descriptorLayout->m_descriptorSetLayout, sun._descriptorLayout->m_setLayoutBindings));*/
+		sun.AddDescriptor(vulkanDevice->GetDescriptorSet(sun._descriptorLayout, descriptorPool,
+			{ sceneVertexUniformBuffer, uniformBufferSunVS }, { sunMap }));
 
 		saturn.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		saturn.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &uniformBufferMPVS->m_descriptor }, { &saturnMap->m_descriptor },
-			saturn._descriptorLayout->m_descriptorSetLayout, saturn._descriptorLayout->m_setLayoutBindings));
+		/*saturn.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &uniformBufferMPVS->m_descriptor }, { &saturnMap->m_descriptor },
+			saturn._descriptorLayout->m_descriptorSetLayout, saturn._descriptorLayout->m_setLayoutBindings));*/
+		saturn.AddDescriptor(vulkanDevice->GetDescriptorSet(saturn._descriptorLayout, descriptorPool,
+			{ sceneVertexUniformBuffer, uniformBufferMPVS }, { saturnMap }));
 
 		/*std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> skyboxbindings
 		{
@@ -304,11 +332,17 @@ public:
 		/*terrain.AddPipeline(vulkanDevice->GetPipeline(terrain._descriptorLayout->m_descriptorSetLayout, vertexLayoutNM.m_vertexInputBindings, vertexLayoutNM.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/basic/normalmap.vert.spv", engine::tools::getAssetPath() + "shaders/basic/normalmap.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache));*/
 		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f }, 0);
-		sun.AddPipeline(vulkanDevice->GetPipeline(sun._descriptorLayout->m_descriptorSetLayout, sun._vertexLayout->m_vertexInputBindings, sun._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/planet/planet.vert.spv", engine::tools::getAssetPath() + "shaders/planet/sun.frag.spv", scenepass->GetRenderPass(), pipelineCache, props));
+		/*sun.AddPipeline(vulkanDevice->GetPipeline(sun._descriptorLayout->m_descriptorSetLayout, sun._vertexLayout->m_vertexInputBindings, sun._vertexLayout->m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/planet/planet.vert.spv", engine::tools::getAssetPath() + "shaders/planet/sun.frag.spv", scenepass->GetRenderPass(), pipelineCache, props));*/
+		sun.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/planet/planet.vert.spv","", engine::tools::getAssetPath() + "shaders/planet/sun.frag.spv","", 
+			sun._vertexLayout,sun._descriptorLayout, props, scenepass));
 
-		saturn.AddPipeline(vulkanDevice->GetPipeline(saturn._descriptorLayout->m_descriptorSetLayout, saturn._vertexLayout->m_vertexInputBindings, saturn._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/planet/planet.vert.spv", engine::tools::getAssetPath() + "shaders/planet/planet.frag.spv", scenepass->GetRenderPass(), pipelineCache, props));
+		/*saturn.AddPipeline(vulkanDevice->GetPipeline(saturn._descriptorLayout->m_descriptorSetLayout, saturn._vertexLayout->m_vertexInputBindings, saturn._vertexLayout->m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/planet/planet.vert.spv", engine::tools::getAssetPath() + "shaders/planet/planet.frag.spv", scenepass->GetRenderPass(), pipelineCache, props));*/
+		saturn.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/planet/planet.vert.spv","", engine::tools::getAssetPath() + "shaders/planet/planet.frag.spv","",
+			saturn._vertexLayout, saturn._descriptorLayout, props, scenepass));
 
 		/*skybox.AddPipeline(vulkanDevice->GetPipeline(skybox._descriptorLayout->m_descriptorSetLayout, simpleVertexLayout.m_vertexInputBindings, simpleVertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/basic/skybox.vert.spv", engine::tools::getAssetPath() + "shaders/basic/skybox.frag.spv", scenepass->GetRenderPass(), pipelineCache));*/
@@ -345,10 +379,10 @@ public:
 		transprops.attachmentCount = static_cast<uint32_t>(blendAttachmentStatesTransparent.size());
 		transprops.pAttachments = blendAttachmentStatesTransparent.data();
 
-		myplanet.Init(engine::tools::getAssetPath() + "textures/planets/mars_1k_topo.jpg", 6000, vulkanDevice, descriptorPool, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), 0, { &colorMap->m_descriptor }, "planet/planet", "planet/planet", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue, 100, 100);
-		rings.Init(6700.0, 6700.0+8000.0, 300, vulkanDevice, descriptorPool, &vertexLayout, sceneVertexUniformBuffer, { &ringsMap->m_descriptor, &shadowtex->m_descriptor }, "planet/shadowedplanet", "planet/shadowedplanet", scenepass->GetRenderPass(), pipelineCache, transprops, queue);
+		myplanet.Init(engine::tools::getAssetPath() + "textures/planets/mars_1k_topo.jpg", 6000, vulkanDevice, descriptorPool, vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), 0, { colorMap }, "planet/planet", "planet/planet", scenepass, pipelineCache, sphereprops, queue, 100, 100);
+		rings.Init(6700.0, 6700.0+8000.0, 300, vulkanDevice, descriptorPool, vertexLayout, sceneVertexUniformBuffer, { ringsMap, shadowtex }, "planet/shadowedplanet", "planet/shadowedplanet", scenepass, pipelineCache, transprops, queue);
 		
-		shadowobjects.SetVertexLayout(&vertexLayout);
+		shadowobjects.SetVertexLayout(vertexLayout);
 		scene::Geometry* mygeo = new scene::Geometry;
 		*mygeo = *rings.m_geometries[0];
 		shadowobjects.m_geometries.push_back(mygeo);
@@ -360,17 +394,20 @@ public:
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
 		};
 		shadowobjects.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(offscreenbindings));
-		shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBufferoffscreen->m_descriptor }, {},
-			shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._descriptorLayout->m_setLayoutBindings));
+		/*shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBufferoffscreen->m_descriptor }, {},
+			shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._descriptorLayout->m_setLayoutBindings));*/
+		shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet(shadowobjects._descriptorLayout, descriptorPool, { uniformBufferoffscreen }, {}));
 		
-		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
+		//std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+		//vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
 		render::PipelineProperties sprops; sprops.depthBias = true;
-		shadowobjects.AddPipeline(vulkanDevice->GetPipeline(shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._vertexLayout->m_vertexInputBindings, shadowobjects._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache, sprops));
+		/*shadowobjects.AddPipeline(vulkanDevice->GetPipeline(shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._vertexLayout->m_vertexInputBindings, shadowobjects._vertexLayout->m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache, sprops));*/
+		shadowobjects.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "","","", shadowobjects._vertexLayout, shadowobjects._descriptorLayout, sprops, offscreenPass));
 
 		sphereprops.blendEnable = true;
-		atmosphere.Init("", 6100, vulkanDevice, descriptorPool, &vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), sizeof(modelUniformAtmosphereFS), { &colorMap->m_descriptor }, "planet/atmosphere", "planet/atmosphere", scenepass->GetRenderPass(), pipelineCache, sphereprops, queue,
+		atmosphere.Init("", 6100, vulkanDevice, descriptorPool, vertexLayout, sceneVertexUniformBuffer, sizeof(uboVS), sizeof(modelUniformAtmosphereFS), { colorMap }, "planet/atmosphere", "planet/atmosphere", scenepass, pipelineCache, sphereprops, queue,
 		128, 128);
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> atmosphereBindings
@@ -388,9 +425,11 @@ public:
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/planet/atmosphereposteffect.frag.spv",
 			mainRenderPass->GetRenderPass(), pipelineCache, props);
 
-		peffdesc = vulkanDevice->GetDescriptorSet(descriptorPool, { &matricesUniformBuffer->m_descriptor, &atmosphere.GetFSUniformBuffer()->m_descriptor },
+		/*peffdesc = vulkanDevice->GetDescriptorSet(descriptorPool, { &matricesUniformBuffer->m_descriptor, &atmosphere.GetFSUniformBuffer()->m_descriptor },
 			{ &scenecolor->m_descriptor, &scenepositions->m_descriptor, &scenedepth->m_descriptor, &bluenoise->m_descriptor }, 
-			atmosphereLayout->m_descriptorSetLayout, atmosphereLayout->m_setLayoutBindings);
+			atmosphereLayout->m_descriptorSetLayout, atmosphereLayout->m_setLayoutBindings);*/
+		peffdesc = vulkanDevice->GetDescriptorSet(atmosphereLayout, descriptorPool, { matricesUniformBuffer, atmosphere.GetFSUniformBuffer() },
+			{ scenecolor, scenepositions, scenedepth, bluenoise });
 
 		camera.SetPositionOnSphere(2.0, 0.5, myplanet.GetRadius() + 50.0f);
 		/*int stride = terrain._vertexLayout->GetVertexSize(0) / sizeof(float);
@@ -429,42 +468,45 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			offscreenPass->Begin(drawCommandBuffers[i], 0);
+			offscreenPass->Begin(m_drawCommandBuffers[i], 0);
 
-			vkCmdSetDepthBias(
+			/*vkCmdSetDepthBias(
 				drawCommandBuffers[i],
 				depthBiasConstant,
 				0.0f,
-				depthBiasSlope);
+				depthBiasSlope);*/
 
-			shadowobjects.Draw(drawCommandBuffers[i]);
+			shadowobjects.Draw(m_drawCommandBuffers[i]);
 
-			offscreenPass->End(drawCommandBuffers[i]);
+			offscreenPass->End(m_drawCommandBuffers[i]);
 
-			scenepass->Begin(drawCommandBuffers[i], 0);
+			scenepass->Begin(m_drawCommandBuffers[i], 0);
 
-			sun.Draw(drawCommandBuffers[i]);
-			saturn.Draw(drawCommandBuffers[i]);
-			rings.Draw(drawCommandBuffers[i]);
-			myplanet.Draw(drawCommandBuffers[i]);
+			sun.Draw(m_drawCommandBuffers[i]);
+			saturn.Draw(m_drawCommandBuffers[i]);
+			rings.Draw(m_drawCommandBuffers[i]);
+			myplanet.Draw(m_drawCommandBuffers[i]);
 
-			scenepass->End(drawCommandBuffers[i]);
+			scenepass->End(m_drawCommandBuffers[i]);
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
-			peffpipeline->Draw(drawCommandBuffers[i]);
-			peffdesc->Draw(drawCommandBuffers[i], peffpipeline->getPipelineLayout(), 0);
-			vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			peffpipeline->Draw(m_drawCommandBuffers[i]);
+			peffdesc->Draw(m_drawCommandBuffers[i], peffpipeline);
+			//vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			DrawFullScreenQuad(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

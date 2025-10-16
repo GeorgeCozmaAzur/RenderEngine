@@ -8,10 +8,10 @@ namespace engine
 			return (float)rand() / ((float)RAND_MAX + 1);
 		}
 
-		void DeferredLights::Init(render::VulkanBuffer* ub, render::VulkanDevice* device, VkDescriptorPool descriptorPool, VkQueue queue, VkRenderPass renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture* positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic, render::VulkanTexture* albedo)
+		void DeferredLights::Init(render::VulkanBuffer* ub, render::VulkanDevice* device, render::DescriptorPool* descriptorPool, VkQueue queue, render::RenderPass* renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture* positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic, render::VulkanTexture* albedo)
 		{
 			vulkanDevice = device;
-			_vertexLayout = new render::VulkanVertexLayout(
+			_vertexLayout = device->GetVertexLayout(//new render::VulkanVertexLayout(
 				{
 					render::VERTEX_COMPONENT_POSITION
 				},
@@ -48,22 +48,23 @@ namespace engine
 				{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT}
 			};
-			std::vector<VkDescriptorImageInfo*> texturesDescriptors = { &positions->m_descriptor, &normals->m_descriptor };
+			std::vector<render::Texture*> texturesDescriptors = { positions, normals };
 
 			//we have a pbr lighting system
 			if (roughnessMetallic && albedo)
 			{
 				modelbindings.push_back({ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT });
 				modelbindings.push_back({ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT });
-				texturesDescriptors.insert(texturesDescriptors.begin(), &albedo->m_descriptor);
-				texturesDescriptors.push_back(&roughnessMetallic->m_descriptor);	
+				texturesDescriptors.insert(texturesDescriptors.begin(), albedo);
+				texturesDescriptors.push_back(roughnessMetallic);	
 				shaderVertexName = "shaders/basicdeferred/deferredlightspbr.vert.spv";
 				shaderFragmentName = "shaders/basicdeferred/deferredlightspbr.frag.spv";
 			}
 
 			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(modelbindings);
-			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &ub->m_descriptor }, texturesDescriptors,
-				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));
+			/*m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(descriptorPool, { &ub->m_descriptor }, texturesDescriptors,
+				_descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings));*/
+			m_descriptorSets.push_back(vulkanDevice->GetDescriptorSet(_descriptorLayout, descriptorPool, { ub }, texturesDescriptors));
 
 			/*std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates{ {VK_TRUE, 
 				VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_DST_ALPHA,
@@ -82,10 +83,11 @@ namespace engine
 			props.depthWriteEnable = false;
 			props.subpass = 1U;
 			props.cullMode = render::CullMode::BACK;
-			_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
+			/*_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
 				engine::tools::getAssetPath() + shaderVertexName, engine::tools::getAssetPath() + shaderFragmentName,
-				renderPass, pipelineCache, props);
-				//true, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, nullptr, static_cast<uint32_t>(blendAttachmentStates.size()), blendAttachmentStates.data(),false,true,false,1U);
+				renderPass, pipelineCache, props);*/
+			_pipeline = vulkanDevice->GetPipeline(engine::tools::getAssetPath() + shaderVertexName, "", engine::tools::getAssetPath() + shaderFragmentName, "",
+				_vertexLayout, _descriptorLayout, props, renderPass);
 		}
 
 		void DeferredLights::Update()
@@ -98,7 +100,7 @@ namespace engine
 
 		DeferredLights::~DeferredLights()
 		{
-			delete _vertexLayout;
+			//delete _vertexLayout;
 		}
 	}
 }

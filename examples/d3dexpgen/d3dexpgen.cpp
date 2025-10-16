@@ -282,12 +282,12 @@ public:
 
 		render::PipelineProperties props;
 		props.depthBias = true;
-		pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainOffscreen", vertexLayout, odsl, props, m_mainRenderPass);
-		//pipelineOffscreen = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/offscreen.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/offscreenvariancecolor.frag.spv"), "PSMainOffscreen",vertexLayout, odsl, props, offscreenPass);
+		pipelineOffscreen = m_device->GetPipeline(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainOffscreen", vertexLayout, odsl, props, m_mainRenderPass);
+		//pipelineOffscreen = m_device->GetPipeline(GetAssetFullPath("shaders/d3dexp/offscreen.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/offscreenvariancecolor.frag.spv"), "PSMainOffscreen",vertexLayout, odsl, props, offscreenPass);
 		props.depthBias = false;
 		props.vertexConstantBlockSize = sizeof(glm::vec4);
-		pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
-		//pipelineMT = m_device->GetPipeLine(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/scene.frag.spv"), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
+		pipelineMT = m_device->GetPipeline(GetAssetFullPath("shaders/d3dexp/shaders.hlsl"), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
+		//pipelineMT = m_device->GetPipeline(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/scene.frag.spv"), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
 
 		if (m_loadingCommandBuffer)	
 		{
@@ -314,40 +314,40 @@ public:
 	virtual void BuildCommandBuffers()
 	{
 		int i = currentBuffer;
-		for (int32_t i = 0; i < m_commandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			m_commandBuffers[i]->Begin();
+			m_drawCommandBuffers[i]->Begin();
 
-			m_srvHeap->Draw(m_commandBuffers[i]);
+			m_srvHeap->Draw(m_drawCommandBuffers[i]);
 
-			offscreenPass->Begin(m_commandBuffers[i]);
-			pipelineOffscreen->Draw(m_commandBuffers[i]);
-			modeltableoffscreen->Draw(m_commandBuffers[i], pipelineOffscreen);
+			offscreenPass->Begin(m_drawCommandBuffers[i]);
+			pipelineOffscreen->Draw(m_drawCommandBuffers[i]);
+			modeltableoffscreen->Draw(m_drawCommandBuffers[i], pipelineOffscreen);
 			for (auto m : meshesmodel)
 			{
-				m->Draw(m_commandBuffers[i]);
+				m->Draw(m_drawCommandBuffers[i]);
 			}
 			for (auto m : meshesplane)
 			{
-				m->Draw(m_commandBuffers[i]);
+				m->Draw(m_drawCommandBuffers[i]);
 			}
-			offscreenPass->End(m_commandBuffers[i]);
+			offscreenPass->End(m_drawCommandBuffers[i]);
 
-			m_mainRenderPass->Begin(m_commandBuffers[i], i);
+			m_mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 			//pipeline->Draw(m_commandBuffers[i]);
 			//modeltable->Draw(m_commandBuffers[i]);
 			float colorDwords[4] = { 0.5f,1.0f,0.5f,1.0f };
-			pipelineMT->Draw(m_commandBuffers[i]);
-			pipelineMT->PushConstants(m_commandBuffers[i], colorDwords);
-			planetable->Draw(m_commandBuffers[i], pipelineMT);
+			pipelineMT->Draw(m_drawCommandBuffers[i]);
+			pipelineMT->PushConstants(m_drawCommandBuffers[i], colorDwords);
+			planetable->Draw(m_drawCommandBuffers[i], pipelineMT);
 			for (auto m : meshesmodel)
-				m->Draw(m_commandBuffers[i]);
+				m->Draw(m_drawCommandBuffers[i]);
 
 			for (auto m : meshesplane)
-				m->Draw(m_commandBuffers[i]);
-			m_mainRenderPass->End(m_commandBuffers[i], i);
+				m->Draw(m_drawCommandBuffers[i]);
+			m_mainRenderPass->End(m_drawCommandBuffers[i], i);
 
-			m_commandBuffers[i]->End();
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

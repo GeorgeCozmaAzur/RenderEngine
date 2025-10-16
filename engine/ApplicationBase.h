@@ -42,7 +42,8 @@ protected:
 	std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp;
 
 	render::GraphicsDevice* m_device = nullptr;
-	std::vector<render::CommandBuffer*> m_commandBuffers;
+	std::vector<render::CommandBuffer*> m_drawCommandBuffers;
+	std::vector<std::vector<render::CommandBuffer*>> m_allDrawCommandBuffers;
 	render::CommandBuffer* m_loadingCommandBuffer = nullptr;
 	render::RenderPass* m_mainRenderPass = nullptr;
 
@@ -151,6 +152,9 @@ public:
 	// Called when the window has been resized
 	// Can be overriden in derived class to recreate or rebuild resources attached to the frame buffer / swapchain
 	virtual void WindowResized() = 0;
+
+	virtual std::vector<render::CommandBuffer*> CreateCommandBuffers() = 0;
+	virtual void CreateAllCommandBuffers() = 0;
 	// Pure virtual function to be overriden by the dervice class
 	// Called in case of an event where e.g. the framebuffer has to be rebuild and thus
 	// all command buffers that may reference this
@@ -170,6 +174,8 @@ public:
 	virtual void UpdateOverlay()=0;
 
 	virtual void WaitForDevice() = 0;
+
+	virtual void DrawFullScreenQuad(render::CommandBuffer* commandBuffer) = 0;
 };
 
 // OS specific macros for the example main entry points

@@ -36,14 +36,19 @@ namespace engine
 
 		void D3D12RenderPass::Begin(CommandBuffer* commandBuffer, uint32_t frameBufferIndex)
 		{
-			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
 			Begin(d3dcommandBuffer->m_commandList.Get(), frameBufferIndex);
 		}
 
 		void D3D12RenderPass::End(CommandBuffer* commandBuffer, uint32_t frameBufferIndex)
 		{
-			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
 			End(d3dcommandBuffer->m_commandList.Get(), frameBufferIndex);
+		}
+
+		void D3D12RenderPass::NextSubPass(CommandBuffer* commandBuffer)
+		{
+
 		}
 	}
 }

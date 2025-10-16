@@ -21,13 +21,14 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VertexLayout* vertexLayout = nullptr;
+		/*render::VertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
 		render::VERTEX_COMPONENT_UV
-		}, {});
+		}, {});*/
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	engine::scene::SimpleModel basicModel;
 	engine::scene::SimpleModel basicModelTextured;
@@ -83,14 +84,20 @@ public:
 
 	void setupGeometry()
 	{
+		vertexLayout = m_device->GetVertexLayout({
+		render::VERTEX_COMPONENT_POSITION,
+		render::VERTEX_COMPONENT_NORMAL,
+		render::VERTEX_COMPONENT_UV
+			}, {});
+
 		//Geometry
-		basicModel.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.1f, 1);
+		basicModel.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.1f, 1);
 		for (auto geo : basicModel.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 		}
-		basicModelTextured.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.1f, 1);
+		basicModelTextured.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.1f, 1);
 		for (auto geo : basicModelTextured.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
@@ -133,7 +140,7 @@ public:
 
 		data.LoadFromFile(engine::tools::getAssetPath() + "textures/pbr/rusted_iron/ao.png", render::GfxFormat::R8G8B8A8_UNORM);
 		aoMap = vulkanDevice->GetTexture(&data, queue);
-		data.Destroy();
+		//data.Destroy();
 	}
 
 	void SetupUniforms()
@@ -155,11 +162,15 @@ public:
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool({
+			{ render::DescriptorType::UNIFORM_BUFFER, 6 },
+			{render::DescriptorType::IMAGE_SAMPLER, 8 }
+			}, 4);
 	}
 
 	void SetupDescriptors()
@@ -183,23 +194,34 @@ public:
 		basicModel.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 		basicModelTextured.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindingstextured));
 
-		basicModel.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor },
+		/*basicModel.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor },
 			{  },
-			basicModel._descriptorLayout->m_descriptorSetLayout, basicModel._descriptorLayout->m_setLayoutBindings));
+			basicModel._descriptorLayout->m_descriptorSetLayout, basicModel._descriptorLayout->m_setLayoutBindings));*/
+		basicModel.AddDescriptor(vulkanDevice->GetDescriptorSet(basicModel._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer, modelFragmentUniformBuffer }, {  }));
 
-		basicModelTextured.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentTexturedUniformBuffer->m_descriptor },
+		/*basicModelTextured.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentTexturedUniformBuffer->m_descriptor },
 			{ &colorMap->m_descriptor, &roughnessMap->m_descriptor, &metallicMap->m_descriptor, &aoMap->m_descriptor },
-			basicModelTextured._descriptorLayout->m_descriptorSetLayout, basicModelTextured._descriptorLayout->m_setLayoutBindings));
+			basicModelTextured._descriptorLayout->m_descriptorSetLayout, basicModelTextured._descriptorLayout->m_setLayoutBindings));*/
+		basicModelTextured.AddDescriptor(vulkanDevice->GetDescriptorSet(basicModelTextured._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer, modelFragmentTexturedUniformBuffer },
+			{ colorMap, roughnessMap, metallicMap, aoMap }));
 	}
 
 	void setupPipelines()
 	{
 		render::PipelineProperties props;
-		basicModel.AddPipeline(vulkanDevice->GetPipeline(basicModel._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbr.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		/*basicModel.AddPipeline(vulkanDevice->GetPipeline(basicModel._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbr.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));*/
+		basicModel.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv","", engine::tools::getAssetPath() + "shaders/pbr/pbr.frag.spv","",
+			vertexLayout, basicModel._descriptorLayout, props, mainRenderPass));
 
-		basicModelTextured.AddPipeline(vulkanDevice->GetPipeline(basicModelTextured._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+		/*basicModelTextured.AddPipeline(vulkanDevice->GetPipeline(basicModelTextured._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbrtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+	*/
+		basicModelTextured.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/pbr/pbr.vert.spv","", engine::tools::getAssetPath() + "shaders/pbr/pbrtextured.frag.spv","",
+			vertexLayout, basicModelTextured._descriptorLayout, props, mainRenderPass));
+
 	}
 
 	void init()
@@ -217,20 +239,22 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 			//draw here
-			textured ? basicModelTextured.Draw(drawCommandBuffers[i]) : basicModel.Draw(drawCommandBuffers[i]);
+			textured ? basicModelTextured.Draw(m_drawCommandBuffers[i]) : basicModel.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

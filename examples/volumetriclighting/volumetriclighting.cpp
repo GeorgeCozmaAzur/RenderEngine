@@ -14,6 +14,8 @@
 #include <vulkan/vulkan.h>
 #include "VulkanApplication.h"
 #include "render/vulkan/VulkanTexture.h"
+#include "render/vulkan/VulkanCommandBuffer.h"
+#include "render/vulkan/VulkanDescriptorPool.h"
 #include "scene/DrawDebug.h"
 #include "scene/SceneLoader.h"
 
@@ -85,10 +87,10 @@ public:
 
 	float lightAngle = glm::radians(-45.0f);
 
-	std::vector<VkCommandBuffer> drawShadowCmdBuffers;
-	std::vector<VkCommandBuffer> drawComputeCmdBuffers;
+	std::vector<render::CommandBuffer*> drawShadowCmdBuffers;
+	std::vector<render::CommandBuffer*> drawComputeCmdBuffers;
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	VulkanExample() : VulkanApplication(true)
 	{
@@ -115,12 +117,18 @@ public:
 
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 3);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 3);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool(
+			{
+			{render::DescriptorType::UNIFORM_BUFFER, 3},
+			{render::DescriptorType::STORAGE_IMAGE, 2},
+			{render::DescriptorType::IMAGE_SAMPLER, 6}
+			}, 3);
 	}
 
 	void initComputeObjects()
@@ -145,9 +153,14 @@ public:
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT},
 			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT}
 		};
+
+		render::VulkanDescriptorPool* vpool = (render::VulkanDescriptorPool*)descriptorPool;
+
 		lightinjectiondescriptorSetLayout = vulkanDevice->GetDescriptorSetLayout(computebindings);
-		lightinjectiondescriptorSet = vulkanDevice->GetDescriptorSet(descriptorPool, { &computeUniformBuffer->m_descriptor }, { &scene.shadowmap->m_descriptor,&scene.shadowmapColor->m_descriptor, &textureBlueNoise->m_descriptor,&textureCompute3dTargets[0]->m_descriptor, &textureCompute3dTargets[1]->m_descriptor },
+		lightinjectiondescriptorSet = vulkanDevice->GetDescriptorSet(vpool->m_vkPool, { &computeUniformBuffer->m_descriptor }, { &scene.shadowmap->m_descriptor,&scene.shadowmapColor->m_descriptor, &textureBlueNoise->m_descriptor,&textureCompute3dTargets[0]->m_descriptor, &textureCompute3dTargets[1]->m_descriptor },
 			lightinjectiondescriptorSetLayout->m_descriptorSetLayout, lightinjectiondescriptorSetLayout->m_setLayoutBindings);
+		
+			//lightinjectiondescriptorSetLayout->m_descriptorSetLayout, lightinjectiondescriptorSetLayout->m_setLayoutBindings);
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> rmbindings
 		{
@@ -156,7 +169,9 @@ public:
 			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT}
 		};
 		raymarchdescriptorSetLayout = vulkanDevice->GetDescriptorSetLayout(rmbindings);
-		raymarchdescriptorSet = vulkanDevice->GetDescriptorSet(descriptorPool, { &computeUniformBuffer->m_descriptor }, { &textureCompute3dTargets[0]->m_descriptor, &textureCompute3dTargetRaymarch->m_descriptor },
+
+		
+		raymarchdescriptorSet = vulkanDevice->GetDescriptorSet(vpool->m_vkPool, { &computeUniformBuffer->m_descriptor }, { &textureCompute3dTargets[0]->m_descriptor, &textureCompute3dTargetRaymarch->m_descriptor },
 			raymarchdescriptorSetLayout->m_descriptorSetLayout, raymarchdescriptorSetLayout->m_setLayoutBindings);
 
 		std::string fileName = engine::tools::getAssetPath() + "shaders/computeshader/" + "lightinjection" + ".comp.spv";
@@ -210,24 +225,25 @@ public:
 		
 		scene.Update(timer * 0.05f, queue);
 
-		dbgtex.Init(vulkanDevice, descriptorPool, scene.shadowmapColor, queue, mainRenderPass->GetRenderPass(), pipelineCache);
+		dbgtex.Init(vulkanDevice, descriptorPool, scene.shadowmapColor, queue, mainRenderPass, pipelineCache);
 
 		initComputeObjects();
 	}
 
-	virtual void CreateCommandBuffers()
+	virtual void CreateAllCommandBuffers()
 	{
-		if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
-			return;
-		// Create one command buffer for each swap chain image and reuse for rendering
-		
+		/*if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
+			return;		
 		drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 		drawComputeCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 		drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 
 		allDrawCommandBuffers.push_back(drawShadowCmdBuffers);
 		allDrawCommandBuffers.push_back(drawComputeCmdBuffers);
-		allDrawCommandBuffers.push_back(drawCommandBuffers);
+		allDrawCommandBuffers.push_back(drawCommandBuffers);*/
+		drawShadowCmdBuffers = CreateCommandBuffers();
+		drawComputeCmdBuffers = CreateCommandBuffers();
+		m_drawCommandBuffers = CreateCommandBuffers();
 		
 	}
 
@@ -239,11 +255,13 @@ public:
 		for (int32_t i = 0; i < drawShadowCmdBuffers.size(); ++i)
 		{
 
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawShadowCmdBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawShadowCmdBuffers[i], &cmdBufInfo));
+			drawShadowCmdBuffers[i]->Begin();
 
 			scene.DrawShadowsInSeparatePass(drawShadowCmdBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawShadowCmdBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawShadowCmdBuffers[i]));
+			drawShadowCmdBuffers[i]->End();
 		}
 	}
 
@@ -256,30 +274,32 @@ public:
 
 		for (int32_t i = 0; i < drawComputeCmdBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawComputeCmdBuffers[i], &cmdBufInfo));
+			VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)drawComputeCmdBuffers[i])->m_vkCommandBuffer;
+
+			VK_CHECK_RESULT(vkBeginCommandBuffer(vkbuffer, &cmdBufInfo));
 
 			// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
-			scene.shadowmap->PipelineBarrier(drawComputeCmdBuffers[i],
+			scene.shadowmap->PipelineBarrier(vkbuffer,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
 				);
 
-			lightinjectionpipeline->Draw(drawComputeCmdBuffers[i], VK_PIPELINE_BIND_POINT_COMPUTE);
-			lightinjectiondescriptorSet->Draw(drawComputeCmdBuffers[i], lightinjectionpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
-			vkCmdDispatch(drawComputeCmdBuffers[i], TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, TEX_DEPTH / COMPUTE_GROUP_SIZE_Z);
+			lightinjectionpipeline->Draw(vkbuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
+			lightinjectiondescriptorSet->Draw(vkbuffer, lightinjectionpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
+			vkCmdDispatch(vkbuffer, TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, TEX_DEPTH / COMPUTE_GROUP_SIZE_Z);
 
-			textureCompute3dTargets[write_idx]->PipelineBarrier(drawComputeCmdBuffers[i],
+			textureCompute3dTargets[write_idx]->PipelineBarrier(vkbuffer,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
 				);
 
-			raymarchpipeline->Draw(drawComputeCmdBuffers[i], VK_PIPELINE_BIND_POINT_COMPUTE);
-			raymarchdescriptorSet->Draw(drawComputeCmdBuffers[i], raymarchpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
-			vkCmdDispatch(drawComputeCmdBuffers[i], TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, COMPUTE_GROUP_SIZE_Z);
+			raymarchpipeline->Draw(vkbuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
+			raymarchdescriptorSet->Draw(vkbuffer, raymarchpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
+			vkCmdDispatch(vkbuffer, TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, COMPUTE_GROUP_SIZE_Z);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawComputeCmdBuffers[i]));
+			VK_CHECK_RESULT(vkEndCommandBuffer(vkbuffer));
 		}
 	}
 
@@ -288,30 +308,33 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
+			VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)m_drawCommandBuffers[i])->m_vkCommandBuffer;
 			// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
-			textureCompute3dTargetRaymarch->PipelineBarrier(drawCommandBuffers[i], 
+			textureCompute3dTargetRaymarch->PipelineBarrier(vkbuffer,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
 				);
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 			for (int j = 0; j < scene_render_objects.size(); j++) {
 				if(scene_render_objects[j])
-				scene_render_objects[j]->Draw(drawCommandBuffers[i]);
+				scene_render_objects[j]->Draw(m_drawCommandBuffers[i]);
 			}
 
-			dbgtex.Draw(drawCommandBuffers[i]);
+			dbgtex.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

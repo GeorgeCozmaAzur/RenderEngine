@@ -237,11 +237,8 @@ bool D3D12Application::InitAPI()
 
 	//ThrowIfFailed(m_d3ddevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 	//ThrowIfFailed(m_d3ddevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
-	m_commandBuffers.resize(FrameCount);
-	for (int i = 0; i < m_commandBuffers.size(); i++)
-	{
-		m_commandBuffers[i] = m_device->GetCommandBuffer();
-	}
+	CreateAllCommandBuffers();
+	
 	m_loadingCommandBuffer = m_device->GetCommandBuffer();
 
 	// Command lists are created in the recording state, but there is nothing
@@ -359,11 +356,13 @@ void D3D12Application::Render()
 		return;
 
 	// Record all the commands we need to render the scene into the command list.
-	//BuildCommandBuffers();
+	BuildCommandBuffers();
 
 	// Execute the command list.
-	ID3D12CommandList* ppCommandLists[] = { ((render::D3D12CommandBuffer*)m_commandBuffers[currentBuffer])->m_commandList.Get()};
-	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	//ID3D12CommandList* ppCommandLists[] = { ((render::D3D12CommandBuffer*)m_drawCommandBuffers[currentBuffer])->m_commandList.Get()};
+	//m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	
+	m_commandQueue->ExecuteCommandLists(alld3dDrawCommandLists[currentBuffer].size(), alld3dDrawCommandLists[currentBuffer].data());
 
 	// Present the frame.
 	ThrowIfFailed(m_swapChain->Present(1, 0));
@@ -418,6 +417,26 @@ void D3D12Application::KeyPressed(uint32_t) {}
 
 void D3D12Application::MouseMoved(double x, double y, bool & handled) {}
 
+void D3D12Application::CreateAllCommandBuffers()
+{
+	m_drawCommandBuffers = CreateCommandBuffers();
+}
+
+std::vector<render::CommandBuffer*> D3D12Application::CreateCommandBuffers()
+{
+	if (alld3dDrawCommandLists.size() == 0)
+		alld3dDrawCommandLists.resize(FrameCount);
+	
+	std::vector<render::CommandBuffer*> returnvec;
+	returnvec.resize(FrameCount);
+	for (int i = 0; i < returnvec.size(); i++)
+	{
+		returnvec[i] = m_device->GetCommandBuffer();
+		alld3dDrawCommandLists[i].push_back(((D3D12CommandBuffer*)returnvec[i])->m_commandList.Get());
+	}
+	return returnvec;
+}
+
 void D3D12Application::BuildCommandBuffers() 
 {
 	// Command list allocators can only be reset when the associated 
@@ -447,7 +466,7 @@ void D3D12Application::BuildCommandBuffers()
 
 void D3D12Application::SubmitOnQueue(render::CommandBuffer* commandBuffer)
 {
-	render::D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<render::D3D12CommandBuffer*>(commandBuffer);
+	render::D3D12CommandBuffer* d3dcommandBuffer = static_cast<render::D3D12CommandBuffer*>(commandBuffer);
 	ID3D12CommandList* ppCommandLists[] = { d3dcommandBuffer->m_commandList.Get() };
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 }
@@ -506,6 +525,10 @@ void D3D12Application::WindowResize()
 void D3D12Application::WindowResized()
 {
 	// Can be overriden in derived class
+}
+
+void D3D12Application::DrawFullScreenQuad(render::CommandBuffer* commandBuffer)
+{
 }
 
 //void VulkanApplication::OnUpdateUIOverlay(engine::scene::UIOverlay *overlay) {}

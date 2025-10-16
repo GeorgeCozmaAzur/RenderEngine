@@ -37,7 +37,11 @@ namespace engine
 
 			render::VulkanBuffer* m_uniformBuffer;
 
-			std::vector<VkCommandBuffer> commandBuffers;
+			std::vector <render::VulkanDescriptorSet*> m_vulkanDescriptorSets;
+			render::VulkanDescriptorSetLayout* _vulkanDescriptorLayout = nullptr;
+			render::VulkanPipeline* _vulkanPipeline = nullptr;
+
+			std::vector<render::CommandBuffer*> commandBuffers;
 
 			struct UBO {
 				float deltaT = 0.0f;

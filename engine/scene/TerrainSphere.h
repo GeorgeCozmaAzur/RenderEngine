@@ -20,11 +20,11 @@ namespace engine
 		public:
 			virtual uint32_t* BuildPatchIndices(int offsetX, int offsetY, int width, int heights, int& size);
 
-			void Init(const std::string& filename, float radius, render::VulkanDevice* vulkanDevice, VkDescriptorPool descriptorPool
-				, render::VulkanVertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, VkDeviceSize vertexUniformBufferSize, VkDeviceSize fragmentUniformBufferSize, std::vector<VkDescriptorImageInfo*> texturesDescriptors
+			void Init(const std::string& filename, float radius, render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool
+				, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, VkDeviceSize vertexUniformBufferSize, VkDeviceSize fragmentUniformBufferSize, std::vector<render::Texture*> texturesDescriptors
 				, std::string vertexShaderFilename
 				, std::string fragmentShaderFilename
-				, VkRenderPass renderPass
+				, render::RenderPass* renderPass
 				, VkPipelineCache pipelineCache
 				, render::PipelineProperties pipelineProperties
 				, VkQueue queue

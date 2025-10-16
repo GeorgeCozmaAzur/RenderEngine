@@ -181,7 +181,7 @@ namespace engine
         }
         void D3D12Pipeline::Draw(CommandBuffer* commandBuffer)
         {
-            D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+            D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
             d3dcommandBuffer->m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             d3dcommandBuffer->m_commandList->SetPipelineState(m_pipelineState.Get());
             d3dcommandBuffer->m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
@@ -191,7 +191,7 @@ namespace engine
         {
             if (m_constantBlockSize > 0)
             {
-                D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+                D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
                 d3dcommandBuffer->m_commandList->SetGraphicsRoot32BitConstants(m_constantsShaderRegister, m_constantBlockSize/4, constantsData, 0);
             }
         }

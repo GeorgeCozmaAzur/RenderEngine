@@ -54,7 +54,7 @@ namespace engine
 
 		void D3D12DescriptorHeap::Draw(render::CommandBuffer* commandBuffer)
 		{
-			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
 			ID3D12DescriptorHeap* ppHeaps[] = { m_heap.Get() };
 			d3dcommandBuffer->m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 		}

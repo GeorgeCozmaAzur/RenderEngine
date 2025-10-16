@@ -384,28 +384,29 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
 			/*
 				First render pass: Generate shadow map by rendering the scene from light's POV
 			*/
 			{
 
-				offscreenPass->Begin(drawCommandBuffers[i], 0);
+				offscreenPass->Begin(m_drawCommandBuffers[i], 0);
 
 				// Set depth bias (aka "Polygon offset")
 				// Required to avoid shadow mapping artefacts
-				vkCmdSetDepthBias(
+				/*vkCmdSetDepthBias(
 					drawCommandBuffers[i],
 					depthBiasConstant,
 					0.0f,
-					depthBiasSlope);
+					depthBiasSlope);*/
 
-				offscreen_scenes[sceneIndex]->Draw(drawCommandBuffers[i]);
+				offscreen_scenes[sceneIndex]->Draw(m_drawCommandBuffers[i]);
 
-				offscreenPass->End(drawCommandBuffers[i]);
+				offscreenPass->End(m_drawCommandBuffers[i]);
 			}
 
 		/*	filterPass->Begin(drawCmdBuffers[i], 0);
@@ -425,7 +426,7 @@ public:
 			*/
 
 			{
-				mainRenderPass->Begin(drawCommandBuffers[i], i);
+				mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 				// Visualize shadow map
 				if (displayShadowMap) {
@@ -433,14 +434,15 @@ public:
 				}
 
 				// 3D scene							
-				scenes[sceneIndex]->Draw(drawCommandBuffers[i]);
+				scenes[sceneIndex]->Draw(m_drawCommandBuffers[i]);
 
-				DrawUI(drawCommandBuffers[i]);
+				DrawUI(m_drawCommandBuffers[i]);
 
-				mainRenderPass->End(drawCommandBuffers[i]);
+				mainRenderPass->End(m_drawCommandBuffers[i]);
 			}
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

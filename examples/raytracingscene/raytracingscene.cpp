@@ -4,6 +4,7 @@
 #include "VulkanTools.h"
 #include "render/vulkan/VulkanDevice.h"
 #include "scene/SimpleModelRT.h"
+#include "render/vulkan/VulkanCommandBuffer.h"
 
 class VulkanExample : public VulkanApplication
 {
@@ -807,19 +808,21 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
+			VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)m_drawCommandBuffers[i])->m_vkCommandBuffer;
 			/*
 				Dispatch the ray tracing commands
 			*/
-			vkCmdBindPipeline(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline);
-			vkCmdBindDescriptorSets(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+			vkCmdBindPipeline(vkbuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline);
+			vkCmdBindDescriptorSets(vkbuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
 
 			VkStridedDeviceAddressRegionKHR emptySbtEntry = {};
 			vkCmdTraceRaysKHR(
-				drawCommandBuffers[i],
+				vkbuffer,
 				&shaderBindingTables.raygen.stridedDeviceAddressRegion,
 				&shaderBindingTables.miss.stridedDeviceAddressRegion,
 				&shaderBindingTables.hit.stridedDeviceAddressRegion,
@@ -836,12 +839,12 @@ public:
 			swapChainTexture.m_vkImage = swapChain.m_images[i];
 
 			// Prepare current swap chain image as transfer destination
-			swapChainTexture.ChangeLayout(drawCommandBuffers[i],
+			swapChainTexture.ChangeLayout(vkbuffer,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 			// Prepare ray tracing output image as transfer source
-			storageImage->ChangeLayout(drawCommandBuffers[i], 
+			storageImage->ChangeLayout(vkbuffer,
 				VK_IMAGE_LAYOUT_GENERAL,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
@@ -851,21 +854,22 @@ public:
 			copyRegion.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
 			copyRegion.dstOffset = { 0, 0, 0 };
 			copyRegion.extent = { width, height, 1 };
-			vkCmdCopyImage(drawCommandBuffers[i], storageImage->m_vkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapChain.m_images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+			vkCmdCopyImage(vkbuffer, storageImage->m_vkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapChain.m_images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 			// Transition swap chain image back for presentation
-			swapChainTexture.ChangeLayout(drawCommandBuffers[i],
+			swapChainTexture.ChangeLayout(vkbuffer,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 			// Transition ray tracing output image back to general layout
-			storageImage->ChangeLayout(drawCommandBuffers[i],
+			storageImage->ChangeLayout(vkbuffer,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_IMAGE_LAYOUT_GENERAL);
 
 			//drawUI(drawCmdBuffers[i], frameBuffers[i]);//george
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 
 			//make sure the temporary texture doesn't take the image with it's destruction
 			swapChainTexture.m_vkImage = nullptr;

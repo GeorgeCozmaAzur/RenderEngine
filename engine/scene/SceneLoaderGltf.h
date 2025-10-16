@@ -92,7 +92,7 @@ namespace engine
 
 			void CreateShadow(VkQueue copyQueue);
 			void CreateShadowObjects(VkPipelineCache pipelineCache);
-			void DrawShadowsInSeparatePass(VkCommandBuffer command_buffer);
+			void DrawShadowsInSeparatePass(render::CommandBuffer* command_buffer);
 
 			render::VulkanDescriptorSetLayout* GetDescriptorSetlayout(std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> layoutBindigs);
 

@@ -243,10 +243,10 @@ namespace engine
 
 		void VulkanPipeline::Draw(CommandBuffer* commandBuffer)
 		{
-			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
 
-			float depthBiasConstant = 1.25f;
-			float depthBiasSlope = 0.75f;
+			float depthBiasConstant = 2.25f;
+			float depthBiasSlope = 1.75f;
 			if(m_depthBias)
 			vkCmdSetDepthBias(
 				cb->m_vkCommandBuffer,
@@ -259,7 +259,7 @@ namespace engine
 
 		void VulkanPipeline::PushConstants(class CommandBuffer* commandBuffer, void* constantsData)
 		{
-			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
 			if (m_constantBlockSize > 0)
 				vkCmdPushConstants(cb->m_vkCommandBuffer, getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_constantBlockSize, constantsData);
 		}

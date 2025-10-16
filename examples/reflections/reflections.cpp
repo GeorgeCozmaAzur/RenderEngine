@@ -291,27 +291,30 @@ public:
 
 	void BuildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		/*VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;*/
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(m_commandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			offscreenRenderPass->Begin(drawCommandBuffers[i], 0);
-			models.exampleoffscreen->Draw(drawCommandBuffers[i]);
-			offscreenRenderPass->End(drawCommandBuffers[i]);
+			offscreenRenderPass->Begin(m_drawCommandBuffers[i], 0);
+			models.exampleoffscreen->Draw(m_drawCommandBuffers[i]);
+			offscreenRenderPass->End(m_drawCommandBuffers[i]);
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 			//draw here
-			models.example->Draw(drawCommandBuffers[i]);
-			models.plane->Draw(drawCommandBuffers[i]);
+			models.example->Draw(m_drawCommandBuffers[i]);
+			models.plane->Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
+
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 		}
 	}
 

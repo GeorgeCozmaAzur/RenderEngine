@@ -83,8 +83,8 @@ namespace engine
 
 		void VulkanDescriptorSet::Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline, uint32_t indexInDynamicUniformBuffer)
 		{
-			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
-			VulkanPipeline* p = dynamic_cast<VulkanPipeline*>(pipeline);
+			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
+			VulkanPipeline* p = static_cast<VulkanPipeline*>(pipeline);
 			Draw(cb->m_vkCommandBuffer, p->getPipelineLayout(), indexInDynamicUniformBuffer);
 		}
 	}

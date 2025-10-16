@@ -79,27 +79,36 @@ void VulkanApplication::CreateCommandPool()
 	cmdPool = vulkanDevice->GetCommandPool(vulkanDevice->queueFamilyIndices.graphicsFamily);//vulkanDevice->queueFamilyIndices.graphicsFamily);
 }
 
-void VulkanApplication::CreateCommandBuffers()
+void VulkanApplication::CreateAllCommandBuffers()
 {
+	m_drawCommandBuffers = CreateCommandBuffers();
+}
+
+std::vector<render::CommandBuffer*> VulkanApplication::CreateCommandBuffers()
+{
+	std::vector<render::CommandBuffer*> returnvec;
 	if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
-		return;
-	// Create one command buffer for each swap chain image and reuse for rendering
+		return returnvec;
+	if (allvkDrawCommandBuffers.size() == 0)
+		allvkDrawCommandBuffers.resize(swapChain.swapChainImageViews.size());
+
 	//drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 	for (int i = 0; i < swapChain.swapChainImageViews.size(); i++)
 	{
 		render::VulkanCommandBuffer* vulkanBuffer = (render::VulkanCommandBuffer*)(vulkanDevice->GetCommandBuffer());
-		drawCommandBuffers.push_back(vulkanBuffer->m_vkCommandBuffer);
-		m_commandBuffers.push_back(vulkanBuffer);
+		//drawCommandBuffers.push_back(vulkanBuffer->m_vkCommandBuffer);
+		returnvec.push_back(vulkanBuffer);
+		allvkDrawCommandBuffers[i].push_back(vulkanBuffer->m_vkCommandBuffer);
 	}
-	allDrawCommandBuffers.push_back(drawCommandBuffers);
+	return returnvec;
 }
 
 void VulkanApplication::DestroyCommandBuffers()
 {
-	if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
-		vulkanDevice->FreeDrawCommandBuffers();
+	//if (vulkanDevice->queueFamilyIndices.graphicsFamily != UINT32_MAX)
+	//	vulkanDevice->FreeDrawCommandBuffers();
 
-	allDrawCommandBuffers.clear();
+	//allDrawCommandBuffers.clear();
 }
 
 void VulkanApplication::SetupDepthStencil()
@@ -211,7 +220,7 @@ bool VulkanApplication::InitAPI()
 
 	SetupSwapChain();
 	CreateCommandPool();
-	CreateCommandBuffers();
+	CreateAllCommandBuffers();
 	SetupDepthStencil();
 	SetupRenderPass();
 	CreatePipelineCache();
@@ -295,7 +304,7 @@ void VulkanApplication::UpdateOverlay()
 	}
 }
 
-void VulkanApplication::DrawUI(const VkCommandBuffer commandBuffer)
+void VulkanApplication::DrawUI(render::CommandBuffer* commandBuffer)
 {
 	if (settings.overlay) {
 		UIOverlay.draw(commandBuffer);
@@ -322,16 +331,16 @@ void VulkanApplication::Render()
 
 	vkResetFences(device, 1, &submitFences[currentBuffer]);
 
-	std::vector<VkCommandBuffer> submitCommandBuffers(allDrawCommandBuffers.size());
-	for (int i = 0; i < allDrawCommandBuffers.size(); i++)
-	{
-		submitCommandBuffers[i] = allDrawCommandBuffers[i][currentBuffer];
-	}
+	//std::vector<VkCommandBuffer> submitCommandBuffers(allDrawCommandBuffers.size());//TODO make them [cb][i]
+	//for (int i = 0; i < allDrawCommandBuffers.size(); i++)
+	//{
+	//	submitCommandBuffers[i] = allDrawCommandBuffers[i][currentBuffer];
+	//}
 
 	submitInfo.pWaitSemaphores = &presentCompleteSemaphores[currentBuffer];
 	submitInfo.pSignalSemaphores = &renderCompleteSemaphores[currentBuffer];
-	submitInfo.commandBufferCount = submitCommandBuffers.size();
-	submitInfo.pCommandBuffers = submitCommandBuffers.data();
+	submitInfo.commandBufferCount = allvkDrawCommandBuffers[currentBuffer].size();
+	submitInfo.pCommandBuffers = allvkDrawCommandBuffers[currentBuffer].data();
 	VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, submitFences[currentBuffer]));
 
 	//VulkanApplication::PresentFrame();
@@ -419,6 +428,12 @@ void VulkanApplication::WindowResized()
 }
 
 void VulkanApplication::OnUpdateUIOverlay(engine::scene::UIOverlay *overlay) {}
+
+void VulkanApplication::DrawFullScreenQuad(render::CommandBuffer* commandBuffer)
+{
+	VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)commandBuffer)->m_vkCommandBuffer;
+	vkCmdDraw(vkbuffer, 3, 1, 0, 0);
+}
 
 VulkanApplication::~VulkanApplication()
 {

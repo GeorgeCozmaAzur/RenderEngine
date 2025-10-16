@@ -26,6 +26,7 @@ protected:
 	Microsoft::WRL::ComPtr<ID3D12Device> m_d3ddevice;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencil;
+	std::vector <std::vector<ID3D12CommandList*>> alld3dDrawCommandLists;
 	//render::D3D12CommandBuffer m_commandBuffer;
 	//Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	//Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
@@ -70,6 +71,9 @@ public:
 	// Can be overriden in derived class to recreate or rebuild resources attached to the frame buffer / swapchain
 	virtual void WindowResized();
 	virtual void WindowResize();
+
+	virtual void CreateAllCommandBuffers();
+	virtual std::vector<render::CommandBuffer*> CreateCommandBuffers();
 	// Pure virtual function to be overriden by the dervice class
 	// Called in case of an event where e.g. the framebuffer has to be rebuild and thus
 	// all command buffers that may reference this
@@ -88,6 +92,7 @@ public:
 
 	virtual void WaitForDevice();
 
+	virtual void DrawFullScreenQuad(render::CommandBuffer* commandBuffer);
 	/** @brief (Virtual) Called when the UI overlay is updating, can be used to add custom elements to the overlay */
 	//virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay);
 

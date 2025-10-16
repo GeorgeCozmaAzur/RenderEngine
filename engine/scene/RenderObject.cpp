@@ -1,4 +1,5 @@
 #include "RenderObject.h"
+#include "VulkanCommandBuffer.h"
 
 namespace engine
 {
@@ -12,13 +13,13 @@ namespace engine
 			return *this;
 		}
 
-		void RenderObject::AddPipeline(render::VulkanPipeline* pipeline)
+		void RenderObject::AddPipeline(render::Pipeline* pipeline)
 		{
 			_pipeline = pipeline;
 			//TODO verify compatibility		
 		}
 
-		void RenderObject::AddDescriptor(render::VulkanDescriptorSet* descriptorset)
+		void RenderObject::AddDescriptor(render::DescriptorSet* descriptorset)
 		{
 			m_descriptorSets.push_back(descriptorset);
 			//TODO verify compatibility		
@@ -43,7 +44,7 @@ namespace engine
 			memcpy(_geometriesPushConstants, data, constantSize * constantsNumber);
 		}
 
-		void RenderObject::Draw(VkCommandBuffer commandBuffer, uint32_t swapchainImageIndex, render::VulkanPipeline* currentPipeline, render::VulkanDescriptorSet* currentDescriptorSet)
+		void RenderObject::Draw(render::CommandBuffer* commandBuffer, uint32_t swapchainImageIndex, render::Pipeline* currentPipeline, render::DescriptorSet* currentDescriptorSet)
 		{
 			if (m_geometries.empty())
 				return;
@@ -56,29 +57,31 @@ namespace engine
 			if (!is_visible)
 				return;
 
+			render::VulkanVertexLayout* vjlayout = static_cast<render::VulkanVertexLayout*>(_vertexLayout);
 
-			uint32_t vip = _vertexLayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
-			uint32_t iip = _vertexLayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
+			uint32_t vip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
+			uint32_t iip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
 
 			if (_pipeline != currentPipeline)
 				_pipeline->Draw(commandBuffer);
 
 			if (m_dynamicUniformBufferIndices.empty() && m_descriptorSets[swapchainImageIndex] != currentDescriptorSet)
-				m_descriptorSets[swapchainImageIndex]->Draw(commandBuffer, _pipeline->getPipelineLayout(), 0);
+				m_descriptorSets[swapchainImageIndex]->Draw(commandBuffer, _pipeline, 0);
 
 			for (uint32_t j = 0; j < m_geometries.size();j++)
 			{
 				if(_geometriesPushConstants != nullptr)
-					vkCmdPushConstants(commandBuffer, _pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_sizeofConstant, _geometriesPushConstants + (m_sizeofConstant * j));
+					_pipeline->PushConstants(commandBuffer, _geometriesPushConstants + (m_sizeofConstant * j));
 				if (!m_boundingBoxes.empty() && (m_boundingBoxes.size() - 1) >= j && !m_boundingBoxes[j]->IsVisible()) continue;//TODO remove hardcode
 				if (!m_dynamicUniformBufferIndices.empty()) //TODO see how can we add the current descriptor comparison
-					m_descriptorSets[swapchainImageIndex]->Draw(commandBuffer, _pipeline->getPipelineLayout(), m_dynamicUniformBufferIndices[j]);
+					m_descriptorSets[swapchainImageIndex]->Draw(commandBuffer, _pipeline, m_dynamicUniformBufferIndices[j]);
 
-				m_geometries[j]->Draw(&commandBuffer, vip, iip);
+				render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
+				m_geometries[j]->Draw(&vkcmd->m_vkCommandBuffer, vip, iip);
 			}
 		}
 
-		bool RenderObject::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
+		bool RenderObject::LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
 		{
 			return false;
 		}

@@ -264,14 +264,20 @@ namespace engine
 
 		void VulkanRenderPass::Begin(CommandBuffer* commandBuffer, uint32_t frameBufferIndex)
 		{
-			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
 			Begin(cb->m_vkCommandBuffer, frameBufferIndex);
 		}
 
 		void VulkanRenderPass::End(CommandBuffer* commandBuffer, uint32_t frameBufferIndex)
 		{
-			VulkanCommandBuffer* cb = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
 			End(cb->m_vkCommandBuffer);
+		}
+
+		void VulkanRenderPass::NextSubPass(CommandBuffer* commandBuffer)
+		{
+			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
+			vkCmdNextSubpass(cb->m_vkCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 		}
 	}
 }

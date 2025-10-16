@@ -24,7 +24,7 @@ class VulkanExample : public VulkanApplication
 public:
 
 	// Vertex layout for the models
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
@@ -144,13 +144,13 @@ public:
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
-		data.Destroy();
+		//data.Destroy();
 
 		//envMap = vulkanDevice->GetTextureCubeMap(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, queue);
 		render::TextureCubeMapData cdata;
 		cdata.LoadFromFile(engine::tools::getAssetPath() + "textures/hdr/pisa_cube.ktx", render::GfxFormat::R16G16B16A16_SFLOAT);
 		envMap = vulkanDevice->GetTexture(&cdata, queue);
-		cdata.Destroy();
+		//cdata.Destroy();
 
 		paraboloidTexFront = vulkanDevice->GetColorRenderTarget(FB_DIM, FB_DIM, FB_COLOR_FORMAT);
 		frontDepthTex = vulkanDevice->GetDepthRenderTarget(FB_DIM, FB_DIM, false);
@@ -343,35 +343,37 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			offscreenRenderPass->Begin(drawCommandBuffers[i], 0);
-			models.exampleoffscreen->Draw(drawCommandBuffers[i]);
-			offscreenRenderPass->End(drawCommandBuffers[i]);
+			offscreenRenderPass->Begin(m_drawCommandBuffers[i], 0);
+			models.exampleoffscreen->Draw(m_drawCommandBuffers[i]);
+			offscreenRenderPass->End(m_drawCommandBuffers[i]);
 
-			offscreenBackRenderPass->Begin(drawCommandBuffers[i], 0);
-			models.exampleoffscreenback->Draw(drawCommandBuffers[i]);
-			offscreenBackRenderPass->End(drawCommandBuffers[i]);
+			offscreenBackRenderPass->Begin(m_drawCommandBuffers[i], 0);
+			models.exampleoffscreenback->Draw(m_drawCommandBuffers[i]);
+			offscreenBackRenderPass->End(m_drawCommandBuffers[i]);
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
-			float depthBiasConstant = 2.25f;
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
+			/*float depthBiasConstant = 2.25f;
 			float depthBiasSlope = 1.75f;
 			vkCmdSetDepthBias(
 				drawCommandBuffers[i],
 				depthBiasConstant,
 				0.0f,
-				depthBiasSlope);
+				depthBiasSlope);*/
 			//draw here
-			models.example->Draw(drawCommandBuffers[i]);
-			models.plane->Draw(drawCommandBuffers[i]);
+			models.example->Draw(m_drawCommandBuffers[i]);
+			models.plane->Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

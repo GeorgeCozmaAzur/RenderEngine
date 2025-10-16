@@ -32,7 +32,7 @@ public:
 
 	render::VulkanPipeline* blackandwhitepipeline = nullptr;
 
-	VulkanDescriptorSet* pfdesc = nullptr;
+	DescriptorSet* pfdesc = nullptr;
 
 	render::VulkanTexture* scenecolor;
 	render::VulkanTexture* scenepositions;
@@ -42,7 +42,7 @@ public:
 
 	scene::DeferredLights deferredLights;
 
-	VkDescriptorPool descriptorPoolPostEffects;
+	render::DescriptorPool* descriptorPoolPostEffects;
 
 	VulkanExample() : VulkanApplication(true)
 	{
@@ -68,12 +68,18 @@ public:
 
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 4}
 		};
-		descriptorPoolPostEffects = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		descriptorPoolPostEffects = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);*/
+		descriptorPoolPostEffects = vulkanDevice->GetDescriptorPool(
+			{
+			{render::DescriptorType::UNIFORM_BUFFER, 1},
+			{render::DescriptorType::IMAGE_SAMPLER, 1},
+			{render::DescriptorType::INPUT_ATTACHMENT, 4}
+			}, 2);
 	}
 
 	void init()
@@ -140,7 +146,8 @@ public:
 			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/posteffects/simpletexture.frag.spv",
 			mainRenderPass->GetRenderPass(), pipelineCache, props);
 
-		pfdesc = vulkanDevice->GetDescriptorSet(descriptorPoolPostEffects, {}, { &sceneLightscolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
+		//pfdesc = vulkanDevice->GetDescriptorSet(descriptorPoolPostEffects, {}, { &sceneLightscolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
+		pfdesc = vulkanDevice->GetDescriptorSet(blur_layout, descriptorPoolPostEffects, {}, { sceneLightscolor });
 	}
 
 	void BuildCommandBuffers()
@@ -148,35 +155,38 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 			//scene.DrawShadowsInSeparatePass(drawCommandBuffers[i]);
 
-			scenepass->Begin(drawCommandBuffers[i], 0);
+			scenepass->Begin(m_drawCommandBuffers[i], 0);
 
 			for (int j = 0; j < scene_render_objects.size(); j++) {
-				scene_render_objects[j]->Draw(drawCommandBuffers[i]);
+				scene_render_objects[j]->Draw(m_drawCommandBuffers[i]);
 			}
-
-			vkCmdNextSubpass(drawCommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
+			scenepass->NextSubPass(m_drawCommandBuffers[i]);
+			//vkCmdNextSubpass(drawCommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
 			//vkCmdSetDepthTestEnable(drawCmdBuffers[i],true);
-			deferredLights.Draw(drawCommandBuffers[i]);
+			deferredLights.Draw(m_drawCommandBuffers[i]);
 
-			scenepass->End(drawCommandBuffers[i]);
+			scenepass->End(m_drawCommandBuffers[i]);
 
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 			
-			blackandwhitepipeline->Draw(drawCommandBuffers[i]);
-			pfdesc->Draw(drawCommandBuffers[i], blackandwhitepipeline->getPipelineLayout(), 0);
-			vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			blackandwhitepipeline->Draw(m_drawCommandBuffers[i]);
+			pfdesc->Draw(m_drawCommandBuffers[i], blackandwhitepipeline);
+			//vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			DrawFullScreenQuad(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 
@@ -197,7 +207,7 @@ public:
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboSharedLights));
 
 		VK_CHECK_RESULT(vsdeferred->Map());
-		deferredLights.Init(vsdeferred, vulkanDevice, descriptorPoolPostEffects, queue, scenepass->GetRenderPass(), pipelineCache, scene.lightPositions.size(), scenepositions, scenenormals, sceneroughnessmetallic, scenecolor);
+		deferredLights.Init(vsdeferred, vulkanDevice, descriptorPoolPostEffects, queue, scenepass, pipelineCache, scene.lightPositions.size(), scenepositions, scenenormals, sceneroughnessmetallic, scenecolor);
 	}
 
 	void Prepare()

@@ -50,7 +50,7 @@ namespace engine
 			bool m_updated = false;
 			float m_scale = 1.0f;
 
-			VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+			render::DescriptorPool* descriptorPool = nullptr;
 
 			UIOverlay();
 			~UIOverlay();
@@ -62,7 +62,7 @@ namespace engine
 			bool shouldRecreateBuffers();
 
 			bool update();
-			void draw(const VkCommandBuffer commandBuffer);
+			void draw(render::CommandBuffer* commandBuffer);
 			void resize(uint32_t width, uint32_t height);
 
 			void freeResources();

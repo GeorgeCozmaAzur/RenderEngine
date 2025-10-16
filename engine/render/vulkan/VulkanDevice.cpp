@@ -650,7 +650,7 @@ namespace engine
             return cmdBuffer;
         }
 
-        std::vector<VkCommandBuffer> VulkanDevice::CreatedrawCommandBuffers(uint32_t size, uint32_t queueFamilyIndex)
+        /*std::vector<VkCommandBuffer> VulkanDevice::CreatedrawCommandBuffers(uint32_t size, uint32_t queueFamilyIndex)
         {
             std::vector<VkCommandBuffer> newCommandBuffers(size);
 
@@ -663,20 +663,9 @@ namespace engine
                 m_commandBuffers.push_back(vkcommandBuffer);
                 newCommandBuffers[i] = vkcommandBuffer->m_vkCommandBuffer;
             }
-            
-
-           /* VkCommandPool commandPool = GetCommandPool(queueFamilyIndex);
-
-            drawCommandBuffersPoolIndex = queueFamilyIndex;
-
-            VkCommandBufferAllocateInfo cmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(newCommandBuffers.size()) };
-
-            VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, newCommandBuffers.data()));
-
-            drawCommandBuffers.insert(drawCommandBuffers.end(), newCommandBuffers.begin(), newCommandBuffers.end());*/
 
             return newCommandBuffers;
-        }
+        }*/
 
         void VulkanDevice::FreeDrawCommandBuffers()
         {
@@ -741,6 +730,20 @@ namespace engine
             if (free)
             {
                 vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
+            }
+        }
+
+        void VulkanDevice::DestroyDrawCommandBuffer(render::CommandBuffer* commandBuffer)
+        {
+            VkCommandPool commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
+            std::vector<CommandBuffer*>::iterator it;
+            it = find(m_commandBuffers.begin(), m_commandBuffers.end(), commandBuffer);
+            if (it != m_commandBuffers.end())
+            {
+                VulkanCommandBuffer* vkvcmd = dynamic_cast<VulkanCommandBuffer*>(commandBuffer);
+                vkFreeCommandBuffers(logicalDevice, commandPool, 1, &vkvcmd->m_vkCommandBuffer);
+                m_commandBuffers.erase(it);
+                return;
             }
         }
 
@@ -873,7 +876,7 @@ namespace engine
             return scenepass;
         }
 
-        Pipeline* VulkanDevice::GetPipeLine(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass)
+        Pipeline* VulkanDevice::GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass)
         {
             VulkanVertexLayout* vkvlayout = dynamic_cast<VulkanVertexLayout*>(vertexLayout);
             VulkanDescriptorSetLayout* vkdlayout = dynamic_cast<VulkanDescriptorSetLayout*>(descriptorSetlayout);

@@ -15,6 +15,7 @@
 #include "scene/SimpleModel.h"
 #include "scene/DrawDebug.h"
 #include "scene/UniformBuffersManager.h"
+#include "render/vulkan/VulkanCommandBuffer.h"
 
 using namespace engine;
 
@@ -22,19 +23,19 @@ class VulkanExample : public VulkanApplication
 {
 public:
 
-	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
+	render::VertexLayout* vertexLayout = nullptr;
+		/*render::VertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_NORMAL,
-		render::VERTEX_COMPONENT_UV,
-		render::VERTEX_COMPONENT_TANGENT,
-		render::VERTEX_COMPONENT_BITANGENT
-		}, {});
+		render::VERTEX_COMPONENT_UV
+		}, {});*/
 
-	render::VulkanVertexLayout simpleVertexLayout = render::VulkanVertexLayout({
+	render::VertexLayout* simpleVertexLayout = nullptr;
+		/*render::VertexLayout({
 		render::VERTEX_COMPONENT_POSITION
-		}, {});
+		}, {});*/
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	engine::scene::SimpleModel plane;
 	
@@ -104,9 +105,19 @@ public:
 
 	void setupGeometry()
 	{
+		vertexLayout = m_device->GetVertexLayout({
+			render::VERTEX_COMPONENT_POSITION,
+		render::VERTEX_COMPONENT_NORMAL,
+		render::VERTEX_COMPONENT_UV,
+		render::VERTEX_COMPONENT_TANGENT,
+		render::VERTEX_COMPONENT_BITANGENT
+			}, {});
+		simpleVertexLayout = m_device->GetVertexLayout({
+		render::VERTEX_COMPONENT_POSITION
+			}, {});
 		//Geometry
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", &vertexLayout, 0.1f, 1);
-		skybox.LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", &simpleVertexLayout, 20.0f, 1);
+		plane.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 0.1f, 1);
+		skybox.LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", simpleVertexLayout, 20.0f, 1);
 		for (auto geo : plane.m_geometries)
 		{
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
@@ -208,11 +219,15 @@ public:
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 13}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 6);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool({
+			{ render::DescriptorType::UNIFORM_BUFFER, 6 },
+			{render::DescriptorType::IMAGE_SAMPLER, 13}
+			}, 6);
 	}
 
 	void SetupDescriptors()
@@ -233,9 +248,11 @@ public:
 		};
 		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor },
+		/*plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelFragmentUniformBuffer->m_descriptor },
 			{ &BRDFLUTMap->m_descriptor, &irradianceMap->m_descriptor, &prefilterMap->m_descriptor, &colorMap->m_descriptor, &normalMap->m_descriptor, &roughnessMap->m_descriptor, &metallicMap->m_descriptor, &aoMap->m_descriptor },
-			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));
+			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));*/
+		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(plane._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer, modelFragmentUniformBuffer },
+			{ BRDFLUTMap, irradianceMap, prefilterMap, colorMap, normalMap, roughnessMap, metallicMap, aoMap })); 
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> skyboxbindings
 		{
@@ -246,21 +263,29 @@ public:
 		};
 		skybox.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(skyboxbindings));
 
-		skybox.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelSBVertexUniformBuffer->m_descriptor, &modelSBFragmentUniformBuffer->m_descriptor },
+		/*skybox.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &modelSBVertexUniformBuffer->m_descriptor, &modelSBFragmentUniformBuffer->m_descriptor },
 			{ &envMap->m_descriptor },
-			skybox._descriptorLayout->m_descriptorSetLayout, skybox._descriptorLayout->m_setLayoutBindings));
+			skybox._descriptorLayout->m_descriptorSetLayout, skybox._descriptorLayout->m_setLayoutBindings));*/
+		skybox.AddDescriptor(vulkanDevice->GetDescriptorSet(skybox._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer, modelSBVertexUniformBuffer, modelSBFragmentUniformBuffer },
+			{ envMap }));
 	}
 
 	void setupPipelines()
 	{
 		render::PipelineProperties props;
-		plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+		/*plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/pbr/pbribltextured.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/pbribltextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		*/plane.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/pbr/pbribltextured.vert.spv","", engine::tools::getAssetPath() + "shaders/pbr/pbribltextured.frag.spv","",
+			vertexLayout, plane._descriptorLayout,props, mainRenderPass));
 
 		//render::PipelineProperties props;
 		props.cullMode = render::CullMode::FRONT;
-		skybox.AddPipeline(vulkanDevice->GetPipeline(skybox._descriptorLayout->m_descriptorSetLayout, simpleVertexLayout.m_vertexInputBindings, simpleVertexLayout.m_vertexInputAttributes,
+		/*skybox.AddPipeline(vulkanDevice->GetPipeline(skybox._descriptorLayout->m_descriptorSetLayout, simpleVertexLayout.m_vertexInputBindings, simpleVertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/pbr/skybox.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/skybox.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		*/skybox.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/pbr/skybox.vert.spv","", engine::tools::getAssetPath() + "shaders/pbr/skybox.frag.spv","",
+			simpleVertexLayout, skybox._descriptorLayout, props, mainRenderPass));
 	}
 
 	void generateBRDFLUTTexture()
@@ -325,9 +350,10 @@ public:
 		};
 		scene::RenderObject obj;
 		obj.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		obj.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, {},
+		/*obj.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, {},
 			{ &envMap->m_descriptor },
-			obj._descriptorLayout->m_descriptorSetLayout, obj._descriptorLayout->m_setLayoutBindings));
+			obj._descriptorLayout->m_descriptorSetLayout, obj._descriptorLayout->m_setLayoutBindings));*/
+		obj.AddDescriptor(vulkanDevice->GetDescriptorSet(obj._descriptorLayout, descriptorPool, {}, { envMap }));
 
 		struct PushBlock {
 			glm::mat4 mvp;
@@ -336,14 +362,16 @@ public:
 			float deltaTheta = (0.5f * float(M_PI)) / 64.0f;
 		} pushBlock;
 
-		obj.SetVertexLayout(&simpleVertexLayout);
+		obj.SetVertexLayout(simpleVertexLayout);
 
 		render::PipelineProperties props;
 		props.cullMode = render::CullMode::FRONT;
 		props.vertexConstantBlockSize = sizeof(pushBlock);
-		
-		obj.AddPipeline(vulkanDevice->GetPipeline(obj._descriptorLayout->m_descriptorSetLayout, obj._vertexLayout->m_vertexInputBindings, obj._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/irradiancecube.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props));
+		/*obj.AddPipeline(vulkanDevice->GetPipeline(obj._descriptorLayout->m_descriptorSetLayout, obj._vertexLayout->m_vertexInputBindings, obj._vertexLayout->m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/irradiancecube.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props));*/
+		obj.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv","", engine::tools::getAssetPath() + "shaders/pbr/irradiancecube.frag.spv","",
+			obj._vertexLayout, obj._descriptorLayout, props, offscreenRenderPass));
 
 		std::vector<glm::mat4> matrices = {
 			// POSITIVE_X
@@ -360,9 +388,12 @@ public:
 			glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
 		};
 
-		VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-
-		irradianceMap->ChangeLayout(cmdBuf,
+		//VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		render::CommandBuffer* commandBuffer = m_device->GetCommandBuffer();
+		VkCommandBuffer cmdBuf = ((render::VulkanCommandBuffer*)commandBuffer)->m_vkCommandBuffer;
+		commandBuffer->Begin();
+		// Change image layout for all cubemap faces to transfer destination
+		irradianceMap->ChangeLayout(cmdBuf, 
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -376,12 +407,14 @@ public:
 
 				pushBlock.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
 
-				vkCmdPushConstants(cmdBuf, obj._pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
-				obj._pipeline->Draw(cmdBuf);
-				obj.m_descriptorSets[0]->Draw(cmdBuf, obj._pipeline->getPipelineLayout(),0);
+				//vkCmdPushConstants(cmdBuf, obj._pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
+				obj._pipeline->PushConstants(commandBuffer, &pushBlock);
+				obj._pipeline->Draw(commandBuffer);
+				obj.m_descriptorSets[0]->Draw(commandBuffer, obj._pipeline);
 
-				uint32_t vip = obj._vertexLayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
-				uint32_t iip = obj._vertexLayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
+				render::VulkanVertexLayout* vjlayout = static_cast<render::VulkanVertexLayout*>(obj._vertexLayout);
+				uint32_t vip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
+				uint32_t iip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
 				skybox.m_geometries[0]->Draw(&cmdBuf, vip, iip);
 				offscreenRenderPass->End(cmdBuf);
 
@@ -429,7 +462,8 @@ public:
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vulkanDevice->FlushCommandBuffer(cmdBuf, queue);
+		vulkanDevice->FlushCommandBuffer(cmdBuf, queue, false);
+		vulkanDevice->DestroyDrawCommandBuffer(commandBuffer);
 	}
 
 	void generatePrefilteredCube()
@@ -458,9 +492,10 @@ public:
 		};
 		scene::RenderObject obj;
 		obj.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		obj.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, {},
+		/*obj.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, {},
 			{ &envMap->m_descriptor },
-			obj._descriptorLayout->m_descriptorSetLayout, obj._descriptorLayout->m_setLayoutBindings));
+			obj._descriptorLayout->m_descriptorSetLayout, obj._descriptorLayout->m_setLayoutBindings));*/
+		obj.AddDescriptor(vulkanDevice->GetDescriptorSet(obj._descriptorLayout, descriptorPool, {}, { envMap }));
 
 		struct PushBlock {
 			glm::mat4 mvp;
@@ -468,13 +503,16 @@ public:
 			uint32_t numSamples = 32u;
 		} pushBlock;
 
-		obj.SetVertexLayout(&simpleVertexLayout);
+		obj.SetVertexLayout(simpleVertexLayout);
 
 		render::PipelineProperties props;
 		props.cullMode = render::CullMode::FRONT;
 		props.vertexConstantBlockSize = sizeof(pushBlock);
-		obj.AddPipeline(vulkanDevice->GetPipeline(obj._descriptorLayout->m_descriptorSetLayout, obj._vertexLayout->m_vertexInputBindings, obj._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/prefilterenvmap.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props));
+		/*obj.AddPipeline(vulkanDevice->GetPipeline(obj._descriptorLayout->m_descriptorSetLayout, obj._vertexLayout->m_vertexInputBindings, obj._vertexLayout->m_vertexInputAttributes,
+			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv", engine::tools::getAssetPath() + "shaders/pbr/prefilterenvmap.frag.spv", offscreenRenderPass->GetRenderPass(), pipelineCache, props));*/
+		obj.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/pbr/filtercube.vert.spv","", engine::tools::getAssetPath() + "shaders/pbr/prefilterenvmap.frag.spv","",
+			obj._vertexLayout, obj._descriptorLayout, props, offscreenRenderPass));
 
 		std::vector<glm::mat4> matrices = {
 			// POSITIVE_X
@@ -491,7 +529,10 @@ public:
 			glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
 		};
 
-		VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		//VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		render::CommandBuffer* commandBuffer = m_device->GetCommandBuffer();
+		VkCommandBuffer cmdBuf = ((render::VulkanCommandBuffer*)commandBuffer)->m_vkCommandBuffer;
+		commandBuffer->Begin();
 
 		VkViewport viewport = { 0, 0, (float)dim, (float)dim, 0.0f, 1.0f };
 
@@ -510,12 +551,14 @@ public:
 
 				pushBlock.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
 
-				vkCmdPushConstants(cmdBuf, obj._pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
-				obj._pipeline->Draw(cmdBuf);
-				obj.m_descriptorSets[0]->Draw(cmdBuf, obj._pipeline->getPipelineLayout(), 0);
+				obj._pipeline->PushConstants(commandBuffer, &pushBlock);
+				//vkCmdPushConstants(cmdBuf, obj._pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
+				obj._pipeline->Draw(commandBuffer);
+				obj.m_descriptorSets[0]->Draw(commandBuffer, obj._pipeline);
 
-				uint32_t vip = obj._vertexLayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
-				uint32_t iip = obj._vertexLayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
+				render::VulkanVertexLayout* vjlayout = static_cast<render::VulkanVertexLayout*>(obj._vertexLayout);
+				uint32_t vip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
+				uint32_t iip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
 				skybox.m_geometries[0]->Draw(&cmdBuf, vip, iip);
 				offscreenRenderPass->End(cmdBuf);
 
@@ -562,7 +605,8 @@ public:
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vulkanDevice->FlushCommandBuffer(cmdBuf, queue);
+		vulkanDevice->FlushCommandBuffer(cmdBuf, queue, false);
+		vulkanDevice->DestroyDrawCommandBuffer(commandBuffer);
 	}
 
 	void init()
@@ -583,22 +627,23 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
-
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 			//draw here
-			skybox.Draw(drawCommandBuffers[i]);
-			plane.Draw(drawCommandBuffers[i]);
+			skybox.Draw(m_drawCommandBuffers[i]);
+			plane.Draw(m_drawCommandBuffers[i]);
 			//dbgtex.Draw(drawCmdBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

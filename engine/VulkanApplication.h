@@ -44,8 +44,8 @@ protected:
 	// Contains command buffers and semaphores to be presented to the queue
 	VkSubmitInfo submitInfo;
 	// Command buffers used for rendering
-	std::vector <std::vector<VkCommandBuffer>> allDrawCommandBuffers;
-	std::vector<VkCommandBuffer> drawCommandBuffers;
+	std::vector <std::vector<VkCommandBuffer>> allvkDrawCommandBuffers;
+	//std::vector<VkCommandBuffer> drawCommandBuffers;
 	std::vector<VkCommandBuffer> drawUICommandBuffers;
 	// Global render pass for frame buffer writes
 	//VkRenderPass renderPass;
@@ -97,7 +97,8 @@ public:
 	// Creates a new (graphics) command pool object storing command buffers
 	void CreateCommandPool();
 	// Create command buffers for drawing commands
-	virtual void CreateCommandBuffers();
+	virtual void CreateAllCommandBuffers();
+	virtual std::vector<render::CommandBuffer*> CreateCommandBuffers();
 	// Destroy all command buffers and set their handles to VK_NULL_HANDLE
 	// May be necessary during runtime if options are toggled 
 	void DestroyCommandBuffers();
@@ -146,12 +147,14 @@ public:
 	//void UpdateFrame();
 
 	virtual void UpdateOverlay();
-	void DrawUI(const VkCommandBuffer commandBuffer);
+	void DrawUI(render::CommandBuffer* commandBuffer);
 
 	virtual void WaitForDevice();
 
 	/** @brief (Virtual) Called when the UI overlay is updating, can be used to add custom elements to the overlay */
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay);
+
+	virtual void DrawFullScreenQuad(render::CommandBuffer* commandBuffer);
 
 	virtual ~VulkanApplication();
 };

@@ -111,31 +111,34 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
-			scene.DrawShadowsInSeparatePass(drawCommandBuffers[i]);
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
+			scene.DrawShadowsInSeparatePass(m_drawCommandBuffers[i]);
 
-			scenepass->Begin(drawCommandBuffers[i], 0);
+			scenepass->Begin(m_drawCommandBuffers[i], 0);
 
 			for (int j = 0; j < scene_render_objects.size(); j++) {
-				scene_render_objects[j]->Draw(drawCommandBuffers[i]);
+				scene_render_objects[j]->Draw(m_drawCommandBuffers[i]);
 			}
 
-			scenepass->End(drawCommandBuffers[i]);
+			scenepass->End(m_drawCommandBuffers[i]);
 
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 			
-			blackandwhitepipeline->Draw(drawCommandBuffers[i]);
-			pfdesc->Draw(drawCommandBuffers[i], blackandwhitepipeline->getPipelineLayout(), 0);
-			vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			blackandwhitepipeline->Draw(m_drawCommandBuffers[i]);
+			pfdesc->Draw(m_drawCommandBuffers[i], blackandwhitepipeline, 0);
+			DrawFullScreenQuad(m_drawCommandBuffers[i]);
+			//vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(m_drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

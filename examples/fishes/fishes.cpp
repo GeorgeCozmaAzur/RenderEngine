@@ -388,15 +388,18 @@ public:
 		};
 		allfish.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
+		render::VulkanDescriptorSetLayout* vklayout = static_cast<render::VulkanDescriptorSetLayout*>(allfish._descriptorLayout);
+
 		allfish.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &dynamicBuffer->m_descriptor }, { &textures->m_descriptor },
-			allfish._descriptorLayout->m_descriptorSetLayout, allfish._descriptorLayout->m_setLayoutBindings, dynamicAlignment));
+			vklayout->m_descriptorSetLayout, vklayout->m_setLayoutBindings, dynamicAlignment));
 	}
 
 	void setupPipelines()
 	{
+		render::VulkanDescriptorSetLayout* vklayout = static_cast<render::VulkanDescriptorSetLayout*>(allfish._descriptorLayout);
 		render::PipelineProperties props;
 		props.vertexConstantBlockSize = sizeof(int);
-		allfish.AddPipeline(vulkanDevice->GetPipeline(allfish._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
+		allfish.AddPipeline(vulkanDevice->GetPipeline(vklayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
 			engine::tools::getAssetPath() + "shaders/fishes/phongmodel.vert.spv", engine::tools::getAssetPath() + "shaders/fishes/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	}
 
@@ -416,20 +419,21 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
-
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 			//draw here
-			allfish.Draw(drawCommandBuffers[i]);
+			allfish.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

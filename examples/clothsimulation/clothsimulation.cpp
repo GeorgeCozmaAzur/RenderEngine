@@ -15,6 +15,8 @@
 #include "VulkanApplication.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
+#include "render/vulkan/VulkanDescriptorPool.h"
+#include "render/vulkan/VulkanCommandBuffer.h"
 #include "ClothCompute.h"
 
 #define SHADOWMAP_DIM 512
@@ -37,7 +39,7 @@ public:
 		render::VERTEX_COMPONENT_UV
 		}, {});
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	engine::scene::SimpleModel models;
 	render::VulkanTexture* colorMap;
@@ -58,7 +60,7 @@ public:
 	render::VulkanRenderPass* offscreenPass;
 	render::VulkanBuffer* uniformBufferoffscreen = nullptr;
 	scene::RenderObject shadowobjects;
-	std::vector<VkCommandBuffer> drawShadowCmdBuffers;
+	std::vector<render::CommandBuffer*> drawShadowCmdBuffers;
 	float projectionWidth = 4.0f;
 	float projectionDepth = 5.0f;
 
@@ -197,12 +199,19 @@ public:
 
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 7);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 7);*/
+
+		descriptorPool = vulkanDevice->GetDescriptorPool(
+			{ 
+			{render::DescriptorType::UNIFORM_BUFFER, 6},
+			{render::DescriptorType::STORAGE_BUFFER, 4},
+			{render::DescriptorType::IMAGE_SAMPLER, 6} 
+			}, 7);
 	}
 
 	void SetupDescriptors()
@@ -214,20 +223,23 @@ public:
 		};
 		models.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
 
-		models.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
-			models._descriptorLayout->m_descriptorSetLayout, models._descriptorLayout->m_setLayoutBindings));
+		models.AddDescriptor(vulkanDevice->GetDescriptorSet(models._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer }, { colorMap }));
+		/*models.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
+			models._descriptorLayout->m_descriptorSetLayout, models._descriptorLayout->m_setLayoutBindings));*/
 
 		clothobject.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
-		clothobject.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, { &clothMap->m_descriptor },
-			clothobject._descriptorLayout->m_descriptorSetLayout, clothobject._descriptorLayout->m_setLayoutBindings));
+		clothobject.AddDescriptor(vulkanDevice->GetDescriptorSet(clothobject._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer }, { clothMap }));
+		/*clothobject.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, { &clothMap->m_descriptor },
+			clothobject._descriptorLayout->m_descriptorSetLayout, clothobject._descriptorLayout->m_setLayoutBindings));*/
 
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> offscreenbindings
 		{
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
 		};
 		shadowobjects.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(offscreenbindings));
-		shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBufferoffscreen->m_descriptor }, {},
-			shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._descriptorLayout->m_setLayoutBindings));
+		shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet(shadowobjects._descriptorLayout, descriptorPool, { uniformBufferoffscreen }, {  }));
+		/*shadowobjects.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBufferoffscreen->m_descriptor }, {},
+			shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._descriptorLayout->m_setLayoutBindings));*/
 	}
 
 	void setupPipelines()
@@ -235,13 +247,16 @@ public:
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
 		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
 		render::PipelineProperties props;
-		props.depthBias = true;
-		shadowobjects.AddPipeline(vulkanDevice->GetPipeline(shadowobjects._descriptorLayout->m_descriptorSetLayout, shadowobjects._vertexLayout->m_vertexInputBindings, shadowobjects._vertexLayout->m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv", "", offscreenPass->GetRenderPass(), pipelineCache, props));
+		props.depthBias = true;;
+
+		shadowobjects.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/shadowmapping/offscreen.vert.spv","","", "", 
+			shadowobjects._vertexLayout, shadowobjects._descriptorLayout, props, offscreenPass));
 
 		props.depthBias = false;
-		models.AddPipeline(vulkanDevice->GetPipeline(models._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
+		models.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv","", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv","",
+			models._vertexLayout, models._descriptorLayout, props, mainRenderPass));
 
 		std::vector<VkVertexInputBindingDescription> inputBindings = {
 			VkVertexInputBindingDescription{0, sizeof(scene::ClothComputeObject::ClothVertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -257,7 +272,7 @@ public:
 		props.cullMode = render::CullMode::NONE;
 		props.topology = render::PrimitiveTopolgy::TRIANGLE_STRIP;
 		props.primitiveRestart = VK_TRUE;
-		clothobject.AddPipeline(vulkanDevice->GetPipeline(clothobject._descriptorLayout->m_descriptorSetLayout, inputBindings, inputAttributes,
+		clothobject.AddPipeline(vulkanDevice->GetPipeline( ((render::VulkanDescriptorSetLayout*)clothobject._descriptorLayout)->m_descriptorSetLayout, inputBindings, inputAttributes,
 			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	}
 
@@ -270,30 +285,34 @@ public:
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT}
 		};
-		clothcompute._descriptorLayout = vulkanDevice->GetDescriptorSetLayout(computebindings);
-		clothcompute.m_descriptorSets.resize(2);
-		clothcompute.m_descriptorSets[0] = vulkanDevice->GetDescriptorSet(descriptorPool, { &clothcompute.storageBuffers.inbuffer->m_descriptor, &clothcompute.storageBuffers.outbuffer->m_descriptor, &clothcompute.m_uniformBuffer->m_descriptor }, { &shadowtex->m_descriptor },
-			clothcompute._descriptorLayout->m_descriptorSetLayout, clothcompute._descriptorLayout->m_setLayoutBindings);
-		clothcompute.m_descriptorSets[1] = vulkanDevice->GetDescriptorSet(descriptorPool, { &clothcompute.storageBuffers.outbuffer->m_descriptor, &clothcompute.storageBuffers.inbuffer->m_descriptor, &clothcompute.m_uniformBuffer->m_descriptor }, { &shadowtex->m_descriptor },
-			clothcompute._descriptorLayout->m_descriptorSetLayout, clothcompute._descriptorLayout->m_setLayoutBindings);
+		clothcompute._vulkanDescriptorLayout = vulkanDevice->GetDescriptorSetLayout(computebindings);
+		clothcompute.m_vulkanDescriptorSets.resize(2);
+		render::VulkanDescriptorPool* vpool = (render::VulkanDescriptorPool*)descriptorPool;
+		clothcompute.m_vulkanDescriptorSets[0] = vulkanDevice->GetDescriptorSet(vpool->m_vkPool, { &clothcompute.storageBuffers.inbuffer->m_descriptor, &clothcompute.storageBuffers.outbuffer->m_descriptor, &clothcompute.m_uniformBuffer->m_descriptor }, { &shadowtex->m_descriptor },
+			clothcompute._vulkanDescriptorLayout->m_descriptorSetLayout, clothcompute._vulkanDescriptorLayout->m_setLayoutBindings);
+		clothcompute.m_vulkanDescriptorSets[1] = vulkanDevice->GetDescriptorSet(vpool->m_vkPool, { &clothcompute.storageBuffers.outbuffer->m_descriptor, &clothcompute.storageBuffers.inbuffer->m_descriptor, &clothcompute.m_uniformBuffer->m_descriptor }, { &shadowtex->m_descriptor },
+			clothcompute._vulkanDescriptorLayout->m_descriptorSetLayout, clothcompute._vulkanDescriptorLayout->m_setLayoutBindings);
 
 		std::string fileName = engine::tools::getAssetPath() + "shaders/clothsimulation/" + "cloth" + ".comp.spv";
-		clothcompute._pipeline = vulkanDevice->GetComputePipeline(fileName, device, clothcompute._descriptorLayout->m_descriptorSetLayout, pipelineCache, 0);
+		clothcompute._vulkanPipeline = vulkanDevice->GetComputePipeline(fileName, device, clothcompute._vulkanDescriptorLayout->m_descriptorSetLayout, pipelineCache, 0);
 	}
 
-	virtual void CreateCommandBuffers()
+	void CreateAllCommandBuffers()
 	{
-		if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
-			return;
+		/*if (vulkanDevice->queueFamilyIndices.graphicsFamily == UINT32_MAX)
+			return;*/
 		// Create one command buffer for each swap chain image and reuse for rendering
 
-		drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
+		/*drawShadowCmdBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 		clothcompute.commandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 		drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 
 		allDrawCommandBuffers.push_back(drawShadowCmdBuffers);
 		allDrawCommandBuffers.push_back(clothcompute.commandBuffers);
-		allDrawCommandBuffers.push_back(drawCommandBuffers);
+		allDrawCommandBuffers.push_back(drawCommandBuffers);*/
+		drawShadowCmdBuffers = CreateCommandBuffers();
+		clothcompute.commandBuffers = CreateCommandBuffers();
+		m_drawCommandBuffers = CreateCommandBuffers();
 
 	}
 
@@ -335,26 +354,28 @@ public:
 
 	void buildShadowCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		/*VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;*/
 		for (int32_t i = 0; i < drawShadowCmdBuffers.size(); ++i)
 		{
 
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawShadowCmdBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawShadowCmdBuffers[i], &cmdBufInfo));
+			drawShadowCmdBuffers[i]->Begin();
 
 			offscreenPass->Begin(drawShadowCmdBuffers[i], 0);
 
-			vkCmdSetDepthBias(
+			/*vkCmdSetDepthBias(
 				drawShadowCmdBuffers[i],
 				depthBiasConstant,
 				0.0f,
-				depthBiasSlope);
+				depthBiasSlope);*/
 
 			shadowobjects.Draw(drawShadowCmdBuffers[i]);
 
 			offscreenPass->End(drawShadowCmdBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawShadowCmdBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawShadowCmdBuffers[i]));
+			drawShadowCmdBuffers[i]->End();
 		}
 	}
 
@@ -366,46 +387,49 @@ public:
 
 		for (int32_t i = 0; i < clothcompute.commandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(clothcompute.commandBuffers[i], &cmdBufInfo));
+			VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)clothcompute.commandBuffers[i])->m_vkCommandBuffer;
+			VK_CHECK_RESULT(vkBeginCommandBuffer(vkbuffer, &cmdBufInfo));
 
-			vkCmdBindPipeline(clothcompute.commandBuffers[i], VK_PIPELINE_BIND_POINT_COMPUTE, clothcompute._pipeline->getPipeline());
+			vkCmdBindPipeline(vkbuffer, VK_PIPELINE_BIND_POINT_COMPUTE, clothcompute._vulkanPipeline->getPipeline());
 
 			const uint32_t iterations = 64;
 			for (uint32_t j = 0; j < iterations; j++) {
 				readSet = 1 - readSet;
 
-				clothcompute.m_descriptorSets[readSet]->Draw(clothcompute.commandBuffers[i], clothcompute._pipeline->getPipelineLayout(),0, VK_PIPELINE_BIND_POINT_COMPUTE);
-				vkCmdDispatch(clothcompute.commandBuffers[i], clothcompute.m_gridSize.x / 10, clothcompute.m_gridSize.y / 10, 1);
+				clothcompute.m_vulkanDescriptorSets[readSet]->Draw(vkbuffer, clothcompute._vulkanPipeline->getPipelineLayout(),0, VK_PIPELINE_BIND_POINT_COMPUTE);
+				vkCmdDispatch(vkbuffer, clothcompute.m_gridSize.x / 10, clothcompute.m_gridSize.y / 10, 1);
 			}
 
-			addComputeToGraphicsBarriers(clothcompute.commandBuffers[i]);
-			vkEndCommandBuffer(clothcompute.commandBuffers[i]);
+			addComputeToGraphicsBarriers(vkbuffer);
+			vkEndCommandBuffer(vkbuffer);
 
 		}
 	}
 
 	void BuildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		/*VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;*/
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
 			//addComputeToGraphicsBarriers(drawCmdBuffers[i]);
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
-			models.Draw(drawCommandBuffers[i]);
+			models.Draw(m_drawCommandBuffers[i]);
 		
-			clothobject.Draw(drawCommandBuffers[i]);
+			clothobject.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 

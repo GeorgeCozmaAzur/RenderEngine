@@ -33,7 +33,7 @@ namespace engine
 
 		void D3D12DescriptorTable::Draw(class CommandBuffer* commandBuffer, Pipeline* pipeline, uint32_t indexInDynamicUniformBuffer)
 		{
-			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
 			Draw(d3dcommandBuffer->m_commandList.Get());
 		}
 	}

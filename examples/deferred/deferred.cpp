@@ -22,14 +22,14 @@ class VulkanExample : public VulkanApplication
 public:
 
 	// Vertex layout for the models
-	render::VertexLayout vertexLayout = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
 		render::VERTEX_COMPONENT_NORMAL
 		}, {});
 
-	render::VertexLayout vertexLayoutInstanced = render::VertexLayout({
+	render::VulkanVertexLayout vertexLayoutInstanced = render::VulkanVertexLayout({
 		render::VERTEX_COMPONENT_POSITION,
 		render::VERTEX_COMPONENT_UV,
 		render::VERTEX_COMPONENT_COLOR,
@@ -160,7 +160,7 @@ public:
 		else {
 			engine::tools::exitFatal("Device does not support any compressed texture format!", VK_ERROR_FEATURE_NOT_PRESENT);
 		}
-		data.Destroy();
+		//data.Destroy();
 
 		std::vector<glm::vec3> models_positions;
 		models_positions.resize(LIGHTS_NO);
@@ -326,26 +326,29 @@ public:
 		VkCommandBufferBeginInfo cmdBufInfo{};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
+		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
+			//VK_CHECK_RESULT(vkBeginCommandBuffer(m_drawCommandBuffers[i], &cmdBufInfo));
+			m_drawCommandBuffers[i]->Begin();
 
-			scenepass->Begin(drawCommandBuffers[i], 0);
-			models.example.Draw(drawCommandBuffers[i]);
-			models.plane.Draw(drawCommandBuffers[i]);
-			scenepass->End(drawCommandBuffers[i]);
+			scenepass->Begin(m_drawCommandBuffers[i], 0);
+			models.example.Draw(m_drawCommandBuffers[i]);
+			models.plane.Draw(m_drawCommandBuffers[i]);
+			scenepass->End(m_drawCommandBuffers[i]);
 
-			mainRenderPass->Begin(drawCommandBuffers[i], i);
+			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 			//draw here
-			pipelines.deferred->Draw(drawCommandBuffers[i]);
-			descriptorSets.deferred->Draw(drawCommandBuffers[i], pipelines.deferred->getPipelineLayout(), 0);
-			vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			pipelines.deferred->Draw(m_drawCommandBuffers[i]);
+			descriptorSets.deferred->Draw(m_drawCommandBuffers[i], pipelines.deferred);
+			//vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
+			DrawFullScreenQuad(m_drawCommandBuffers[i]);
 
-			DrawUI(drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(drawCommandBuffers[i]);
+			mainRenderPass->End(m_drawCommandBuffers[i]);
 
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
+			m_drawCommandBuffers[i]->End();
 		}
 	}
 
