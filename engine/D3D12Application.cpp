@@ -235,11 +235,12 @@ bool D3D12Application::InitAPI()
 			//m_renderPasses.push_back(pass);
 	m_mainRenderPass = pass;
 
+	primaryCmdPool = m_device->GetCommandPool(0, true);
 	//ThrowIfFailed(m_d3ddevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 	//ThrowIfFailed(m_d3ddevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
 	CreateAllCommandBuffers();
 	
-	m_loadingCommandBuffer = m_device->GetCommandBuffer();
+	m_loadingCommandBuffer = m_device->GetCommandBuffer(primaryCmdPool);
 
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.
@@ -431,7 +432,7 @@ std::vector<render::CommandBuffer*> D3D12Application::CreateCommandBuffers()
 	returnvec.resize(FrameCount);
 	for (int i = 0; i < returnvec.size(); i++)
 	{
-		returnvec[i] = m_device->GetCommandBuffer();
+		returnvec[i] = m_device->GetCommandBuffer(primaryCmdPool);
 		alld3dDrawCommandLists[i].push_back(((D3D12CommandBuffer*)returnvec[i])->m_commandList.Get());
 	}
 	return returnvec;

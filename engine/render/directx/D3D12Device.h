@@ -18,6 +18,8 @@ namespace engine
 		{
 			Microsoft::WRL::ComPtr<ID3D12Device> m_device;
 
+			std::vector<CommandBuffer*> m_commandBuffers;//TODO remove this
+
 		public:
 			D3D12Device(Microsoft::WRL::ComPtr<ID3D12Device> device) : m_device(device) {};
 
@@ -43,7 +45,9 @@ namespace engine
 
 			virtual Pipeline* GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass);
 
-			virtual CommandBuffer* GetCommandBuffer();
+			virtual CommandPool* GetCommandPool(uint32_t queueIndex, bool primary = true);
+
+			virtual CommandBuffer* GetCommandBuffer(CommandPool* pool, bool primary = true);
 
 			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer);
 		};

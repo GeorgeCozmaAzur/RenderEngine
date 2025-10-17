@@ -13,6 +13,7 @@ namespace engine
 			VkDevice _device = VK_NULL_HANDLE;
 			VkCommandBuffer m_vkCommandBuffer = VK_NULL_HANDLE;
 
+			VulkanCommandBuffer(CommandPool* pool) : CommandBuffer(pool) {};
 			~VulkanCommandBuffer();
 			virtual void Begin();
 			virtual void End();

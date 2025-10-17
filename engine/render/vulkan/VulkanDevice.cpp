@@ -3,6 +3,7 @@
 #include "VulkanDescriptorPool.h"
 #include "VulkanMesh.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanCommandPool.h"
 #include <set>
 
 namespace engine
@@ -586,26 +587,19 @@ namespace engine
             m_renderPasses.push_back(pass);
             return pass;
         }
-        
-        VkCommandPool VulkanDevice::CreateCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags)
-        {
-            VkCommandPoolCreateInfo cmdPoolInfo = {};
-            cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-            cmdPoolInfo.queueFamilyIndex = queueFamilyIndex;
-            cmdPoolInfo.flags = createFlags;
-            VkCommandPool cmdPool;
-            VK_CHECK_RESULT(vkCreateCommandPool(logicalDevice, &cmdPoolInfo, nullptr, &cmdPool));
-            m_commandPools.insert(std::pair<uint32_t, VkCommandPool>(queueFamilyIndex, cmdPool));
-            return cmdPool;
-        }
 
-        VkCommandPool VulkanDevice::GetCommandPool(uint32_t queueFamilyIndex)
+       /* VkCommandPool VulkanDevice::GetCommandPool(uint32_t queueFamilyIndex)
         {
             VkCommandPool cmdPool = VK_NULL_HANDLE;
-            std::map<uint32_t, VkCommandPool>::iterator it;
-            it = m_commandPools.find(queueFamilyIndex);
-            if (it != m_commandPools.end())
-                cmdPool = it->second;
+            std::vector<CommandPool*>::iterator it;
+            for (auto pool : m_primaryCommandPools)
+            {
+                if (pool->m_queueIndex == queueFamilyIndex)
+                {
+                    VulkanCommandPool* vkpool = dynamic_cast<VulkanCommandPool*>(pool);
+                    return vkpool->m_vkCommandPool;
+                }
+            }
             if (cmdPool != VK_NULL_HANDLE)
             {
                 return cmdPool;
@@ -614,25 +608,11 @@ namespace engine
             {
                 return CreateCommandPool(queueFamilyIndex);
             }
-        }
-
-        void VulkanDevice::DestroyCommandPool(VkCommandPool cmdPool)
-        {
-            std::map<uint32_t, VkCommandPool>::iterator it;
-            for (it = m_commandPools.begin(); it != m_commandPools.end(); ++it)
-            {
-                if (it->second == cmdPool)
-                {
-                    vkDestroyCommandPool(logicalDevice, cmdPool, nullptr);
-                    m_commandPools.erase(it);
-                    return;
-                }
-            }
-        }
+        }*/
 
         VkCommandBuffer VulkanDevice::CreateCommandBuffer(VkCommandBufferLevel level, bool begin)
         {
-            VkCommandPool commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
+            VkCommandPool commandPool = ((VulkanCommandPool*)GetCommandPool(queueFamilyIndices.graphicsFamily, true))->m_vkCommandPool;
 
             VkCommandBufferAllocateInfo cmdBufAllocateInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, level, 1 };
 
@@ -667,35 +647,35 @@ namespace engine
             return newCommandBuffers;
         }*/
 
-        void VulkanDevice::FreeDrawCommandBuffers()
-        {
-            /*if (drawCommandBuffers.empty())
-                return;
-            VkCommandPool commandPool = GetCommandPool(drawCommandBuffersPoolIndex);
-            vkFreeCommandBuffers(logicalDevice, commandPool, static_cast<uint32_t>(drawCommandBuffers.size()), drawCommandBuffers.data());
-            drawCommandBuffers.clear();*/
-        }
+        //void VulkanDevice::FreeDrawCommandBuffers()
+        //{
+        //    /*if (drawCommandBuffers.empty())
+        //        return;
+        //    VkCommandPool commandPool = GetCommandPool(drawCommandBuffersPoolIndex);
+        //    vkFreeCommandBuffers(logicalDevice, commandPool, static_cast<uint32_t>(drawCommandBuffers.size()), drawCommandBuffers.data());
+        //    drawCommandBuffers.clear();*/
+        //}
 
-        VkCommandBuffer VulkanDevice::CreateComputeCommandBuffer(uint32_t queueFamilyIndex)
-        {
-            VkCommandPool commandPool = GetCommandPool(queueFamilyIndex);
+        //VkCommandBuffer VulkanDevice::CreateComputeCommandBuffer(uint32_t queueFamilyIndex)
+        //{
+        //    VkCommandPool commandPool = GetCommandPool(queueFamilyIndex);
 
-            VkCommandBufferAllocateInfo cmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1};// = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+        //    VkCommandBufferAllocateInfo cmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1};// = commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 
-            VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &computeCommandBuffer));
+        //    VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &computeCommandBuffer));
 
-            computeCommandBuffersPoolIndex = queueFamilyIndex;
+        //    computeCommandBuffersPoolIndex = queueFamilyIndex;
 
-            return computeCommandBuffer;
-        }
+        //    return computeCommandBuffer;
+        //}
 
-        void VulkanDevice::FreeComputeCommandBuffer()
+       /* void VulkanDevice::FreeComputeCommandBuffer()
         {
             if (computeCommandBuffer == VK_NULL_HANDLE)
                 return;
             VkCommandPool commandPool = GetCommandPool(computeCommandBuffersPoolIndex);
             vkFreeCommandBuffers(logicalDevice, commandPool, 1, &computeCommandBuffer);
-        }
+        }*/
 
         void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free)
         {
@@ -704,7 +684,8 @@ namespace engine
                 return;
             }
 
-            VkCommandPool commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
+            //VkCommandPool commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
+            VkCommandPool commandPool = ((VulkanCommandPool*)GetCommandPool(queueFamilyIndices.graphicsFamily, true))->m_vkCommandPool;
 
             VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 
@@ -735,7 +716,7 @@ namespace engine
 
         void VulkanDevice::DestroyDrawCommandBuffer(render::CommandBuffer* commandBuffer)
         {
-            VkCommandPool commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
+           /* VkCommandPool commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
             std::vector<CommandBuffer*>::iterator it;
             it = find(m_commandBuffers.begin(), m_commandBuffers.end(), commandBuffer);
             if (it != m_commandBuffers.end())
@@ -744,7 +725,9 @@ namespace engine
                 vkFreeCommandBuffers(logicalDevice, commandPool, 1, &vkvcmd->m_vkCommandBuffer);
                 m_commandBuffers.erase(it);
                 return;
-            }
+            }*/
+            CommandPool* pool = GetCommandPool(queueFamilyIndices.graphicsFamily, true);
+            pool->DestroyCommandBuffer(commandBuffer);
         }
 
         VkSemaphore VulkanDevice::GetSemaphore()
@@ -887,14 +870,45 @@ namespace engine
             return pipeline;
         }
 
-        CommandBuffer* VulkanDevice::GetCommandBuffer()
+        CommandPool* VulkanDevice::GetCommandPool(uint32_t queueIndex, bool primary)
         {
-            VulkanCommandBuffer* vkcommandBuffer = new VulkanCommandBuffer();
+            if (primary)
+            {
+                for (auto pool : m_primaryCommandPools)
+                {
+                    if (pool->m_queueIndex == queueIndex)
+                        return pool;
+                }
+                VulkanCommandPool* newpool = new VulkanCommandPool();
+                newpool->m_primary = primary;
+                newpool->Create(logicalDevice, queueIndex);
+                m_primaryCommandPools.push_back(newpool);
+                return newpool;
+            }
+            else
+            {
+               /* for (auto pool : m_secondaryCommandPools)
+                {
+                    if (pool->m_queueIndex == queueIndex)
+                        return pool;
+                }*/
+                VulkanCommandPool* newpool = new VulkanCommandPool();
+                newpool->m_primary = primary;
+                newpool->Create(logicalDevice, queueIndex);
+                m_secondaryCommandPools.push_back(newpool);
+                return newpool;
+            }
+        }
+
+        CommandBuffer* VulkanDevice::GetCommandBuffer(CommandPool* pool, bool primary)
+        {
+            return pool->GetCommandBuffer();
+            /*VulkanCommandBuffer* vkcommandBuffer = new VulkanCommandBuffer();
             vkcommandBuffer->_device = logicalDevice;
             vkcommandBuffer->_commandPool = GetCommandPool(queueFamilyIndices.graphicsFamily);
             vkcommandBuffer->m_vkCommandBuffer = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
             m_commandBuffers.push_back(vkcommandBuffer);
-            return vkcommandBuffer;
+            return vkcommandBuffer;*/
         }
 
         Mesh* VulkanDevice::GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commandBuffer)
@@ -911,7 +925,7 @@ namespace engine
 
         VulkanDevice::~VulkanDevice()
         {
-            FreeDrawCommandBuffers();
+          /*  FreeDrawCommandBuffers();
             FreeComputeCommandBuffer();
             for (auto cmd : m_commandBuffers)
                 delete cmd;
@@ -920,8 +934,13 @@ namespace engine
             {
                 vkDestroyCommandPool(logicalDevice, cmdPool.second, nullptr);
             }
-            m_commandPools.clear();
-
+            m_commandPools.clear();*/
+            for (auto cb : m_primaryCommandPools)
+                delete cb;
+            m_primaryCommandPools.clear();
+            for (auto cb : m_secondaryCommandPools)
+                delete cb;
+            m_secondaryCommandPools.clear();
             for (auto layout : m_descriptorSetLayouts)
                 delete layout;
             m_descriptorSetLayouts.clear();

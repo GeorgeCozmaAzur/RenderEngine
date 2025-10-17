@@ -14,6 +14,7 @@
 #include "scene/SpacePartitionTree.h"
 #include "scene/Timer.h"
 #include "scene/DrawDebug.h"
+#include "render/vulkan/VulkanCommandBuffer.h"
 
 using namespace engine;
 
@@ -50,7 +51,7 @@ public:
 	render::DescriptorPool* descriptorPool;
 
 	struct ThreadData {
-		VkCommandPool commandPool;
+		render::CommandPool* commandPool;
 		// One command buffer per render object
 		std::vector<render::CommandBuffer*> commandBuffer;
 		std::vector<engine::scene::SimpleModel*> objects;
@@ -125,13 +126,13 @@ public:
 	{
 		// Clean up used Vulkan resources 
 		// Note : Inherited destructor cleans up resources stored in base class
-		for (auto& thread : threadData) {
+		/*for (auto& thread : threadData) {
 			vkFreeCommandBuffers(device, thread.commandPool, static_cast<uint32_t>(thread.commandBuffer.size()), thread.commandBuffer.data());
 			vkDestroyCommandPool(device, thread.commandPool, nullptr);
 		}
 		
 		vkFreeCommandBuffers(device, threadUIData.commandPool, static_cast<uint32_t>(threadUIData.commandBuffer.size()), threadUIData.commandBuffer.data());
-		vkDestroyCommandPool(device, threadUIData.commandPool, nullptr);
+		vkDestroyCommandPool(device, threadUIData.commandPool, nullptr);*/
 
 		for (auto bla : vert_ram_uniform_buffers)
 		{
@@ -376,32 +377,42 @@ public:
 			ThreadData* thread = &threadData[i];
 
 			// Create one command pool for each thread
-			VkCommandPoolCreateInfo cmdPoolCreateInfo{};
+			/*VkCommandPoolCreateInfo cmdPoolCreateInfo{};
 			cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			cmdPoolCreateInfo.queueFamilyIndex = vulkanDevice->queueFamilyIndices.graphicsFamily;
 			cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &thread->commandPool));
+			VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &thread->commandPool));*/
+
+			thread->commandPool = m_device->GetCommandPool(vulkanDevice->queueFamilyIndices.graphicsFamily, false);
 
 			// One secondary command buffer per object that is updated by this thread
 			thread->commandBuffer.resize(numObjectsPerThread);
+			for (int i = 0; i < thread->commandBuffer.size(); i++)
+			{
+				thread->commandBuffer[i] = m_device->GetCommandBuffer(thread->commandPool,false);
+			}
 			// Generate secondary command buffers for each thread
-			VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, thread->commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY, static_cast<uint32_t>(thread->commandBuffer.size()) };
-			VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &secondaryCmdBufAllocateInfo, thread->commandBuffer.data()));
+			/*VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, thread->commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY, static_cast<uint32_t>(thread->commandBuffer.size()) };
+			VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &secondaryCmdBufAllocateInfo, thread->commandBuffer.data()));*/
 
 			thread->objects.reserve(objectsNo / numDrawThreads);
 		}
-		VkCommandPoolCreateInfo cmdPoolCreateInfo{};
+		/*VkCommandPoolCreateInfo cmdPoolCreateInfo{};
 		cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		cmdPoolCreateInfo.queueFamilyIndex = vulkanDevice->queueFamilyIndices.graphicsFamily;
 		cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &threadUIData.commandPool));
+		VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &threadUIData.commandPool));*/
+		threadUIData.commandPool = m_device->GetCommandPool(vulkanDevice->queueFamilyIndices.graphicsFamily, false);
 
 		// One secondary command buffer per object that is updated by this thread
 		threadUIData.commandBuffer.resize(numObjectsPerThread);
 		// Generate secondary command buffers for each thread
-		VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, threadUIData.commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY, static_cast<uint32_t>(threadUIData.commandBuffer.size()) };
-
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &secondaryCmdBufAllocateInfo, threadUIData.commandBuffer.data()));
+		for (int i = 0; i < threadUIData.commandBuffer.size(); i++)
+		{
+			threadUIData.commandBuffer[i] = m_device->GetCommandBuffer(threadUIData.commandPool, false);
+		}
+		/*VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO , nullptr, threadUIData.commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY, static_cast<uint32_t>(threadUIData.commandBuffer.size()) };
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &secondaryCmdBufAllocateInfo, threadUIData.commandBuffer.data()));*/
 
 	}
 
@@ -413,7 +424,7 @@ public:
 		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		commandBufferBeginInfo.pInheritanceInfo = &inheritanceInfo;
-		VkCommandBuffer cmdBuffer = thread->commandBuffer[cmdBufferIndex];
+		VkCommandBuffer cmdBuffer = ((render::VulkanCommandBuffer*)thread->commandBuffer[cmdBufferIndex])->m_vkCommandBuffer;
 
 		VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo));
 
@@ -426,7 +437,7 @@ public:
 		for (auto object : thread->objects)
 		{
 			if(object)
-				object->Draw(cmdBuffer);
+				object->Draw(thread->commandBuffer[cmdBufferIndex]);
 		}
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
@@ -441,11 +452,12 @@ public:
 
 		commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		commandBufferBeginInfo.pInheritanceInfo = &inheritanceInfo;
-		VkCommandBuffer cmdBuffer = thread->commandBuffer[0];
+		//VkCommandBuffer cmdBuffer = thread->commandBuffer[0];
+		VkCommandBuffer cmdBuffer = ((render::VulkanCommandBuffer*)thread->commandBuffer[0])->m_vkCommandBuffer;
 
 		VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo));
 
-		DrawUI(cmdBuffer);
+		DrawUI(thread->commandBuffer[0]);
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
 	}
@@ -455,9 +467,11 @@ public:
 		VkCommandBufferBeginInfo commandBufferBeginInfo{};
 		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[0], &commandBufferBeginInfo));
+		VkCommandBuffer cmdBuffer = ((render::VulkanCommandBuffer*)m_drawCommandBuffers[0])->m_vkCommandBuffer;
 
-		mainRenderPass->Begin(drawCommandBuffers[0], i, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo));
+
+		mainRenderPass->Begin(cmdBuffer, i, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// Contains the list of secondary command buffers to be submitted
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -526,18 +540,22 @@ public:
 			{
 				if (threadData[t].objects.size() != 0)
 				{
-					commandBuffers.push_back(threadData[t].commandBuffer[0]);
+					
+					//commandBuffers.push_back(threadData[t].commandBuffer[0]);
+					commandBuffers.push_back(((render::VulkanCommandBuffer*)threadData[t].commandBuffer[0])->m_vkCommandBuffer);
+					
 				}
 			}
 		}
-		commandBuffers.push_back(threadUIData.commandBuffer[0]);
+		//commandBuffers.push_back(threadUIData.commandBuffer[0]);
+		commandBuffers.push_back(((render::VulkanCommandBuffer*)threadUIData.commandBuffer[0])->m_vkCommandBuffer);
 
 		// Execute render commands from the secondary command buffer
-		vkCmdExecuteCommands(drawCommandBuffers[0], static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+		vkCmdExecuteCommands(cmdBuffer, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-		mainRenderPass->End(drawCommandBuffers[0]);
+		mainRenderPass->End(cmdBuffer);
 
-		VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[0]));
+		VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
 	}
 	void updateglobalUniformBuffers()
 	{
@@ -571,7 +589,7 @@ public:
 			vert_uniform_buffers[i]->MemCopy(&vert_ram_uniform_buffers[i]->model,sizeof(vert_ram_uniform_buffers[i]->model));
 		}
 	}
-	bool multithreaded = false;
+	bool multithreaded = true;
 	void draw()
 	{
 		vkWaitForFences(device, 1, &submitFences[multithreaded ? 0 : currentBuffer], VK_TRUE, UINT64_MAX);
@@ -607,7 +625,8 @@ public:
 		submitInfo.pWaitSemaphores = &presentCompleteSemaphores[multithreaded ? 0 : currentBuffer];
 		submitInfo.pSignalSemaphores = &renderCompleteSemaphores[multithreaded ? 0 : currentBuffer];
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCommandBuffers[multithreaded? 0 : currentBuffer];
+		VkCommandBuffer cmdBuffer = ((render::VulkanCommandBuffer*)m_drawCommandBuffers[multithreaded ? 0 : currentBuffer])->m_vkCommandBuffer;
+		submitInfo.pCommandBuffers = &cmdBuffer;
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, submitFences[multithreaded ? 0 : currentBuffer]));
 
 		//VulkanApplication::PresentFrame();

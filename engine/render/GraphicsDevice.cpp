@@ -24,7 +24,9 @@ namespace engine
                 delete tex;
             for (auto pass : m_renderPasses)
                 delete pass;
-            for (auto cb : m_commandBuffers)
+            for (auto cb : m_primaryCommandPools)
+                delete cb;
+            for (auto cb : m_secondaryCommandPools)
                 delete cb;
 		}
 

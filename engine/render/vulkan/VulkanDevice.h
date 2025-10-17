@@ -35,11 +35,11 @@ namespace engine
 			std::vector<const char*> m_enabledExtensions;  // Enabled extensions
 			VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;  // Handle to the physical device
 			VkDevice logicalDevice = VK_NULL_HANDLE;  // Handle to the logical device
-			std::map<uint32_t, VkCommandPool> m_commandPools;  // Command pools for each queue family index
-			std::vector<VkCommandBuffer> drawCommandBuffers;  // Draw command buffers
-			uint32_t drawCommandBuffersPoolIndex = 0;  // Index of the draw command buffers pool
-			VkCommandBuffer computeCommandBuffer = VK_NULL_HANDLE;  // Compute command buffer
-			uint32_t computeCommandBuffersPoolIndex = 0;  // Index of the compute command buffers pool
+			//std::map<uint32_t, VkCommandPool> m_commandPools;  // Command pools for each queue family index
+			//std::vector<VkCommandBuffer> drawCommandBuffers;  // Draw command buffers
+			//uint32_t drawCommandBuffersPoolIndex = 0;  // Index of the draw command buffers pool
+			//VkCommandBuffer computeCommandBuffer = VK_NULL_HANDLE;  // Compute command buffer
+			//uint32_t computeCommandBuffersPoolIndex = 0;  // Index of the compute command buffers pool
 
 			bool enableDebugMarkers = false;  // Indicates if debug markers extension is enabled
 			VkPipelineCache pipelineCache = VK_NULL_HANDLE;  // Pipeline cache object
@@ -165,15 +165,6 @@ namespace engine
 			// Overloaded function to get a render pass with additional properties
 			VulkanRenderPass* GetRenderPass(std::vector <std::pair<VkFormat, VkImageLayout>> layouts);
 
-			// Creates a command pool
-			VkCommandPool CreateCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-
-			// Gets a command pool for a specific queue family index
-			VkCommandPool GetCommandPool(uint32_t queueFamilyIndex);
-
-			// Destroys a command pool
-			void DestroyCommandPool(VkCommandPool cmdPool);
-
 			// Creates a command buffer
 			VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level, bool begin = false);
 
@@ -181,13 +172,13 @@ namespace engine
 			//std::vector<VkCommandBuffer> CreatedrawCommandBuffers(uint32_t size, uint32_t queueFamilyIndex);
 
 			// Frees draw command buffers
-			void FreeDrawCommandBuffers();
+			//void FreeDrawCommandBuffers();
 
 			// Creates a compute command buffer
-			VkCommandBuffer CreateComputeCommandBuffer(uint32_t queueFamilyIndex);
+			//VkCommandBuffer CreateComputeCommandBuffer(uint32_t queueFamilyIndex);
 
 			// Frees the compute command buffer
-			void FreeComputeCommandBuffer();
+			//void FreeComputeCommandBuffer();
 
 			// Flushes a command buffer
 			void FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free = true);
@@ -226,7 +217,9 @@ namespace engine
 
 			virtual Pipeline* GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass);
 
-			virtual CommandBuffer* GetCommandBuffer();
+			virtual CommandPool* GetCommandPool(uint32_t queueIndex, bool primary = true);
+
+			virtual CommandBuffer* GetCommandBuffer(CommandPool* pool, bool primary = true);
 
 			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer);
 

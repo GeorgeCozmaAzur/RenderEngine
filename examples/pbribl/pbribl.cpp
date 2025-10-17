@@ -351,7 +351,7 @@ public:
 		};
 
 		//VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-		render::CommandBuffer* commandBuffer = m_device->GetCommandBuffer();
+		render::CommandBuffer* commandBuffer = m_device->GetCommandBuffer(primaryCmdPool);
 		VkCommandBuffer cmdBuf = ((render::VulkanCommandBuffer*)commandBuffer)->m_vkCommandBuffer;
 		commandBuffer->Begin();
 		// Change image layout for all cubemap faces to transfer destination
@@ -490,7 +490,7 @@ public:
 		};
 
 		//VkCommandBuffer cmdBuf = vulkanDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-		render::CommandBuffer* commandBuffer = m_device->GetCommandBuffer();
+		render::CommandBuffer* commandBuffer = m_device->GetCommandBuffer(primaryCmdPool);
 		VkCommandBuffer cmdBuf = ((render::VulkanCommandBuffer*)commandBuffer)->m_vkCommandBuffer;
 		commandBuffer->Begin();
 

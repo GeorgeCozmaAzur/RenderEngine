@@ -76,7 +76,7 @@ void VulkanApplication::SetupSwapChain()
 
 void VulkanApplication::CreateCommandPool()
 {
-	cmdPool = vulkanDevice->GetCommandPool(vulkanDevice->queueFamilyIndices.graphicsFamily);//vulkanDevice->queueFamilyIndices.graphicsFamily);
+	primaryCmdPool = vulkanDevice->GetCommandPool(vulkanDevice->queueFamilyIndices.graphicsFamily);//vulkanDevice->queueFamilyIndices.graphicsFamily);
 }
 
 void VulkanApplication::CreateAllCommandBuffers()
@@ -95,7 +95,7 @@ std::vector<render::CommandBuffer*> VulkanApplication::CreateCommandBuffers()
 	//drawCommandBuffers = vulkanDevice->CreatedrawCommandBuffers(swapChain.swapChainImageViews.size(), vulkanDevice->queueFamilyIndices.graphicsFamily);
 	for (int i = 0; i < swapChain.swapChainImageViews.size(); i++)
 	{
-		render::VulkanCommandBuffer* vulkanBuffer = (render::VulkanCommandBuffer*)(vulkanDevice->GetCommandBuffer());
+		render::VulkanCommandBuffer* vulkanBuffer = (render::VulkanCommandBuffer*)(vulkanDevice->GetCommandBuffer(primaryCmdPool));
 		//drawCommandBuffers.push_back(vulkanBuffer->m_vkCommandBuffer);
 		returnvec.push_back(vulkanBuffer);
 		allvkDrawCommandBuffers[i].push_back(vulkanBuffer->m_vkCommandBuffer);

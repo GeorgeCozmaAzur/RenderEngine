@@ -42,6 +42,7 @@ protected:
 	std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp;
 
 	render::GraphicsDevice* m_device = nullptr;
+	render::CommandPool* primaryCmdPool;
 	std::vector<render::CommandBuffer*> m_drawCommandBuffers;
 	std::vector<std::vector<render::CommandBuffer*>> m_allDrawCommandBuffers;
 	render::CommandBuffer* m_loadingCommandBuffer = nullptr;

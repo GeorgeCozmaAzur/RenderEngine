@@ -7,7 +7,7 @@
 #include "DescriptorSet.h"
 #include "RenderPass.h"
 #include "Pipeline.h"
-#include "CommandBuffer.h"
+#include "CommandPool.h"
 #include "Mesh.h"
 #include <vector>
 
@@ -28,7 +28,8 @@ namespace engine
 			std::vector<DescriptorSet*> m_descriptorSets;
 			std::vector<RenderPass*> m_renderPasses;
 			std::vector<Pipeline*> m_pipelines;
-			std::vector<CommandBuffer*> m_commandBuffers;
+			std::vector<CommandPool*> m_primaryCommandPools;
+			std::vector<CommandPool*> m_secondaryCommandPools;
 			
 		public:
 			virtual ~GraphicsDevice();
@@ -53,7 +54,9 @@ namespace engine
 
 			virtual Pipeline* GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass) = 0;
 
-			virtual CommandBuffer* GetCommandBuffer() = 0;
+			virtual CommandPool* GetCommandPool(uint32_t queueIndex, bool primary = true) = 0;
+			
+			virtual CommandBuffer* GetCommandBuffer(CommandPool *pool, bool primary = true) = 0;
 
 			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer) = 0;
 

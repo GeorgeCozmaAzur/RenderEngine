@@ -6,7 +6,7 @@ namespace engine
 	{
 		VulkanCommandBuffer::~VulkanCommandBuffer()
 		{
-			vkFreeCommandBuffers(_device, _commandPool, 1, &m_vkCommandBuffer);
+			//vkFreeCommandBuffers(_device, _commandPool, 1, &m_vkCommandBuffer);TODO make the individual free
 		}
 
 		void VulkanCommandBuffer::Begin()

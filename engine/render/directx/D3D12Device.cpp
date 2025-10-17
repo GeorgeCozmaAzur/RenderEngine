@@ -15,7 +15,8 @@ namespace engine
 	{
 		D3D12Device::~D3D12Device()
 		{
-
+			for (auto cmd : m_commandBuffers)
+				delete cmd;
 		}
 		Buffer* D3D12Device::GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool)
 		{
@@ -147,12 +148,18 @@ namespace engine
 			return pipeline;
 		}
 
-		CommandBuffer* D3D12Device::GetCommandBuffer()
+		CommandPool* D3D12Device::GetCommandPool(uint32_t queueIndex, bool primary)
 		{
-			D3D12CommandBuffer* commandBuffer = new D3D12CommandBuffer();
+			return nullptr;
+		}
+
+		CommandBuffer* D3D12Device::GetCommandBuffer(CommandPool* pool, bool primary)
+		{
+			D3D12CommandBuffer* commandBuffer = new D3D12CommandBuffer(pool);
 			commandBuffer->Create(m_device.Get());
 			m_commandBuffers.push_back(commandBuffer);
 			return commandBuffer;
+			//return pool->GetCommandBuffer();
 		}
 
 		Mesh* D3D12Device::GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commandBuffer)

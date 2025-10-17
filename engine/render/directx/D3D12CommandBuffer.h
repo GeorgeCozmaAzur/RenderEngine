@@ -17,6 +17,7 @@ namespace engine
 		class D3D12CommandBuffer : public CommandBuffer
 		{
 		public:
+			D3D12CommandBuffer(CommandPool* pool) : CommandBuffer(pool) {}
 			~D3D12CommandBuffer();
 			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
 			Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
