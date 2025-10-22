@@ -179,6 +179,11 @@ namespace engine
             m_vertexBuffer.FreeStagingBuffer();
         }
 
+        void D3D12Mesh::UpdateInstanceBuffer(void* data, size_t offset, size_t size)
+        {
+           // _instanceBuffer->MemCopy(data, size);
+        }
+
         void D3D12Mesh::Draw(ID3D12GraphicsCommandList* commandList)
         {
             commandList->IASetIndexBuffer(&m_indexBuffer.m_view);

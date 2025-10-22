@@ -219,8 +219,9 @@ namespace engine
 		}
 
 		// Load a mesh based on data read via assimp 
-		bool SkinnedMesh::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
+		std::vector<render::MeshData*> SkinnedMesh::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
 		{
+			std::vector<render::MeshData*> returnVector;
 			_vertexLayout = vertex_layout;
 			//skinnedMesh = new SkinnedMesh();
 
@@ -312,7 +313,7 @@ namespace engine
 				VkDeviceMemory memory;
 			} vertexStaging, indexStaging;*/
 
-			Geometry* geometry = new Geometry();
+			render::MeshData* geometry = new render::MeshData();
 			geometry->m_vertexCount = vertexBuffer.size();
 			geometry->m_indexCount = static_cast<uint32_t>(indexBuffer.size());
 			geometry->m_indices = new uint32_t[geometry->m_indexCount];
@@ -393,9 +394,9 @@ namespace engine
 			m_vertex_buffers.push_back(vbuffer);
 			m_index_buffers.push_back(ibuffer);
 			*/
-			m_geometries.push_back(geometry);
+			returnVector.push_back(geometry);
 
-			return true;
+			return returnVector;
 		}
 	}
 }

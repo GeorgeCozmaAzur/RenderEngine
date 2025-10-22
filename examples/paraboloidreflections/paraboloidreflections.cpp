@@ -122,12 +122,15 @@ public:
 
 	void init()
 	{
-		models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/audi/Audi_r8.obj", &vertexLayout, 0.0005f, 1);
-		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayout, 0.1f, 1, glm::vec3(0.0, -0.25, -1.5));
-		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/oak_trunk.dae", &vertexLayout, 2.0f, 1, glm::vec3(-2.0, -0.5, 0.0));
-		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", &vertexLayout, 2.0f, 1, glm::vec3(0.0, -0.5, 1.5));
-		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/torusknot.obj", &vertexLayout, 0.02f, 1, glm::vec3(2.0,-0.5,0.0));
-
+		std::vector<render::MeshData*> planemd = models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/audi/Audi_r8.obj", &vertexLayout, 0.0005f, 1);
+		std::vector<render::MeshData*> pmd = models.example->LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayout, 0.1f, 1, glm::vec3(0.0, -0.25, -1.5));
+		std::vector<render::MeshData*> pmd1 = models.example->LoadGeometry(engine::tools::getAssetPath() + "models/oak_trunk.dae", &vertexLayout, 2.0f, 1, glm::vec3(-2.0, -0.5, 0.0));
+		std::vector<render::MeshData*> pmd2 = models.example->LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", &vertexLayout, 2.0f, 1, glm::vec3(0.0, -0.5, 1.5));
+		std::vector<render::MeshData*> pmd3 = models.example->LoadGeometry(engine::tools::getAssetPath() + "models/torusknot.obj", &vertexLayout, 0.02f, 1, glm::vec3(2.0,-0.5,0.0));
+		
+		pmd.insert(pmd.end(), pmd1.begin(), pmd1.end());
+		pmd.insert(pmd.end(), pmd2.begin(), pmd2.end());
+		pmd.insert(pmd.end(), pmd3.begin(), pmd3.end());
 		render::Texture2DData data;
 		if (vulkanDevice->m_enabledFeatures.textureCompressionBC) {
 			data.LoadFromFile(engine::tools::getAssetPath() + "textures/darkmetal_bc3_unorm.ktx", render::GfxFormat::BC3_UNORM_BLOCK);
@@ -158,20 +161,27 @@ public:
 		backDepthTex = vulkanDevice->GetDepthRenderTarget(FB_DIM, FB_DIM, false);
 
 		//generate index and vertex buffers from the data that we just loaded
-		for (auto geo : models.plane->m_geometries)
+		for (auto geo : planemd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			models.plane->AddGeometry(vulkanDevice->GetMesh(geo, &vertexLayout, nullptr));
+			delete geo;
 		}
-		for (auto geo : models.example->m_geometries)
+		for (auto geo : pmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			render::Mesh* m = vulkanDevice->GetMesh(geo, &vertexLayout, nullptr);
+			models.example->AddGeometry(m);
+			models.exampleoffscreen->AddGeometry(m);
+			models.exampleoffscreenback->AddGeometry(m);
+			delete geo;
 		}
 
 		//transfers the geometries from one object to another
-		*models.exampleoffscreen = *models.example;
-		*models.exampleoffscreenback = *models.example;
+		//*models.exampleoffscreen = *models.example;
+		//*models.exampleoffscreenback = *models.example;
 
 		//setup layouts
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings

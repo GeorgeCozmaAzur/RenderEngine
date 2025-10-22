@@ -55,7 +55,7 @@ namespace engine
 			UIOverlay();
 			~UIOverlay();
 
-			virtual bool LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale = 1.0f, int instanceNo = 1, glm::vec3 atPos = glm::vec3(0.0f));
+			virtual std::vector<render::MeshData*> LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale = 1.0f, int instanceNo = 1, glm::vec3 atPos = glm::vec3(0.0f));
 
 			void preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass);
 

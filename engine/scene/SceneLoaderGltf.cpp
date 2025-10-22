@@ -263,14 +263,14 @@ namespace engine
 					uint32_t indexCount = 0;
 					size_t vertexCount = 0;
 
-					Geometry* geometry = new Geometry();
-					geometry->_device = _device->logicalDevice;
+					render::MeshData* geometry = new render::MeshData();
+					//geometry->_device = _device->logicalDevice;
 					geometry->m_instanceNo = 1;//TODO what if we want multiple instances
 					geometry->m_vertexCount = vertexCount;
 					geometry->m_indexCount = indexCount;
 
 					// Vertices
-					{
+					
 						const float* positionBuffer = nullptr;
 						const float* normalsBuffer = nullptr;
 						const float* texCoordsBuffer = nullptr;
@@ -363,7 +363,7 @@ namespace engine
 								};
 							}
 						}
-					}
+					
 
 					// Indices
 					{
@@ -404,7 +404,8 @@ namespace engine
 						}
 
 					}
-					render_objects[glTFPrimitive.material]->AddGeometry(geometry);
+					render_objects[glTFPrimitive.material]->AddGeometry(_device->GetMesh(geometry, &vlayout, nullptr));
+					delete geometry;
 				}
 			}
 			else
@@ -446,7 +447,7 @@ namespace engine
 				LoadNode(node, glm::mat4(1.0f), glTFInput);
 			}
 
-			for (auto robj : render_objects)
+			/*for (auto robj : render_objects)
 			{
 				if (robj)
 					for (auto geo : robj->m_geometries)
@@ -454,7 +455,7 @@ namespace engine
 						geo->SetIndexBuffer(_device->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 						geo->SetVertexBuffer(_device->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 					}
-			}
+			}*/
 
 			return render_objects;
 		};

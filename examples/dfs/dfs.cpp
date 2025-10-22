@@ -166,7 +166,7 @@ public:
 		raymarchpipeline = vulkanDevice->GetComputePipeline(fileName, device, raymarchdescriptorSetLayout->m_descriptorSetLayout, pipelineCache);*/
 	}
 
-	void generateSSOs(std::vector<scene::Geometry*> geos)
+	void generateSSOs(std::vector<render::MeshData*> geos)
 	{
 		std::vector<glm::vec4> vertexBuffer;
 		std::vector<uint32_t> indexBuffer;
@@ -209,6 +209,7 @@ public:
 		vulkanDevice->DestroyBuffer(stagingBuffer);
 		vulkanDevice->DestroyBuffer(istagingBuffer);
 		vkQueueWaitIdle(queue);
+		vkDeviceWaitIdle(device);
 	}
 
 	void setupDescriptorPool()
@@ -239,15 +240,19 @@ public:
 			}, {});
 
 		setupDescriptorPool();
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", vertexLayout, 1.1f, 1, glm::vec3(0.0f, 1.0f,0.0f));
+		std::vector<render::MeshData*> pmd = plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", vertexLayout, 1.1f, 1, glm::vec3(0.0f, 1.0f,0.0f));
 		//plane.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", &vertexLayout, 0.02f, 1, glm::vec3(-0.7f, 0.0f, 0.0f));
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", vertexLayout, 0.1f, 1, glm::vec3(-0.7f, 1.0f, 0.0f));
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/teapot.dae", vertexLayout, 0.05f, 1, glm::vec3(0.7f, 0.0f, 0.0f));
+		std::vector<render::MeshData*> pmd1 = plane.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", vertexLayout, 0.1f, 1, glm::vec3(-0.7f, 1.0f, 0.0f));
+		std::vector<render::MeshData*> pmd2 = plane.LoadGeometry(engine::tools::getAssetPath() + "models/teapot.dae", vertexLayout, 0.05f, 1, glm::vec3(0.7f, 0.0f, 0.0f));
+		pmd.insert(pmd.end(), pmd1.begin(), pmd1.end());
+		pmd.insert(pmd.end(), pmd2.begin(), pmd2.end());
 
-		for (auto geo : plane.m_geometries)
+		for (auto geo : pmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices),true);
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices),true);
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices),true);
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices),true);
+			plane.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			//delete geo;
 		}
 
 		//model.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", &vertexLayout, 0.1f, 1);
@@ -260,8 +265,12 @@ public:
 			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices),true);
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices),true);
 		}*/
-		std::vector<scene::Geometry*> geos(plane.m_geometries.begin()+1, plane.m_geometries.end());
+		std::vector<render::MeshData*> geos(pmd.begin()+1, pmd.end());
 		generateSSOs(geos);
+		for (auto geo : pmd)
+		{
+			delete geo;
+		}
 
 		textureDFS = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
 

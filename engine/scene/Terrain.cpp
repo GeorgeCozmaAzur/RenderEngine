@@ -133,13 +133,14 @@ namespace engine
 			computedNormals = true;
 		}
 
-		bool Terrain::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
+		std::vector<render::MeshData*> Terrain::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos)
 		{
+			std::vector<render::MeshData*> returnVector;
 			_vertexLayout = vertex_layout;
 
 			LoadHeightmap(filename, scale);
 
-			Geometry* geometry = new Geometry();
+			render::MeshData* geometry = new render::MeshData();
 			geometry->m_instanceNo = 1;
 			geometry->m_vertexCount = Length() * Width();
 			geometry->m_indexCount = 0;
@@ -315,9 +316,9 @@ namespace engine
 			}
 
 			m_boundingBoxes.push_back(box);
-			m_geometries.push_back(geometry);
+			returnVector.push_back(geometry);
 
-			return true;
+			return returnVector;
 		}
 
 		void Terrain::Destroy()

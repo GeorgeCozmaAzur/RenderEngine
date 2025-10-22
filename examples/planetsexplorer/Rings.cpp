@@ -56,7 +56,7 @@ namespace engine
 			int slices = resolution;
 			int rings = 2;
 
-			Geometry* geometry = new Geometry;
+			render::MeshData* geometry = new render::MeshData;
 			geometry->m_vertexCount = rings * (slices);
 			geometry->m_verticesSize = geometry->m_vertexCount * vertex_layout->GetVertexSize(0) / sizeof(float);
 			geometry->m_vertices = new float[geometry->m_verticesSize];
@@ -139,9 +139,9 @@ namespace engine
 				std::cout << geometry->m_indices[i] << "\n";
 			}*/
 			
-			geometry->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_indexCount * sizeof(uint32_t), geometry->m_indices));
-			geometry->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_verticesSize * sizeof(float), geometry->m_vertices), true);
-			m_geometries.push_back(geometry);
+			//geometry->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_indexCount * sizeof(uint32_t), geometry->m_indices));
+			//geometry->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_verticesSize * sizeof(float), geometry->m_vertices), true);
+			m_geometries.push_back(vulkanDevice->GetMesh(geometry, vertex_layout, nullptr));
 
 			uniformBufferVS = vulkanDevice->GetUniformBuffer(sizeof(uboVS), true, queue);
 			uniformBufferVS->Map();

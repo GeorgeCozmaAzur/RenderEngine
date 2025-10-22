@@ -278,7 +278,7 @@ public:
 	{
 		//alltextures.push_back(vulkanDevice->GetTexture(engine::tools::getAssetPath() + "textures/tilesWood0005_2_S.jpg", VK_FORMAT_R8G8B8A8_UNORM, queue));
 	
-		for (auto geo : scene.m_geometries)
+		for (auto geo : scene.m_geometriesRT)
 		{
 			scene::GeometryRT* geoRT = (scene::GeometryRT*)geo;
 			//for (int i = 0; i < geoRT->m_textures.size();i++)
@@ -305,7 +305,7 @@ public:
 		geoRT->m_materials[0].textureID = 0;
 		geoRT->m_textures.push_back("compass.jpg");*/
 		int txtOffset = 0;
-		for (auto geo : scene.m_geometries)
+		for (auto geo : scene.m_geometriesRT)
 		{
 			scene::GeometryRT* geoRT = (scene::GeometryRT*)geo;
 
@@ -631,8 +631,8 @@ public:
 		accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
 		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, storageImage->m_descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL };
-		VkDescriptorBufferInfo vertexBufferDescriptor{ scene.m_geometries[0]->_vertexBuffer->GetVkBuffer(), 0, VK_WHOLE_SIZE };
-		VkDescriptorBufferInfo indexBufferDescriptor{ scene.m_geometries[0]->_indexBuffer->GetVkBuffer(), 0, VK_WHOLE_SIZE };
+		VkDescriptorBufferInfo vertexBufferDescriptor{ scene.m_geometriesRT[0]->_vertexBuffer->GetVkBuffer(), 0, VK_WHOLE_SIZE };
+		VkDescriptorBufferInfo indexBufferDescriptor{ scene.m_geometriesRT[0]->_indexBuffer->GetVkBuffer(), 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo objdescBufferDescriptor{ m_bObjDesc->GetVkBuffer(), 0, VK_WHOLE_SIZE };
 
 		std::vector<VkDescriptorImageInfo> diit;

@@ -210,9 +210,13 @@ public:
 		scenes[1] = new scene::SimpleModel;
 		offscreen_scenes[0] = new scene::SimpleModel;
 		offscreen_scenes[1] = new scene::SimpleModel;
-		scenes[0]->LoadGeometry(engine::tools::getAssetPath() + "models/vulkanscene_shadow.dae", layouts.scene_vlayout, 4.0f,1);
+
+		std::vector<std::vector<render::MeshData*>> meshdatas;
+		meshdatas.resize(2);
+
+		meshdatas[0] = scenes[0]->LoadGeometry(engine::tools::getAssetPath() + "models/vulkanscene_shadow.dae", layouts.scene_vlayout, 4.0f,1);
 		//scenes[0]->LoadGeometry(engine::tools::getAssetPath() + "models/sponza/crytek-sponza-huge-vray.obj", layouts.scene_vlayout, 0.004f, 1);
-		scenes[1]->LoadGeometry(engine::tools::getAssetPath() + "models/samplescene.dae", layouts.scene_vlayout, 0.25f, 1);
+		meshdatas[1] = scenes[1]->LoadGeometry(engine::tools::getAssetPath() + "models/samplescene.dae", layouts.scene_vlayout, 0.25f, 1);
 
 		for (int r = 0; r < offscreen_scenes.size(); r++)
 		{
@@ -229,12 +233,15 @@ public:
 		for (auto scene : scenes)
 			scene->SetDescriptorSetLayout(layouts.scene_layout);
 
-		for (auto scene : scenes)
+		for (int i=0;i<scenes.size();i++)
 		{
-			for (auto geo : scene->m_geometries)
+			for (auto geo : meshdatas[i])
 			{
-				geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+				/*geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 				geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			*/
+				scenes[i]->AddGeometry(vulkanDevice->GetMesh(geo, layouts.scene_vlayout, nullptr));
+				delete geo;
 			}
 		}
 		
@@ -242,9 +249,9 @@ public:
 		{
 			for (auto geo : scenes[i]->m_geometries)
 			{
-				scene::Geometry* mygeo = new scene::Geometry;
-				*mygeo = *geo;
-				offscreen_scenes[i]->m_geometries.push_back(mygeo);
+				/*render::VulkanMesh* mygeo = new render::Mesh();
+				*mygeo = *geo;*/
+				offscreen_scenes[i]->m_geometries.push_back(geo);
 			}
 		}
 

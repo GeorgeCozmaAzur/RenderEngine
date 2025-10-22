@@ -63,11 +63,13 @@ public:
 		}, {});
 
 		//Geometry
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", vertexLayout, 0.1f, 1);
-		for (auto geo : plane.m_geometries)
+		std::vector<render::MeshData*> mdatas = plane.LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", vertexLayout, 0.1f, 1);
+		for (auto geo : mdatas)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			plane.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 		}
 	}
 

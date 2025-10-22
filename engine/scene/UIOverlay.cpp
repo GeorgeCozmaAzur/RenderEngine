@@ -9,6 +9,7 @@
 #include "UIOverlay.h"
 #include "render/vulkan/VulkanTexture.h"
 #include "VulkanCommandBuffer.h"
+#include "render/vulkan/VulkanMesh.h"
 
 namespace engine 
 {
@@ -62,7 +63,7 @@ namespace engine
 
 		UIOverlay::~UIOverlay() { }
 
-		bool UIOverlay::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
+		std::vector<render::MeshData*> UIOverlay::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
 		{
 			ImGuiIO& io = ImGui::GetIO();
 
@@ -138,9 +139,9 @@ namespace engine
 
 			m_descriptorSets.push_back(set);
 
-			m_geometries.push_back(new Geometry);
-
-			return true;
+			render::MeshData mdata;
+			m_geometries.push_back(_device->GetMesh(&mdata, vertexLayout, nullptr));
+			return std::vector<render::MeshData*>();
 		}
 
 		/** Prepare a separate pipeline for the UI overlay rendering decoupled from the main application */
@@ -185,9 +186,11 @@ namespace engine
 				return false;
 			}
 
+			render::VulkanMesh* vkmesh = dynamic_cast<render::VulkanMesh*>(m_geometries[0]);
+
 			// Vertex buffer
-			return  (m_geometries[0]->m_vertexCount != imDrawData->TotalVtxCount
-				|| m_geometries[0]->m_indexCount < touint(imDrawData->TotalIdxCount));
+			return  (vkmesh->m_vertexCount != imDrawData->TotalVtxCount
+				|| vkmesh->m_indexCount < touint(imDrawData->TotalIdxCount));
 		}
 
 		/** Update vertex and index buffer containing the imGui elements when required */
@@ -207,35 +210,37 @@ namespace engine
 				return false;
 			}
 
+			render::VulkanMesh* vkmesh = dynamic_cast<render::VulkanMesh*>(m_geometries[0]);
+
 			// Vertex buffer
-			if (m_geometries[0]->m_vertexCount != imDrawData->TotalVtxCount) 
+			if (vkmesh->m_vertexCount != imDrawData->TotalVtxCount)
 			{
-				if (m_geometries[0]->_vertexBuffer)
+				if (vkmesh->_vertexBuffer)
 				{
-					m_geometries[0]->_vertexBuffer->Unmap();
-					_device->DestroyBuffer(m_geometries[0]->_vertexBuffer);
+					vkmesh->_vertexBuffer->Unmap();//george check unmap
+					_device->DestroyBuffer(vkmesh->_vertexBuffer);
 				}
 
-				m_geometries[0]->_vertexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBufferSize);
-				m_geometries[0]->m_vertexCount = imDrawData->TotalVtxCount;
-				m_geometries[0]->_vertexBuffer->Unmap();
-				m_geometries[0]->_vertexBuffer->Map();
+				vkmesh->_vertexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBufferSize);
+				vkmesh->m_vertexCount = imDrawData->TotalVtxCount;
+				vkmesh->_vertexBuffer->Unmap();
+				vkmesh->_vertexBuffer->Map();
 				updateCmdBuffers = true;
 			}
 
 			// Index buffer
 			VkDeviceSize indexSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
-			if (m_geometries[0]->m_indexCount < touint(imDrawData->TotalIdxCount)) 
+			if (vkmesh->m_indexCount < touint(imDrawData->TotalIdxCount))
 			{
-				if (m_geometries[0]->_indexBuffer)
+				if (vkmesh->_indexBuffer)
 				{
-					m_geometries[0]->_indexBuffer->Unmap();
-					_device->DestroyBuffer(m_geometries[0]->_indexBuffer);
+					//m_geometries[0]->_indexBuffer->Unmap();
+					_device->DestroyBuffer(vkmesh->_indexBuffer);
 				}
 
-				m_geometries[0]->_indexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, indexBufferSize);
-				m_geometries[0]->m_indexCount = imDrawData->TotalIdxCount;
-				m_geometries[0]->_indexBuffer->Map();
+				vkmesh->_indexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, indexBufferSize);
+				vkmesh->m_indexCount = imDrawData->TotalIdxCount;
+				vkmesh->_indexBuffer->Map();
 				updateCmdBuffers = true;
 			}
 
@@ -246,15 +251,15 @@ namespace engine
 			for (int n = 0; n < imDrawData->CmdListsCount; n++) 
 			{
 				const ImDrawList* cmd_list = imDrawData->CmdLists[n];
-				m_geometries[0]->_vertexBuffer->MemCopy(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), vtxOffset);
-				m_geometries[0]->_indexBuffer->MemCopy(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), idxOffset);
+				vkmesh->_vertexBuffer->MemCopy(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), vtxOffset);
+				vkmesh->_indexBuffer->MemCopy(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), idxOffset);
 				vtxOffset += cmd_list->VtxBuffer.Size * sizeof(ImDrawVert);
 				idxOffset += cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx);
 			}
 
 			// Flush to make writes visible to GPU
-			m_geometries[0]->_vertexBuffer->Flush();
-			m_geometries[0]->_indexBuffer->Flush();
+			vkmesh->_vertexBuffer->Flush();
+			vkmesh->_indexBuffer->Flush();
 
 			return updateCmdBuffers;
 		}
@@ -280,10 +285,11 @@ namespace engine
 			m_descriptorSets[0]->Draw(commandBuffer, _pipeline, 0);
 
 			render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
+			render::VulkanMesh* vkmesh = dynamic_cast<render::VulkanMesh*>(m_geometries[0]);
 			VkDeviceSize offsets[1] = { 0 };
-			const VkBuffer vertexBuffer = m_geometries[0]->_vertexBuffer->GetVkBuffer();
+			const VkBuffer vertexBuffer = vkmesh->_vertexBuffer->GetVkBuffer();
 			vkCmdBindVertexBuffers(vkcmd->m_vkCommandBuffer, 0, 1, &vertexBuffer, offsets);
-			vkCmdBindIndexBuffer(vkcmd->m_vkCommandBuffer, m_geometries[0]->_indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
+			vkCmdBindIndexBuffer(vkcmd->m_vkCommandBuffer, vkmesh->_indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 			for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
 			{

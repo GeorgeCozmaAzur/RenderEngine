@@ -179,17 +179,21 @@ public:
 			}, {});
 
 		//Geometry
-		saturn.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 300.0f, 1);
-		for (auto geo : saturn.m_geometries)
+		std::vector<render::MeshData*> smd = saturn.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 300.0f, 1);
+		for (auto geo : smd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices),true);
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices),true);
+			saturn.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
 		}
-		sun.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 100.0f, 1, glm::vec3(0.0,0,0.0));
-		for (auto geo : sun.m_geometries)
+		std::vector<render::MeshData*> sunmd = sun.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 100.0f, 1, glm::vec3(0.0,0,0.0));
+		for (auto geo : sunmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices), true);
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices), true);
+			sun.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
 		}
 
 		/*skybox.LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", &simpleVertexLayout, 20.0f, 1);
@@ -383,12 +387,12 @@ public:
 		rings.Init(6700.0, 6700.0+8000.0, 300, vulkanDevice, descriptorPool, vertexLayout, sceneVertexUniformBuffer, { ringsMap, shadowtex }, "planet/shadowedplanet", "planet/shadowedplanet", scenepass, pipelineCache, transprops, queue);
 		
 		shadowobjects.SetVertexLayout(vertexLayout);
-		scene::Geometry* mygeo = new scene::Geometry;
-		*mygeo = *rings.m_geometries[0];
-		shadowobjects.m_geometries.push_back(mygeo);
-		mygeo = new scene::Geometry;
-		*mygeo = *saturn.m_geometries[0];
-		shadowobjects.m_geometries.push_back(mygeo);
+		/*scene::Geometry* mygeo = new scene::Geometry;
+		*mygeo = *rings.m_geometries[0];*/
+		shadowobjects.m_geometries.push_back(rings.m_geometries[0]);
+		/*mygeo = new scene::Geometry;
+		*mygeo = *saturn.m_geometries[0];*/
+		shadowobjects.m_geometries.push_back(saturn.m_geometries[0]);
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> offscreenbindings
 		{
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}

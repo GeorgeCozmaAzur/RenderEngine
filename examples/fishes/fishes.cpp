@@ -157,29 +157,38 @@ public:
 				std::string objectNumber = (geoindex < 9 ? "0" : "") + std::to_string(geoindex + 1);
 				std::string objectName = "models/TropicalFish_obj/TropicalFish" + objectNumber + ".obj";
 				std::string textureName = "models/TropicalFish_obj/TropicalFish" + objectNumber + ".jpg";
+				std::vector<render::MeshData*> fmd;
 				//plane.LoadGeometry(engine::tools::getAssetPath() + "models/torusknot.obj", &vertexLayout, 0.001f, 1);	
 				if (tools::fileExists(engine::tools::getAssetPath() + objectName))
-					allfish.LoadGeometry(engine::tools::getAssetPath() + objectName, &vertexLayout, 0.001f, 1, glm::vec3(0.0,0.0,0.0), glm::vec3(1.0f,1.0f,1.0f));
+					fmd = allfish.LoadGeometry(engine::tools::getAssetPath() + objectName, &vertexLayout, 0.001f, 1, glm::vec3(0.0,0.0,0.0), glm::vec3(1.0f,1.0f,1.0f));
 				else
 					//plane.LoadGeometry(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish12.obj", &vertexLayout, 0.001f, 1);
-					allfish.LoadGeometry(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish01.obj", &vertexLayout, 0.001f, 1);
+					fmd = allfish.LoadGeometry(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish01.obj", &vertexLayout, 0.001f, 1);
 
 				if (tools::fileExists(engine::tools::getAssetPath() + textureName))
 					textureNames.push_back(engine::tools::getAssetPath() + textureName);
 				else
 					textureNames.push_back(engine::tools::getAssetPath() + "models/TropicalFish_obj/TropicalFish01.jpg");
 
-				scene::Geometry* geo = allfish.m_geometries.back();
-				geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-				geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+				for (auto geo : fmd)
+				{
+					/*geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+					geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+				*/
+					allfish.AddGeometry(vulkanDevice->GetMesh(geo, &vertexLayout, nullptr));
+					delete geo;
+				}
+				//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+				//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+
 
 				geoindex++;
 			}
 			else
 			{
-				scene::Geometry* geo = new scene::Geometry();
-				*geo = *allfish.m_geometries[allfish.m_geometries.size()-1];
-				allfish.AddGeometry(geo);
+				//scene::Geometry* geo = new scene::Geometry();
+				//*geo = *allfish.m_geometries[allfish.m_geometries.size()-1];
+				allfish.AddGeometry(allfish.m_geometries[allfish.m_geometries.size() - 1]);
 			}
 			constants.push_back(geoindex);
 		}

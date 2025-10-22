@@ -13,9 +13,9 @@ namespace engine
 {
 	namespace scene
 	{
-		bool SimpleModel::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec3 normalsCoefficient, glm::vec2 uvCoefficient)
+		std::vector<render::MeshData*> SimpleModel::LoadGeometry(const std::string& filename, render::VertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec3 normalsCoefficient, glm::vec2 uvCoefficient)
 		{
-			//m_device = device->logicalDevice;
+			std::vector<render::MeshData*> returnVector;
 
 			Assimp::Importer Importer;
 			const aiScene* pScene;
@@ -55,24 +55,23 @@ namespace engine
 
 			if (pScene)
 			{
-
 				parts.clear();
 				parts.resize(pScene->mNumMeshes);
+
+				returnVector.resize(pScene->mNumMeshes);
 
 				// Load meshes
 				for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
 				{
-					Geometry* geometry = new Geometry();
+					render::MeshData* geometry = new render::MeshData();
 					geometry->m_instanceNo = instance_no;
 					geometry->m_vertexCount = 0;
 					geometry->m_indexCount = 0;
-
-					const aiMesh* paiMesh = pScene->mMeshes[i];
-
 					geometry->m_vertexCount = pScene->mMeshes[i]->mNumVertices;
-
 					geometry->m_verticesSize = geometry->m_vertexCount * vertex_layout->GetVertexSize(0) / sizeof(float);
 					geometry->m_vertices = new float[geometry->m_verticesSize];
+
+					const aiMesh* paiMesh = pScene->mMeshes[i];
 
 					aiColor3D pColor(0.f, 0.f, 0.f);
 					pScene->mMaterials[paiMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_DIFFUSE, pColor);
@@ -164,10 +163,9 @@ namespace engine
 					}
 
 					m_boundingBoxes.push_back(box);
-					m_geometries.push_back(geometry);
-				}
 
-				return true;
+					returnVector[i] = geometry;
+				}
 			}
 			else
 			{
@@ -175,8 +173,8 @@ namespace engine
 #if defined(__ANDROID__)
 				LOGE("Error parsing '%s': '%s'", filename.c_str(), Importer.GetErrorString());
 #endif
-				return false;
 			}
+			return returnVector;
 		};
 	}
 }

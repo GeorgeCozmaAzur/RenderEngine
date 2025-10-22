@@ -4,9 +4,9 @@ namespace engine
 {
 	namespace scene
 	{
-		bool SimpleModelRT::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec3 normalsCoefficient, glm::vec2 uvCoefficient)
+		std::vector<render::MeshData*> SimpleModelRT::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos, glm::vec3 normalsCoefficient, glm::vec2 uvCoefficient)
 		{
-			//m_device = device->logicalDevice;
+			std::vector<render::MeshData*> returnVector;
 
 			Assimp::Importer Importer;
 			const aiScene* pScene;
@@ -195,9 +195,9 @@ namespace engine
 					m_boundingBoxes.push_back(box);
 				}
 				
-				m_geometries.push_back(geometry);
+				m_geometriesRT.push_back(geometry);
 
-				return true;
+				return returnVector;
 			}
 			else
 			{
@@ -205,7 +205,7 @@ namespace engine
 #if defined(__ANDROID__)
 				LOGE("Error parsing '%s': '%s'", filename.c_str(), Importer.GetErrorString());
 #endif
-				return false;
+				return returnVector;
 			}
 		};
 	}

@@ -295,7 +295,7 @@ namespace engine
             vkCmdCopyBuffer(copyCmd, src->GetVkBuffer(), dst->GetVkBuffer(), 1, &bufferCopy);
         }
 
-        void VulkanDevice::DestroyBuffer(VulkanBuffer* buffer)
+        void VulkanDevice::DestroyBuffer(Buffer* buffer)
         {
             std::vector<Buffer*>::iterator it;
             it = find(m_buffers.begin(), m_buffers.end(), buffer);
@@ -915,10 +915,23 @@ namespace engine
         {
             VulkanVertexLayout* vkvlayout = dynamic_cast<VulkanVertexLayout*>(vlayout);
             VulkanMesh* mesh = new VulkanMesh(logicalDevice, vkvlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX), vkvlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE));
+            if(data->m_indexCount > 0)
             mesh->_indexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, data->m_indexCount * sizeof(uint32_t), data->m_indices);
             VkDeviceSize vertexBufferSize = data->m_vertexCount * vlayout->GetVertexSize(0);
+            if(vertexBufferSize > 0)
             mesh->_vertexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, vertexBufferSize, data->m_vertices);
             mesh->m_indexCount = data->m_indexCount;
+
+            if (data->m_instanceBufferSize > 0)
+            {
+                VkMemoryPropertyFlags memoryPropertyFlags = (data->m_instanceFrequentUpdate ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT :
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+                usageFlags |= (data->m_instanceFrequentUpdate ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+                mesh->_instanceBuffer = GetGeometryBuffer(usageFlags, copyQueue, data->m_instanceBufferSize, data->_instanceExternalData, memoryPropertyFlags);
+                mesh->m_instanceNo = data->m_instanceNo;
+            }
+
             m_meshes.push_back(mesh);
             return mesh;
         }

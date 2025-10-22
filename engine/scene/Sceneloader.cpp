@@ -409,8 +409,8 @@ namespace engine
 					//if (pScene->mMaterials[paiMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 					//	continue;
 
-					Geometry* geometry = new Geometry();
-					geometry->_device = device->logicalDevice;
+					render::MeshData* geometry = new render::MeshData();
+					//geometry->_device = device->logicalDevice;
 					geometry->m_instanceNo = 1;//TODO what if we want multiple instances
 					geometry->m_vertexCount = 0;
 					geometry->m_indexCount = 0;
@@ -528,11 +528,12 @@ namespace engine
 
 					//if (pScene->mMaterials[paiMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) == 0)
 					if(render_objects[paiMesh->mMaterialIndex])
-					render_objects[paiMesh->mMaterialIndex]->AddGeometry(geometry);
+					render_objects[paiMesh->mMaterialIndex]->AddGeometry(_device->GetMesh(geometry, vertex_layout, nullptr));
+					delete geometry;
 				}
 
-				timer.start();
-				for (auto robj : render_objects)
+				//timer.start();
+				/*for (auto robj : render_objects)
 				{
 					if(robj)
 					for (auto geo : robj->m_geometries)
@@ -540,10 +541,10 @@ namespace engine
 						geo->SetIndexBuffer(device->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 						geo->SetVertexBuffer(device->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, copyQueue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 					}
-				}
-				timer.stop();
+				}*/
+				/*timer.stop();
 				uint64_t time = timer.elapsedMilliseconds();
-				std::cout << "------time uploading: " << time << "\n";
+				std::cout << "------time uploading: " << time << "\n";*/
 
 				return render_objects;
 			}

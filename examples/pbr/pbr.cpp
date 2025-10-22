@@ -91,17 +91,21 @@ public:
 			}, {});
 
 		//Geometry
-		basicModel.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.1f, 1);
-		for (auto geo : basicModel.m_geometries)
+		std::vector<render::MeshData*> bmd = basicModel.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.1f, 1);
+		for (auto geo : bmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			basicModel.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
 		}
-		basicModelTextured.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.1f, 1);
-		for (auto geo : basicModelTextured.m_geometries)
+		std::vector<render::MeshData*> btmd = basicModelTextured.LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.1f, 1);
+		for (auto geo : btmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			basicModelTextured.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
 		}
 		
 	}

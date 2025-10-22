@@ -166,11 +166,13 @@ public:
 		//Geometry
 		for (int i = 0;i < objectsNo;i++)
 		{
-			objects[i].LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.01f * randomFloatRange(0.5, 1.0), 1);
-			for (auto geo : objects[i].m_geometries)
+			std::vector<render::MeshData*> smd = objects[i].LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", vertexLayout, 0.01f * randomFloatRange(0.5, 1.0), 1);
+			for (auto geo : smd)
 			{
-				geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-				geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+				//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+				//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+				objects[i].AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+				delete geo;
 			}
 		}
 

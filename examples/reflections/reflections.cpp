@@ -109,8 +109,8 @@ public:
 
 	void init()
 	{
-		models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 0.5f, 1);
-		models.example->LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayout, 0.3f, 1);	
+		std::vector<render::MeshData*> pmd = models.plane->LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 0.5f, 1);
+		std::vector<render::MeshData*> emd = models.example->LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", &vertexLayout, 0.3f, 1);
 
 		render::Texture2DData data;
 		if (vulkanDevice->m_enabledFeatures.textureCompressionBC) {
@@ -134,19 +134,27 @@ public:
 		depthTex = vulkanDevice->GetDepthRenderTarget(FB_DIM, FB_DIM, false);
 
 		//generate index and vertex buffers from the data that we just loaded
-		for (auto geo : models.plane->m_geometries)
+		for (auto geo : pmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			/*geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			*/
+			models.plane->AddGeometry(vulkanDevice->GetMesh(geo, &vertexLayout, nullptr));
+			delete geo;
 		}
-		for (auto geo : models.example->m_geometries)
+		for (auto geo : emd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			/*geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+		*/
+			render::Mesh* mesh = vulkanDevice->GetMesh(geo, &vertexLayout, nullptr);
+			models.example->AddGeometry(mesh);
+			models.exampleoffscreen->AddGeometry(mesh);
+			delete geo;
 		}
 
 		//transfers the geometries from one object to another
-		*models.exampleoffscreen = *models.example;
+		//*models.exampleoffscreen = *models.example;
 
 		//setup layouts
 		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings

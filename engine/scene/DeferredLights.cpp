@@ -20,7 +20,7 @@ namespace engine
 					render::VERTEX_COMPONENT_DUMMY_VEC4 
 				});
 
-			LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", _vertexLayout, 0.05f, lightsNumber, glm::vec3(0.0, 0.0, 0.0));
+			std::vector<render::MeshData*> meshDatas = LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", _vertexLayout, 0.05f, lightsNumber, glm::vec3(0.0, 0.0, 0.0));
 
 			std::string shaderVertexName = "shaders/basicdeferred/deferredlights.vert.spv";
 			std::string shaderFragmentName = "shaders/basicdeferred/deferredlights.frag.spv";
@@ -33,13 +33,17 @@ namespace engine
 				m_pointLights[++i] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 			}
 
-			for (auto geo : m_geometries)
+			for (auto geo : meshDatas)
 			{
-				geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+				geo->m_instanceBufferSize = m_pointLights.size() * sizeof(glm::vec4);
+				geo->_instanceExternalData = m_pointLights.data();
+				m_geometries.push_back(vulkanDevice->GetMesh(geo, _vertexLayout, nullptr));
+
+			/*	geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 				geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 				geo->SetInstanceBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 					queue, m_pointLights.size() * sizeof(glm::vec4), m_pointLights.data(),
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));*/
 			}
 
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings

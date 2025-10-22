@@ -88,7 +88,7 @@ public:
 			float tangent[3];
 			float binormal[3];
 		};
-		scene::Geometry* geo = new scene::Geometry;
+		render::MeshData* geo = new render::MeshData;
 		std::vector<Vertex> vertices =
 		{
 			{ {  1.0f,  1.0f, 0.0f },  {0.0f,0.0f,1.0f},{ 1.0f, 1.0f }, {1.0f, 0.0f, 0.0f}, {0.0f,1.0f,0.0f} },
@@ -104,15 +104,22 @@ public:
 			{ {  1.0f, 0.0f, -1.0f }, {0.0f,-1.0f,0.0f}, { 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f}, {0.0f,0.0f,1.0f} }
 		};*/
 		geo->m_verticesSize = vertices.size();
+		geo->m_vertexCount = 4;
+		geo->m_vertices = (float*)vertices.data();
 
 		// Setup indices
 		std::vector<uint32_t> indices = { 0,1,2, 2,3,0 };
 		geo->m_indexCount = static_cast<uint32_t>(indices.size());
-
-		geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), indices.data()));
-		geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, vertices.size() * sizeof(Vertex), vertices.data()));
+		geo->m_indices = indices.data();
+		
+		//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), indices.data()));
+		//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, vertices.size() * sizeof(Vertex), vertices.data()));
 		plane._vertexLayout = vertexLayout;
-		plane.m_geometries.push_back(geo);
+
+		plane.m_geometries.push_back(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+		geo->m_indices = nullptr;
+		geo->m_vertices = nullptr;
+		delete geo;
 	}
 
 	void SetupTextures()

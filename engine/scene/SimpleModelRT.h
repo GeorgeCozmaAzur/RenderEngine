@@ -75,13 +75,15 @@ namespace engine
 				glm::vec3 size;
 			} dim;
 
+			std::vector<GeometryRT*> m_geometriesRT;
+
 			/** @brief Release all Vulkan resources of this model */
 			void destroy()
 			{
 				//assert(m_device);
 
 			}
-			bool LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no = 1, glm::vec3 atPos = glm::vec3(0.0f), glm::vec3 normalsCoefficient = glm::vec3(1.0f), glm::vec2 uvCoefficient = glm::vec2(1.0f));
+			std::vector<render::MeshData*> LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no = 1, glm::vec3 atPos = glm::vec3(0.0f), glm::vec3 normalsCoefficient = glm::vec3(1.0f), glm::vec2 uvCoefficient = glm::vec2(1.0f));
 		};
 	}
 }

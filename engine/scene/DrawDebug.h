@@ -43,7 +43,7 @@ namespace engine
 				}, {});
 
 		public:
-			void CreateDebugVectorsGeometry(glm::vec3 position, std::vector<glm::vec3> directions, std::vector<glm::vec3> colors);
+			render::MeshData* CreateDebugVectorsGeometry(glm::vec3 position, std::vector<glm::vec3> directions, std::vector<glm::vec3> colors);
 			void Init(render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, render::RenderPass* renderPass, VkPipelineCache pipelineCache);
 		};
 

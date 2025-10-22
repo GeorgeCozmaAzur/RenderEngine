@@ -18,6 +18,7 @@
 #include "render/vulkan/VulkanDescriptorPool.h"
 #include "render/vulkan/VulkanCommandBuffer.h"
 #include "ClothCompute.h"
+#include "render/vulkan/VulkanMesh.h"
 
 #define SHADOWMAP_DIM 512
 
@@ -87,21 +88,26 @@ public:
 
 	void setupGeometry()
 	{
-		models.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", &vertexLayout, 0.15f, 1, glm::vec3(0.0f));
-		models.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 0.5f, 1);
-		for (auto geo : models.m_geometries)
+		std::vector<render::MeshData*> pmd = models.LoadGeometry(engine::tools::getAssetPath() + "models/venus.fbx", &vertexLayout, 0.15f, 1, glm::vec3(0.0f));
+		std::vector<render::MeshData*> pmd1 = models.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", &vertexLayout, 0.5f, 1);
+		pmd.insert(pmd.end(), pmd1.begin(), pmd1.end());
+		for (auto geo : pmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			render::Mesh* m = vulkanDevice->GetMesh(geo, &vertexLayout, nullptr);
+			models.AddGeometry(m);
+			shadowobjects.AddGeometry(m);
+			delete geo;
 		}
 
 		shadowobjects.SetVertexLayout(&vertexLayout);
-		scene::Geometry* mygeo = new scene::Geometry;
+		/*scene::Geometry* mygeo = new scene::Geometry;
 		*mygeo = *models.m_geometries[0];
 		shadowobjects.m_geometries.push_back(mygeo);
 		mygeo = new scene::Geometry;
 		*mygeo = *models.m_geometries[1];
-		shadowobjects.m_geometries.push_back(mygeo);
+		shadowobjects.m_geometries.push_back(mygeo);*/
 
 		prepareStorageBuffers();
 	}
@@ -120,10 +126,12 @@ public:
 		uint32_t indexBufferSize = static_cast<uint32_t>(clothcompute.m_indices.size()) * sizeof(uint32_t);
 		uint32_t indexCount = static_cast<uint32_t>(clothcompute.m_indices.size());
 
-		scene::Geometry* geo = new scene::Geometry;
+		//scene::Geometry* geo = new scene::Geometry;
+		render::MeshData mdata;
+		render::VulkanMesh* geo = (render::VulkanMesh*)vulkanDevice->GetMesh(&mdata, &vertexLayout, nullptr);
 		geo->m_indexCount = indexCount;
-		geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, indexBufferSize, clothcompute.m_indices.data()));
-		geo->SetVertexBuffer(clothcompute.storageBuffers.outbuffer);
+		geo->_indexBuffer = vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, indexBufferSize, clothcompute.m_indices.data());
+		geo->_vertexBuffer = clothcompute.storageBuffers.outbuffer;
 
 		clothobject._vertexLayout = &vertexLayout;
 		clothobject.AddGeometry(geo);

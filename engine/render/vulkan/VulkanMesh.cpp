@@ -28,5 +28,10 @@ namespace engine
 			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
 			Draw(cb->m_vkCommandBuffer);
         }
+
+		void VulkanMesh::UpdateInstanceBuffer(void* data, size_t offset, size_t size)
+		{
+			_instanceBuffer->MemCopy(data, size);
+		}
     }
 }

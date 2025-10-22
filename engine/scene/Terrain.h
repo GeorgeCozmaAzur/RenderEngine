@@ -52,7 +52,7 @@ namespace engine
 			bool LoadHeightmap(const std::string& filename, float scale);
 
 			//static Terrain* LoadTerrain(std::string filename, float height, engine::EngineDevice *vdevice, VkQueue copyQueue);
-			bool LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos = glm::vec3(0.0f));
+			std::vector<render::MeshData*> LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertex_layout, float scale, int instance_no, glm::vec3 atPos = glm::vec3(0.0f));
 		};
 	}
 }

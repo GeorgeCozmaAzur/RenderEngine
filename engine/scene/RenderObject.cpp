@@ -24,7 +24,7 @@ namespace engine
 			m_descriptorSets.push_back(descriptorset);
 			//TODO verify compatibility		
 		}
-		void RenderObject::AddGeometry(Geometry* geometry)
+		void RenderObject::AddGeometry(render::Mesh* geometry)
 		{
 			m_geometries.push_back(geometry);//TODO verify compatibility
 		}
@@ -57,10 +57,10 @@ namespace engine
 			if (!is_visible)
 				return;
 
-			render::VulkanVertexLayout* vjlayout = static_cast<render::VulkanVertexLayout*>(_vertexLayout);
+			//render::VulkanVertexLayout* vjlayout = static_cast<render::VulkanVertexLayout*>(_vertexLayout);
 
-			uint32_t vip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
-			uint32_t iip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
+			//uint32_t vip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
+			//uint32_t iip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
 
 			if (_pipeline != currentPipeline)
 				_pipeline->Draw(commandBuffer);
@@ -76,23 +76,24 @@ namespace engine
 				if (!m_dynamicUniformBufferIndices.empty()) //TODO see how can we add the current descriptor comparison
 					m_descriptorSets[swapchainImageIndex]->Draw(commandBuffer, _pipeline, m_dynamicUniformBufferIndices[j]);
 
-				render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
-				m_geometries[j]->Draw(&vkcmd->m_vkCommandBuffer, vip, iip);
+				//render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
+				//m_geometries[j]->Draw(&vkcmd->m_vkCommandBuffer, vip, iip);
+				m_geometries[j]->Draw(commandBuffer);
 			}
 		}
 
-		bool RenderObject::LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
+		std::vector<render::MeshData*> RenderObject::LoadGeometry(const std::string& filename, render::VertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
 		{
-			return false;
+			return std::vector<render::MeshData*>();
 		}
 
 		void RenderObject::AdoptGeometriesFrom(const RenderObject& t)
 		{
 			for (auto geo : t.m_geometries)
 			{
-				Geometry* mygeo = new Geometry;
-				*mygeo = *geo;
-				m_geometries.push_back(mygeo);
+				/*render::Mesh* mygeo = new Geometry;
+				*mygeo = *geo;*/
+				m_geometries.push_back(geo);
 			}
 		}
 

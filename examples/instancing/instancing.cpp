@@ -92,14 +92,17 @@ public:
 		}
 
 		//Geometry
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/rock01.dae", vertexLayoutInstanced, 1.0f, LIGHTS_NO);
-		for (auto geo : plane.m_geometries)
+		std::vector<render::MeshData*> pmd = plane.LoadGeometry(engine::tools::getAssetPath() + "models/rock01.dae", vertexLayoutInstanced, 1.0f, LIGHTS_NO);
+		for (auto geo : pmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			geo->m_instanceBufferSize = models_positions.size() * sizeof(glm::vec3);
+			geo->_instanceExternalData = models_positions.data();
+			/*geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 			geo->SetInstanceBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				queue, models_positions.size() * sizeof(glm::vec3), models_positions.data(),
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));*/
+			plane.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayoutInstanced, nullptr));
 		}
 	}
 

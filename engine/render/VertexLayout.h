@@ -86,6 +86,7 @@ namespace engine
 			{
 				uint32_t res = 0;
 
+				if(index < m_components.size())
 				for (auto& component : m_components[index])
 				{
 					res += GetComponentSize(component);

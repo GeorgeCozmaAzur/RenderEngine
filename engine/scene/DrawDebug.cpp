@@ -20,7 +20,7 @@ namespace engine
 
 			_vertexLayout = &m_vertexLayout;//george TODO
 			m_texture = texture;
-			Geometry* geo = new Geometry;
+			render::MeshData geo;
 			std::vector<Vertex> vertices =
 			{
 				{ {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f } },
@@ -28,14 +28,20 @@ namespace engine
 				{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } },
 				{ {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }
 			};
+			geo.m_vertexCount = 4;
+			geo.m_vertices = (float*)vertices.data();//TODO george is it safe
 
 			// Setup indices
 			std::vector<uint32_t> indices = { 0,1,2, 2,3,0 };
-			geo->m_indexCount = static_cast<uint32_t>(indices.size());
+			geo.m_indexCount = static_cast<uint32_t>(indices.size());
+			geo.m_indices = indices.data();
 			
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), indices.data()));
+			/*geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), indices.data()));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, vertices.size() * sizeof(Vertex), vertices.data()));
-			m_geometries.push_back(geo);
+			m_geometries.push_back(geo);*/
+			m_geometries.push_back(vulkanDevice->GetMesh(&geo, _vertexLayout, nullptr));
+			geo.m_vertices = nullptr;
+			geo.m_indices = nullptr;
 
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 			{
@@ -85,9 +91,9 @@ namespace engine
 			}
 		}
 
-		void DrawDebugVectors::CreateDebugVectorsGeometry(glm::vec3 position, std::vector<glm::vec3> directions, std::vector<glm::vec3> colors)
+		render::MeshData* DrawDebugVectors::CreateDebugVectorsGeometry(glm::vec3 position, std::vector<glm::vec3> directions, std::vector<glm::vec3> colors)
 		{
-			Geometry* geo = new Geometry;
+			render::MeshData* geo = new render::MeshData;
 			geo->m_indexCount = static_cast<uint32_t>(directions.size()) * 2;
 			geo->m_indices = new uint32_t[geo->m_indexCount];
 			int ii = 0;
@@ -119,8 +125,9 @@ namespace engine
 				geo->m_vertices[vindex++] = colors[i].z;//abs(directions[i].z);
 			}
 
-			geo->m_instanceNo = 1;
-			m_geometries.push_back(geo);
+			geo->m_instanceNo = 1;			 
+
+			return geo;
 		}
 
 		void DrawDebugVectors::Init(render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, render::RenderPass* renderPass, VkPipelineCache pipelineCache)
@@ -155,8 +162,8 @@ namespace engine
 			{
 				glm::vec3 first = bb[0];
 				glm::vec3 second = bb[1];
-				scene::Geometry* geometry = new scene::Geometry();
-				geometry->_device = vulkanDevice->logicalDevice;
+				render::MeshData* geometry = new render::MeshData();
+				//geometry->_device = vulkanDevice->logicalDevice;
 				geometry->m_instanceNo = 1;
 				std::vector<uint32_t> wire_indices = { 0,1,1,2,2,3,3,0, 0,4,3,7,2,6,1,5,4,5,5,6,6,7,7,4 };
 				geometry->m_indexCount = static_cast<uint32_t>(wire_indices.size());
@@ -191,9 +198,12 @@ namespace engine
 
 				memcpy(geometry->m_vertices, vertices.data(), geometry->m_verticesSize);
 
-				geometry->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_indexCount * sizeof(uint32_t), geometry->m_indices), false);
+				m_geometries.push_back(vulkanDevice->GetMesh(geometry, _vertexLayout, nullptr));
+
+				delete geometry;
+				/*geometry->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_indexCount * sizeof(uint32_t), geometry->m_indices), false);
 				geometry->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geometry->m_verticesSize * sizeof(float), geometry->m_vertices), false);
-				m_geometries.push_back(geometry);
+				m_geometries.push_back(geometry);*/
 			}
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 			{

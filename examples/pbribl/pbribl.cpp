@@ -108,17 +108,21 @@ public:
 		render::VERTEX_COMPONENT_POSITION
 			}, {});
 		//Geometry
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 0.1f, 1);
-		skybox.LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", simpleVertexLayout, 20.0f, 1);
-		for (auto geo : plane.m_geometries)
+		std::vector<render::MeshData*> pmd = plane.LoadGeometry(engine::tools::getAssetPath() + "models/geosphere.obj", vertexLayout, 0.1f, 1);
+		std::vector<render::MeshData*> skymd = skybox.LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", simpleVertexLayout, 20.0f, 1);
+		for (auto geo : pmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			plane.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
 		}
-		for (auto geo : skybox.m_geometries)
+		for (auto geo : skymd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			skybox.AddGeometry(vulkanDevice->GetMesh(geo, simpleVertexLayout, nullptr));
+			delete geo;
 		}
 		
 	}
@@ -377,7 +381,8 @@ public:
 				render::VulkanVertexLayout* vjlayout = static_cast<render::VulkanVertexLayout*>(obj._vertexLayout);
 				uint32_t vip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
 				uint32_t iip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
-				skybox.m_geometries[0]->Draw(&cmdBuf, vip, iip);
+				//skybox.m_geometries[0]->Draw(&cmdBuf, vip, iip);
+				skybox.m_geometries[0]->Draw(commandBuffer);
 				offscreenRenderPass->End(cmdBuf);
 
 				tempTex->ChangeLayout(cmdBuf, 
@@ -518,7 +523,8 @@ public:
 				render::VulkanVertexLayout* vjlayout = static_cast<render::VulkanVertexLayout*>(obj._vertexLayout);
 				uint32_t vip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_VERTEX);//TODO can we add this info for each geometry?
 				uint32_t iip = vjlayout->GetVertexInputBinding(VK_VERTEX_INPUT_RATE_INSTANCE);
-				skybox.m_geometries[0]->Draw(&cmdBuf, vip, iip);
+				//skybox.m_geometries[0]->Draw(&cmdBuf, vip, iip);
+				skybox.m_geometries[0]->Draw(commandBuffer);
 				offscreenRenderPass->End(cmdBuf);
 
 				tempTex->ChangeLayout(cmdBuf,

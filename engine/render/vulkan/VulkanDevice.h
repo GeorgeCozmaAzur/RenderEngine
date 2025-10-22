@@ -101,7 +101,7 @@ namespace engine
 			VulkanBuffer* GetGeometryBuffer(VkBufferUsageFlags usageFlags, VkQueue queue, VkDeviceSize size, void* data = nullptr, VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 			// Destroys a buffer
-			void DestroyBuffer(VulkanBuffer* buffer);
+			void DestroyBuffer(Buffer* buffer);
 
 			// Gets a texture from a file
 			VulkanTexture* GetTexture(TextureData* data, VkQueue copyQueue,

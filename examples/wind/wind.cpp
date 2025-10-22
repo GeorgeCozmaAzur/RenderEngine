@@ -78,23 +78,29 @@ public:
 			}, {});
 
 		//Geometry
-		plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", vertexLayout, 0.1f, 1);
-		for (auto geo : plane.m_geometries)
+		std::vector<render::MeshData*> pmd = plane.LoadGeometry(engine::tools::getAssetPath() + "models/plane.obj", vertexLayout, 0.1f, 1);
+		for (auto geo : pmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			plane.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
 		}
-		trunk.LoadGeometry(engine::tools::getAssetPath() + "models/oak_trunk.dae", vertexLayout, 1.0f, 1);
-		for (auto geo : trunk.m_geometries)
+		std::vector<render::MeshData*> tmd = trunk.LoadGeometry(engine::tools::getAssetPath() + "models/oak_trunk.dae", vertexLayout, 1.0f, 1);
+		for (auto geo : tmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			trunk.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
 		}
-		leaves.LoadGeometry(engine::tools::getAssetPath() + "models/oak_leafs.dae", vertexLayout, 1.0f, 1);
-		for (auto geo : leaves.m_geometries)
+		std::vector<render::MeshData*> lmd = leaves.LoadGeometry(engine::tools::getAssetPath() + "models/oak_leafs.dae", vertexLayout, 1.0f, 1);
+		for (auto geo : lmd)
 		{
-			geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
-			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
+			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
+			leaves.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			delete geo;
 		}
 	}
 
