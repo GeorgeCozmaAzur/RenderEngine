@@ -65,6 +65,8 @@ namespace engine
 
 		std::vector<render::MeshData*> UIOverlay::LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale, int instanceNo, glm::vec3 atPos)
 		{
+			descriptorPool = _device->GetDescriptorPool({ {render::DescriptorType::IMAGE_SAMPLER, 1} }, 1);
+
 			ImGuiIO& io = ImGui::GetIO();
 
 			// Create font texture
@@ -75,64 +77,68 @@ namespace engine
 			io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
 			VkDeviceSize uploadSize = texWidth * texHeight * 4 * sizeof(char);
 
-			m_fontTexture = new render::VulkanTexture;
+			render::Texture2DData tdata;
+			tdata.CreateFromBuffer(fontData, uploadSize, texWidth, texHeight);
+			m_fontTexture = _device->GetTexture(&tdata, descriptorPool, nullptr);
 
-			m_fontTexture->Create(_device->logicalDevice, &_device->memoryProperties, { touint(texWidth), touint(texHeight), 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+			//m_fontTexture = new render::VulkanTexture;
 
-			// Staging buffers for font data upload
-			render::VulkanBuffer* stagingBuffer = _device->CreateStagingBuffer(uploadSize, fontData);;
+			//m_fontTexture->Create(_device->logicalDevice, &_device->memoryProperties, { touint(texWidth), touint(texHeight), 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 
-			// Copy buffer data to font image
-			VkCommandBuffer copyCmd = _device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+			//// Staging buffers for font data upload
+			//render::VulkanBuffer* stagingBuffer = _device->CreateStagingBuffer(uploadSize, fontData);;
 
-			// Prepare for transfer
-			m_fontTexture->ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			//// Copy buffer data to font image
+			//VkCommandBuffer copyCmd = _device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
-			// Copy
-			VkBufferImageCopy bufferCopyRegion = {};
-			bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			bufferCopyRegion.imageSubresource.layerCount = 1;
-			bufferCopyRegion.imageExtent.width = texWidth;
-			bufferCopyRegion.imageExtent.height = texHeight;
-			bufferCopyRegion.imageExtent.depth = 1;
+			//// Prepare for transfer
+			//m_fontTexture->ChangeLayout(copyCmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-			vkCmdCopyBufferToImage(
-				copyCmd,
-				stagingBuffer->GetVkBuffer(),
-				m_fontTexture->m_vkImage,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1,
-				&bufferCopyRegion
-			);
+			//// Copy
+			//VkBufferImageCopy bufferCopyRegion = {};
+			//bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			//bufferCopyRegion.imageSubresource.layerCount = 1;
+			//bufferCopyRegion.imageExtent.width = texWidth;
+			//bufferCopyRegion.imageExtent.height = texHeight;
+			//bufferCopyRegion.imageExtent.depth = 1;
 
-			// Prepare for shader read
-			m_fontTexture->ChangeLayout(copyCmd,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+			//vkCmdCopyBufferToImage(
+			//	copyCmd,
+			//	stagingBuffer->GetVkBuffer(),
+			//	m_fontTexture->m_vkImage,
+			//	VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			//	1,
+			//	&bufferCopyRegion
+			//);
 
-			_device->FlushCommandBuffer(copyCmd, _queue, true);
+			//// Prepare for shader read
+			//m_fontTexture->ChangeLayout(copyCmd,
+			//	VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			//	VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-			_device->DestroyStagingBuffer(stagingBuffer);
+			//_device->FlushCommandBuffer(copyCmd, _queue, true);
 
-			m_fontTexture->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_2D, 0);
+			//_device->DestroyStagingBuffer(stagingBuffer);
 
-			std::vector<VkDescriptorPoolSize> poolSizes = {
-			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
-			};
-			descriptorPool = _device->GetDescriptorPool({ {render::DescriptorType::IMAGE_SAMPLER, 1} }, 1);
+			//m_fontTexture->CreateDescriptor(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_IMAGE_VIEW_TYPE_2D, 0);
 
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> setLayoutBindings
+			//// Descriptor set
+			///*VkDescriptorImageInfo fontDescriptorImageInfo{};
+			//fontDescriptorImageInfo.sampler = m_fontTexture->m_descriptor.sampler;
+			//fontDescriptorImageInfo.imageView = m_fontTexture->m_descriptor.imageView;
+			//fontDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;*/
+			//m_fontTexture->m_descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			
+
+			/*std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> setLayoutBindings
 			{
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 			};
-			_descriptorLayout = _device->GetDescriptorSetLayout(setLayoutBindings);
-
-			// Descriptor set
-			/*VkDescriptorImageInfo fontDescriptorImageInfo{};
-			fontDescriptorImageInfo.sampler = m_fontTexture->m_descriptor.sampler;
-			fontDescriptorImageInfo.imageView = m_fontTexture->m_descriptor.imageView;
-			fontDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;*/
-			m_fontTexture->m_descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			_descriptorLayout = _device->GetDescriptorSetLayout(setLayoutBindings);*/
+			_descriptorLayout = _device->GetDescriptorSetLayout({
+						{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT}
+				});
 
 			//render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, {}, { &fontDescriptorImageInfo }, _descriptorLayout->m_descriptorSetLayout, _descriptorLayout->m_setLayoutBindings);
 			render::DescriptorSet* set = _device->GetDescriptorSet(_descriptorLayout, descriptorPool, {}, { m_fontTexture });
@@ -147,12 +153,11 @@ namespace engine
 		/** Prepare a separate pipeline for the UI overlay rendering decoupled from the main application */
 		void UIOverlay::preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass)
 		{
-			/*render::VulkanVertexLayout vertexLayout = render::VulkanVertexLayout({
-			render::VERTEX_COMPONENT_POSITION,
+			_vertexLayout = _device->GetVertexLayout({
+			render::VERTEX_COMPONENT_POSITION2D,
 			render::VERTEX_COMPONENT_UV,
-			render::VERTEX_COMPONENT_COLOR,
-			render::VERTEX_COMPONENT_NORMAL
-				}, {});*/
+			render::VERTEX_COMPONENT_COLOR_UINT
+				}, {});
 
 			std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
 			   	VkVertexInputBindingDescription{0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -160,7 +165,7 @@ namespace engine
 			std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
 				VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)},	// Location 0: Position
 				VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},	// Location 1: UV
-				VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},	// Location 0: Color
+				VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},	// Location 0: Color//todo WHAT TO DO WITH DIRECTX
 			};
 			render::PipelineProperties props;
 			props.blendEnable = true;
@@ -215,13 +220,14 @@ namespace engine
 			// Vertex buffer
 			if (vkmesh->m_vertexCount != imDrawData->TotalVtxCount)
 			{
-				if (vkmesh->_vertexBuffer)
+				if (vkmesh->_vertexBuffer && vkmesh->_vertexBuffer->GetSize() < vertexBufferSize)
 				{
-					vkmesh->_vertexBuffer->Unmap();//george check unmap
+					vkmesh->_vertexBuffer->Unmap();
 					_device->DestroyBuffer(vkmesh->_vertexBuffer);
+					vkmesh->_vertexBuffer = nullptr;
 				}
-
-				vkmesh->_vertexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBufferSize);
+				if(!vkmesh->_vertexBuffer)
+					vkmesh->_vertexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBufferSize);
 				vkmesh->m_vertexCount = imDrawData->TotalVtxCount;
 				vkmesh->_vertexBuffer->Unmap();
 				vkmesh->_vertexBuffer->Map();
@@ -324,7 +330,7 @@ namespace engine
 			if (!_device)
 				return;
 
-			delete m_fontTexture;
+			//delete m_fontTexture;
 		}
 
 		bool UIOverlay::header(const char* caption)

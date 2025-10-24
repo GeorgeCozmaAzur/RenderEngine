@@ -177,6 +177,11 @@ public:
 	virtual void WaitForDevice() = 0;
 
 	virtual void DrawFullScreenQuad(render::CommandBuffer* commandBuffer) = 0;
+
+	virtual const std::string GetShadersPath() = 0;
+	virtual const std::string GetVertexShadersExt() = 0;
+	virtual const std::string GetFragShadersExt() = 0;
+
 };
 
 // OS specific macros for the example main entry points

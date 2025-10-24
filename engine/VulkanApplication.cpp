@@ -248,7 +248,7 @@ void VulkanApplication::PrepareUI()
 	settings.overlay = settings.overlay;
 	if (settings.overlay) {
 		UIOverlay._device = vulkanDevice;
-		UIOverlay._queue = queue;
+		//UIOverlay._queue = queue;
 		engine::render::VulkanVertexLayout v;
 		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
 		UIOverlay.preparePipeline(pipelineCache, mainRenderPass->GetRenderPass());
@@ -433,6 +433,21 @@ void VulkanApplication::DrawFullScreenQuad(render::CommandBuffer* commandBuffer)
 {
 	VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)commandBuffer)->m_vkCommandBuffer;
 	vkCmdDraw(vkbuffer, 3, 1, 0, 0);
+}
+
+const std::string VulkanApplication::GetShadersPath()
+{
+	return "shaders/";
+}
+
+const std::string VulkanApplication::GetVertexShadersExt()
+{
+	return ".vert.spv";
+}
+
+const std::string VulkanApplication::GetFragShadersExt()
+{
+	return ".frag.spv";
 }
 
 VulkanApplication::~VulkanApplication()

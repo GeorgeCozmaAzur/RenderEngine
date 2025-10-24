@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "VulkanApplication.h"
+//#include "D3D12Application.h"
 
 using namespace engine;
 
@@ -41,29 +42,29 @@ public:
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
 		};
-		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 1);
+		vulkanDevice->CreateDescriptorSetsPool(poolSizes, 1);*/
 	}
 
 	void BuildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		/*VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;*/
 
 		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
 			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 			m_drawCommandBuffers[i]->Begin();
 
-			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
+			m_mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
 			//draw here
 
-			DrawUI(m_drawCommandBuffers[i]);
+			//DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(m_drawCommandBuffers[i]);
+			m_mainRenderPass->End(m_drawCommandBuffers[i], i);
 
 			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 			m_drawCommandBuffers[i]->End();

@@ -156,5 +156,9 @@ public:
 
 	virtual void DrawFullScreenQuad(render::CommandBuffer* commandBuffer);
 
+	virtual const std::string GetShadersPath();
+	virtual const std::string GetVertexShadersExt();
+	virtual const std::string GetFragShadersExt();
+
 	virtual ~VulkanApplication();
 };

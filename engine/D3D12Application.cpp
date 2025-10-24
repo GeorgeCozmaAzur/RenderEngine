@@ -532,6 +532,21 @@ void D3D12Application::DrawFullScreenQuad(render::CommandBuffer* commandBuffer)
 {
 }
 
+const std::string D3D12Application::GetShadersPath()
+{
+	return "shaders/hlsl/";
+}
+
+const std::string D3D12Application::GetVertexShadersExt()
+{
+	return ".hlsl";
+}
+
+const std::string D3D12Application::GetFragShadersExt()
+{
+	return ".hlsl";
+}
+
 //void VulkanApplication::OnUpdateUIOverlay(engine::scene::UIOverlay *overlay) {}
 
 D3D12Application::~D3D12Application()

@@ -37,9 +37,9 @@ namespace engine
 		{
 		public:
 			render::VulkanDevice* _device = nullptr;
-			VkQueue _queue = VK_NULL_HANDLE;
+			//VkQueue _queue = VK_NULL_HANDLE;
 
-			class render::VulkanTexture* m_fontTexture = nullptr;
+			class render::Texture* m_fontTexture = nullptr;
 
 			struct PushConstBlock {
 				glm::vec2 scale;

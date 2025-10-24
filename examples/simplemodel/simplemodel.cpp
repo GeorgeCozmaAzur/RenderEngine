@@ -109,10 +109,10 @@ public:
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
-		};
+		};*/
 		descriptorPool = vulkanDevice->GetDescriptorPool(
 			{{render::DescriptorType::UNIFORM_BUFFER, 1},
 			{render::DescriptorType::IMAGE_SAMPLER, 1} }, 1); 
@@ -121,12 +121,17 @@ public:
 	void SetupDescriptors()
 	{
 		//descriptors
-		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
+		render::DescriptorSetLayout* pdsl = m_device->GetDescriptorSetLayout({
+						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX},
+						{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT}
+			});
+		plane.SetDescriptorSetLayout(pdsl);
+		/*std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
 		{
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
-		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));
+		plane.SetDescriptorSetLayout(vulkanDevice->GetDescriptorSetLayout(modelbindings));*/
 
 		/*plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));*/
@@ -136,11 +141,12 @@ public:
 	void setupPipelines()
 	{
 		render::PipelineProperties props;
-		plane.AddPipeline(vulkanDevice->GetPipeline(
+		/*plane.AddPipeline(vulkanDevice->GetPipeline(
 			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv","", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv","",
+			vertexLayout, plane._descriptorLayout, props, mainRenderPass));*/
+		plane.AddPipeline(vulkanDevice->GetPipeline(
+			engine::tools::getAssetPath() + GetShadersPath() +"basic/phong" + GetVertexShadersExt(), "", engine::tools::getAssetPath() + GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "",
 			vertexLayout, plane._descriptorLayout, props, mainRenderPass));
-		/*plane.AddPipeline(vulkanDevice->GetPipeline(plane._descriptorLayout->m_descriptorSetLayout, vertexLayout.m_vertexInputBindings, vertexLayout.m_vertexInputAttributes,
-			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));*/
 	}
 
 	void init()
@@ -157,9 +163,6 @@ public:
 
 	void BuildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
 		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
 			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
@@ -170,7 +173,7 @@ public:
 			//draw here
 			plane.Draw(m_drawCommandBuffers[i]);
 
-			DrawUI(m_drawCommandBuffers[i]);//george bad
+			DrawUI(m_drawCommandBuffers[i]);
 
 			mainRenderPass->End(m_drawCommandBuffers[i]);
 
