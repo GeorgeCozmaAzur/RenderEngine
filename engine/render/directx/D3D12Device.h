@@ -50,6 +50,8 @@ namespace engine
 			virtual CommandBuffer* GetCommandBuffer(CommandPool* pool, bool primary = true);
 
 			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer);
+
+			virtual void UpdateHostVisibleMesh(MeshData* data, Mesh* mesh);
 		};
 	}
 }

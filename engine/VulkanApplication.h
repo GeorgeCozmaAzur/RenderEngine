@@ -9,7 +9,6 @@
 
 #include "render/vulkan/VulkanDevice.h"
 #include "render/vulkan/VulkanSwapChain.h"
-#include "scene/UIOverlay.h"
 
 using namespace engine;
 
@@ -73,8 +72,6 @@ protected:
 	//std::vector<Geometry *> m_geometries;
 public: 
 	VulkanApplication::VulkanApplication(bool enableValidation);
-
-	engine::scene::UIOverlay UIOverlay;
 
 	/** @brief Encapsulated physical and logical vulkan device */
 	engine::render::VulkanDevice* vulkanDevice = nullptr;
@@ -147,12 +144,9 @@ public:
 	//void UpdateFrame();
 
 	virtual void UpdateOverlay();
-	void DrawUI(render::CommandBuffer* commandBuffer);
+	//void DrawUI(render::CommandBuffer* commandBuffer);
 
 	virtual void WaitForDevice();
-
-	/** @brief (Virtual) Called when the UI overlay is updating, can be used to add custom elements to the overlay */
-	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay);
 
 	virtual void DrawFullScreenQuad(render::CommandBuffer* commandBuffer);
 

@@ -936,6 +936,38 @@ namespace engine
             return mesh;
         }
 
+        void VulkanDevice::UpdateHostVisibleMesh(MeshData* data, Mesh *mesh)
+        {
+            render::VulkanMesh* vkmesh = dynamic_cast<render::VulkanMesh*>(mesh);
+
+            if (vkmesh->m_vertexCount != data->m_vertexCount)
+            {
+                if (vkmesh->_vertexBuffer && vkmesh->_vertexBuffer->GetSize() < data->m_verticesSize)
+                {
+                    vkmesh->_vertexBuffer->Unmap();
+                    DestroyBuffer(vkmesh->_vertexBuffer);
+                    vkmesh->_vertexBuffer = nullptr;
+                }
+                if (!vkmesh->_vertexBuffer)
+                    vkmesh->_vertexBuffer = GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, data->m_verticesSize);
+                vkmesh->m_vertexCount = data->m_vertexCount;
+                vkmesh->_vertexBuffer->Unmap();
+                vkmesh->_vertexBuffer->Map();
+            }
+            if (vkmesh->m_indexCount < data->m_indexCount)
+            {
+                if (vkmesh->_indexBuffer)
+                {
+                    DestroyBuffer(vkmesh->_indexBuffer);
+                }
+
+                vkmesh->_indexBuffer = GetBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, data->m_indexCount * data->m_indexSize);
+                vkmesh->m_indexCount = data->m_indexCount;
+                vkmesh->m_indexSize = data->m_indexSize;
+                vkmesh->_indexBuffer->Map();
+            }
+        }
+
         VulkanDevice::~VulkanDevice()
         {
           /*  FreeDrawCommandBuffers();

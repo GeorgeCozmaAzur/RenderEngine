@@ -98,7 +98,7 @@ namespace engine
 		{
 			for (auto geo : m_geometries)
 			{
-				geo->UpdateInstanceBuffer(m_pointLights.data(),0, m_pointLights.size() * sizeof(glm::vec4));
+				geo->UpdateInstanceBuffer(m_pointLights.data(), m_pointLights.size() * sizeof(glm::vec4), 0);
 			}
 		}
 

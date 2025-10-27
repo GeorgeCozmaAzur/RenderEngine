@@ -23,9 +23,11 @@ namespace engine
 	        //void Load(ID3D12Device* device, std::string fileName, XMFLOAT3 atPosition, float scale, ID3D12GraphicsCommandList* commandList);
             void Create(ID3D12Device* device, MeshData* data, VertexLayout* vlayout, ID3D12GraphicsCommandList* commandList);
             void FreeRamData();
-            virtual void UpdateInstanceBuffer(void* data, size_t offset, size_t size);
+            virtual void UpdateIndexBuffer(void* data, size_t size, size_t offset);
+            virtual void UpdateVertexBuffer(void* data, size_t size, size_t offset);
+            virtual void UpdateInstanceBuffer(void* data, size_t size, size_t offset);
             void Draw(ID3D12GraphicsCommandList* commandList);
-            virtual void Draw(CommandBuffer* commandBuffer);
+            virtual void Draw(CommandBuffer* commandBuffer, const std::vector<MeshPart>& parts = std::vector<MeshPart>());
         };
     }
 }

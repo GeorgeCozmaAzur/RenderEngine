@@ -223,6 +223,8 @@ namespace engine
 
 			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer);
 
+			virtual void UpdateHostVisibleMesh(MeshData* data, Mesh* mesh);
+
 			// Destructor
 			~VulkanDevice();
 		};

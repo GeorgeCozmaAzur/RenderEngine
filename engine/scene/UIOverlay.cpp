@@ -151,7 +151,7 @@ namespace engine
 		}
 
 		/** Prepare a separate pipeline for the UI overlay rendering decoupled from the main application */
-		void UIOverlay::preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass)
+		void UIOverlay::PreparePipeline(render::RenderPass* renderPass)
 		{
 			_vertexLayout = _device->GetVertexLayout({
 			render::VERTEX_COMPONENT_POSITION2D,
@@ -159,20 +159,23 @@ namespace engine
 			render::VERTEX_COMPONENT_COLOR_UINT
 				}, {});
 
-			std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-			   	VkVertexInputBindingDescription{0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX}
-			};
-			std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-				VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)},	// Location 0: Position
-				VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},	// Location 1: UV
-				VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},	// Location 0: Color//todo WHAT TO DO WITH DIRECTX
-			};
+			//std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
+			//   	VkVertexInputBindingDescription{0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX}
+			//};
+			//std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
+			//	VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)},	// Location 0: Position
+			//	VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},	// Location 1: UV
+			//	VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},	// Location 0: Color//todo WHAT TO DO WITH DIRECTX
+			//};
 			render::PipelineProperties props;
 			props.blendEnable = true;
 			props.vertexConstantBlockSize = sizeof(pushConstBlock);
 			render::VulkanDescriptorSetLayout* vklo = dynamic_cast<render::VulkanDescriptorSetLayout*>(_descriptorLayout);
-			_pipeline = _device->GetPipeline(vklo->m_descriptorSetLayout, vertexInputBindings, vertexInputAttributes,
-				engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", renderPass, pipelineCache, props);
+			//_pipeline = _device->GetPipeline(vklo->m_descriptorSetLayout, vertexInputBindings, vertexInputAttributes,
+			//	engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", renderPass, pipelineCache, props);
+			_pipeline = _device->GetPipeline(
+				engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", "", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", "",
+				_vertexLayout, _descriptorLayout, props, renderPass);
 		}
 
 		bool UIOverlay::shouldRecreateBuffers()
@@ -215,40 +218,50 @@ namespace engine
 				return false;
 			}
 
-			render::VulkanMesh* vkmesh = dynamic_cast<render::VulkanMesh*>(m_geometries[0]);
-
-			// Vertex buffer
-			if (vkmesh->m_vertexCount != imDrawData->TotalVtxCount)
+			render::Mesh* vkmesh = m_geometries[0];//dynamic_cast<render::VulkanMesh*>(m_geometries[0]);
+			if (vkmesh->m_vertexCount != imDrawData->TotalVtxCount || vkmesh->m_indexCount < touint(imDrawData->TotalIdxCount))
 			{
-				if (vkmesh->_vertexBuffer && vkmesh->_vertexBuffer->GetSize() < vertexBufferSize)
-				{
-					vkmesh->_vertexBuffer->Unmap();
-					_device->DestroyBuffer(vkmesh->_vertexBuffer);
-					vkmesh->_vertexBuffer = nullptr;
-				}
-				if(!vkmesh->_vertexBuffer)
-					vkmesh->_vertexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBufferSize);
-				vkmesh->m_vertexCount = imDrawData->TotalVtxCount;
-				vkmesh->_vertexBuffer->Unmap();
-				vkmesh->_vertexBuffer->Map();
+				render::MeshData mdata;
+				mdata.m_vertexCount = imDrawData->TotalVtxCount;
+				mdata.m_verticesSize = vertexBufferSize;
+				mdata.m_indexCount = touint(imDrawData->TotalIdxCount);
+				mdata.m_indexSize = sizeof(ImDrawIdx);
+				_device->UpdateHostVisibleMesh(&mdata, m_geometries[0]);
 				updateCmdBuffers = true;
 			}
 
-			// Index buffer
-			VkDeviceSize indexSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
-			if (vkmesh->m_indexCount < touint(imDrawData->TotalIdxCount))
-			{
-				if (vkmesh->_indexBuffer)
-				{
-					//m_geometries[0]->_indexBuffer->Unmap();
-					_device->DestroyBuffer(vkmesh->_indexBuffer);
-				}
+			//// Vertex buffer
+			//if (vkmesh->m_vertexCount != imDrawData->TotalVtxCount)
+			//{
+			//	if (vkmesh->_vertexBuffer && vkmesh->_vertexBuffer->GetSize() < vertexBufferSize)
+			//	{
+			//		vkmesh->_vertexBuffer->Unmap();
+			//		_device->DestroyBuffer(vkmesh->_vertexBuffer);
+			//		vkmesh->_vertexBuffer = nullptr;
+			//	}
+			//	if(!vkmesh->_vertexBuffer)
+			//		vkmesh->_vertexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vertexBufferSize);
+			//	vkmesh->m_vertexCount = imDrawData->TotalVtxCount;
+			//	vkmesh->_vertexBuffer->Unmap();
+			//	vkmesh->_vertexBuffer->Map();
+			//	updateCmdBuffers = true;
+			//}
 
-				vkmesh->_indexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, indexBufferSize);
-				vkmesh->m_indexCount = imDrawData->TotalIdxCount;
-				vkmesh->_indexBuffer->Map();
-				updateCmdBuffers = true;
-			}
+			//// Index buffer
+			//VkDeviceSize indexSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
+			//if (vkmesh->m_indexCount < touint(imDrawData->TotalIdxCount))
+			//{
+			//	if (vkmesh->_indexBuffer)
+			//	{
+			//		//m_geometries[0]->_indexBuffer->Unmap();
+			//		_device->DestroyBuffer(vkmesh->_indexBuffer);
+			//	}
+
+			//	vkmesh->_indexBuffer = _device->GetBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, indexBufferSize);
+			//	vkmesh->m_indexCount = imDrawData->TotalIdxCount;
+			//	vkmesh->_indexBuffer->Map();
+			//	updateCmdBuffers = true;
+			//}
 
 			// Upload data
 			int vtxOffset = 0;
@@ -257,15 +270,15 @@ namespace engine
 			for (int n = 0; n < imDrawData->CmdListsCount; n++) 
 			{
 				const ImDrawList* cmd_list = imDrawData->CmdLists[n];
-				vkmesh->_vertexBuffer->MemCopy(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), vtxOffset);
-				vkmesh->_indexBuffer->MemCopy(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), idxOffset);
+				vkmesh->UpdateVertexBuffer(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), vtxOffset);
+				vkmesh->UpdateIndexBuffer(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), idxOffset);
 				vtxOffset += cmd_list->VtxBuffer.Size * sizeof(ImDrawVert);
 				idxOffset += cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx);
 			}
 
 			// Flush to make writes visible to GPU
-			vkmesh->_vertexBuffer->Flush();
-			vkmesh->_indexBuffer->Flush();
+			vkmesh->FlushVertexBuffer();
+			vkmesh->FlushIndexBuffer();
 
 			return updateCmdBuffers;
 		}
@@ -274,7 +287,7 @@ namespace engine
 		{
 			ImDrawData* imDrawData = ImGui::GetDrawData();
 			int32_t vertexOffset = 0;
-			int32_t indexOffset = 0;
+			uint32_t indexOffset = 0;
 
 			if ((!imDrawData) || (imDrawData->CmdListsCount == 0)) {
 				return;
@@ -294,8 +307,10 @@ namespace engine
 			render::VulkanMesh* vkmesh = dynamic_cast<render::VulkanMesh*>(m_geometries[0]);
 			VkDeviceSize offsets[1] = { 0 };
 			const VkBuffer vertexBuffer = vkmesh->_vertexBuffer->GetVkBuffer();
-			vkCmdBindVertexBuffers(vkcmd->m_vkCommandBuffer, 0, 1, &vertexBuffer, offsets);
-			vkCmdBindIndexBuffer(vkcmd->m_vkCommandBuffer, vkmesh->_indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
+			//vkCmdBindVertexBuffers(vkcmd->m_vkCommandBuffer, 0, 1, &vertexBuffer, offsets);
+			//vkCmdBindIndexBuffer(vkcmd->m_vkCommandBuffer, vkmesh->_indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+			std::vector<render::MeshPart> meshParts;
 
 			for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
 			{
@@ -308,12 +323,14 @@ namespace engine
 					scissorRect.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
 					scissorRect.extent.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
 					scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
-					vkCmdSetScissor(vkcmd->m_vkCommandBuffer, 0, 1, &scissorRect);
-					vkCmdDrawIndexed(vkcmd->m_vkCommandBuffer, pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
+					//vkCmdSetScissor(vkcmd->m_vkCommandBuffer, 0, 1, &scissorRect);
+					//vkCmdDrawIndexed(vkcmd->m_vkCommandBuffer, pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
+					meshParts.push_back({ (uint32_t)pcmd->ElemCount, 1, indexOffset, vertexOffset, 0 });
 					indexOffset += pcmd->ElemCount;
 				}
 				vertexOffset += cmd_list->VtxBuffer.Size;
 			}
+			m_geometries[0]->Draw(commandBuffer, meshParts);
 		}
 
 		void UIOverlay::resize(uint32_t width, uint32_t height)

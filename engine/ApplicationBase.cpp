@@ -335,8 +335,8 @@ void ApplicationBase::HandleMouseMove(int32_t x, int32_t y)
 	bool handled = false;
 
 	if (settings.overlay) {
-	//	ImGuiIO& io = ImGui::GetIO();
-	//	handled = io.WantCaptureMouse;
+		ImGuiIO& io = ImGui::GetIO();
+		handled = io.WantCaptureMouse;
 	}
 	MouseMoved((float)x, (float)y, handled);
 
@@ -410,6 +410,13 @@ void ApplicationBase::UpdateFrame()
 	}
 	// TODO: Cap UI overlay update rates
 	UpdateOverlay();
+}
+
+void ApplicationBase::DrawUI(render::CommandBuffer* commandBuffer)
+{
+	if (settings.overlay) {
+		UIOverlay.draw(commandBuffer);
+	}
 }
 
 void ApplicationBase::MainLoop()

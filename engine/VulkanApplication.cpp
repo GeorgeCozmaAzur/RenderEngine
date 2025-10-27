@@ -251,7 +251,7 @@ void VulkanApplication::PrepareUI()
 		//UIOverlay._queue = queue;
 		engine::render::VulkanVertexLayout v;
 		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
-		UIOverlay.preparePipeline(pipelineCache, mainRenderPass->GetRenderPass());
+		UIOverlay.PreparePipeline(mainRenderPass);
 	}
 }
 
@@ -304,12 +304,12 @@ void VulkanApplication::UpdateOverlay()
 	}
 }
 
-void VulkanApplication::DrawUI(render::CommandBuffer* commandBuffer)
-{
-	if (settings.overlay) {
-		UIOverlay.draw(commandBuffer);
-	}
-}
+//void VulkanApplication::DrawUI(render::CommandBuffer* commandBuffer)
+//{
+//	if (settings.overlay) {
+//		UIOverlay.draw(commandBuffer);
+//	}
+//}
 
 void VulkanApplication::Render()
 {
@@ -426,8 +426,6 @@ void VulkanApplication::WindowResized()
 {
 	// Can be overriden in derived class
 }
-
-void VulkanApplication::OnUpdateUIOverlay(engine::scene::UIOverlay *overlay) {}
 
 void VulkanApplication::DrawFullScreenQuad(render::CommandBuffer* commandBuffer)
 {

@@ -60,6 +60,8 @@ namespace engine
 
 			virtual Mesh* GetMesh(MeshData* data, VertexLayout* vlayout, CommandBuffer* commanBuffer) = 0;
 
+			virtual void UpdateHostVisibleMesh(MeshData* data, Mesh* mesh) = 0;
+
 			void FreeLoadStaggingBuffers();
 		};
 	}

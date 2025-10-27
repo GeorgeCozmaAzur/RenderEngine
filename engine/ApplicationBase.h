@@ -22,6 +22,7 @@
 
 #include "render/GraphicsDevice.h"
 #include "scene/Camera.h"
+#include "scene/UIOverlay.h"
 
 using namespace engine;
 
@@ -97,6 +98,8 @@ public:
 	float zoomSpeed = 1.0f;
 
 	scene::Camera camera;
+
+	engine::scene::UIOverlay UIOverlay;
 
 	glm::vec3 rotation = glm::vec3();
 	glm::vec3 cameraPos = glm::vec3();
@@ -182,6 +185,9 @@ public:
 	virtual const std::string GetVertexShadersExt() = 0;
 	virtual const std::string GetFragShadersExt() = 0;
 
+	/** @brief (Virtual) Called when the UI overlay is updating, can be used to add custom elements to the overlay */
+	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay* overlay) {};
+	void DrawUI(render::CommandBuffer* commandBuffer);
 };
 
 // OS specific macros for the example main entry points

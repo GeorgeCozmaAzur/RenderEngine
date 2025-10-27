@@ -186,5 +186,10 @@ namespace engine
 
 			return mesh;
 		}
+
+		void D3D12Device::UpdateHostVisibleMesh(MeshData* data, Mesh* mesh)
+		{
+
+		}
 	}
 }

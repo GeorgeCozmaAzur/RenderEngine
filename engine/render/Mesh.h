@@ -13,6 +13,7 @@ namespace engine
 			void* _instanceExternalData = nullptr;
 
 			uint32_t m_indexCount = 0;
+			uint16_t m_indexSize = 4;//index size in bytes
 			uint64_t m_vertexCount = 0;
 			uint64_t m_vertexSize = 0;
 			uint64_t m_verticesSize = 0;
@@ -24,21 +25,33 @@ namespace engine
 			~MeshData();
 		};
 
+		struct MeshPart
+		{
+			uint32_t    indexCount;
+			uint32_t    instanceCount;
+			uint32_t    firstIndex;
+			int32_t     vertexOffset;
+			uint32_t    firstInstance;
+		};
+
 		class Mesh
 		{
 		public:
 			VertexLayout* m_vlayout = nullptr;
-			//class Buffer* _instanceBuffer = nullptr;
-			uint32_t m_instanceNo = 1;
 			uint32_t m_indexCount = 0;
+			uint16_t m_indexSize = 4;//index size in bytes
+			uint64_t m_vertexCount = 0;
+			uint32_t m_instanceNo = 1;
+
 		public:
-			//uint32_t m_indexCount = 0;//TODO make it private or remove
-			//uint64_t m_vertexCount = 0;
-			//render::Buffer* _vertexBuffer = nullptr;
-			//render::Buffer* _indexBuffer = nullptr;
-			virtual void UpdateInstanceBuffer(void* data, size_t offset, size_t size) = 0;
+
+			virtual void UpdateIndexBuffer(void* data, size_t size, size_t offset) = 0;
+			virtual void FlushIndexBuffer() {};
+			virtual void UpdateVertexBuffer(void* data, size_t size, size_t offset) = 0;
+			virtual void FlushVertexBuffer() {};
+			virtual void UpdateInstanceBuffer(void* data, size_t size, size_t offset) = 0;
 			virtual ~Mesh() {}
-			virtual void Draw(CommandBuffer *commandBuffer) = 0;
+			virtual void Draw(CommandBuffer *commandBuffer, const std::vector<MeshPart>& parts = std::vector<MeshPart>()) = 0;
 		};
 	}
 }

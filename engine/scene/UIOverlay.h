@@ -8,26 +8,10 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <vector>
-#include <sstream>
-#include <iomanip>
-
-#include <vulkan/vulkan.h>
-#include "VulkanTools.h"
-#include "VulkanDebug.h"
-#include "render/vulkan/VulkanBuffer.h"
-#include "render/vulkan/VulkanDevice.h"
-#include "render/vulkan/VulkanPipeline.h"
+#include "render/GraphicsDevice.h"
+#include "scene/RenderObject.h"
 
 #include "../external/imgui/imgui.h"
-
-#if defined(__ANDROID__)
-#include "VulkanAndroid.h"
-#endif
 
 namespace engine 
 {
@@ -36,7 +20,7 @@ namespace engine
 		class UIOverlay : public RenderObject
 		{
 		public:
-			render::VulkanDevice* _device = nullptr;
+			render::GraphicsDevice* _device = nullptr;
 			//VkQueue _queue = VK_NULL_HANDLE;
 
 			class render::Texture* m_fontTexture = nullptr;
@@ -57,7 +41,7 @@ namespace engine
 
 			virtual std::vector<render::MeshData*> LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale = 1.0f, int instanceNo = 1, glm::vec3 atPos = glm::vec3(0.0f));
 
-			void preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass);
+			void PreparePipeline(render::RenderPass* renderPass);
 
 			bool shouldRecreateBuffers();
 

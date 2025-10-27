@@ -179,7 +179,17 @@ namespace engine
             m_vertexBuffer.FreeStagingBuffer();
         }
 
-        void D3D12Mesh::UpdateInstanceBuffer(void* data, size_t offset, size_t size)
+        void D3D12Mesh::UpdateIndexBuffer(void* data, size_t size, size_t offset)
+        {
+
+        }
+
+        void D3D12Mesh::UpdateVertexBuffer(void* data, size_t size, size_t offset)
+        {
+
+        }
+
+        void D3D12Mesh::UpdateInstanceBuffer(void* data, size_t size, size_t offset)
         {
            // _instanceBuffer->MemCopy(data, size);
         }
@@ -191,7 +201,7 @@ namespace engine
             commandList->DrawIndexedInstanced(m_indexBuffer.m_numIndices, 1, 0, 0, 0);
         }
 
-        void D3D12Mesh::Draw(CommandBuffer* commandBuffer)
+        void D3D12Mesh::Draw(CommandBuffer* commandBuffer, const std::vector<MeshPart>& parts)
         {
             D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
             Draw(d3dcommandBuffer->m_commandList.Get());
