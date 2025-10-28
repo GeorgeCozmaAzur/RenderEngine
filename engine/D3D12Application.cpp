@@ -274,10 +274,10 @@ bool D3D12Application::InitAPI()
 //	}
 //}
 
-void D3D12Application::PrepareUI()
-{
-
-}
+//void D3D12Application::PrepareUI()
+//{
+//
+//}
 
 void D3D12Application::WaitForDevice()
 {
@@ -293,40 +293,12 @@ void D3D12Application::UpdateOverlay()
 	if (!settings.overlay)
 		return;
 
-	/*ImGuiIO& io = ImGui::GetIO();
+	ApplicationBase::UpdateOverlay();
 
-	io.DisplaySize = ImVec2((float)width, (float)height);
-	io.DeltaTime = frameTimer;
-
-	io.MousePos = ImVec2(mousePos.x, mousePos.y);
-	io.MouseDown[0] = mouseButtons.left;
-	io.MouseDown[1] = mouseButtons.right;
-
-	ImGui::NewFrame();
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-	ImGui::SetNextWindowPos(ImVec2(10, 10));
-	ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Vulkan Example", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-	ImGui::TextUnformatted(title.c_str());
-	ImGui::TextUnformatted(vulkanDevice->GetDeviceName());
-	ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / lastFPS), lastFPS);
-
-	ImGui::PushItemWidth(110.0f * UIOverlay.m_scale);
-	OnUpdateUIOverlay(&UIOverlay);
-	ImGui::PopItemWidth();
-
-	ImGui::End();
-	ImGui::PopStyleVar();
-	ImGui::Render();
-
-	if(UIOverlay.shouldRecreateBuffers())
-		vkWaitForFences(device, submitFences.size(), submitFences.data(), VK_TRUE, UINT64_MAX);
-
-	if (UIOverlay.update() || UIOverlay.m_updated) {		
-		BuildCommandBuffers();
+	if (UIOverlay.update() || UIOverlay.m_updated) {
+		//BuildCommandBuffers();
 		UIOverlay.m_updated = false;
-	}*/
+	}
 }
 
 void D3D12Application::WaitForPreviousFrame()

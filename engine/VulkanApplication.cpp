@@ -243,17 +243,17 @@ bool VulkanApplication::InitAPI()
 	return true;
 }
 
-void VulkanApplication::PrepareUI()
-{
-	settings.overlay = settings.overlay;
-	if (settings.overlay) {
-		UIOverlay._device = vulkanDevice;
-		//UIOverlay._queue = queue;
-		engine::render::VulkanVertexLayout v;
-		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
-		UIOverlay.PreparePipeline(mainRenderPass);
-	}
-}
+//void VulkanApplication::PrepareUI()
+//{
+//	settings.overlay = settings.overlay;
+//	if (settings.overlay) {
+//		UIOverlay._device = vulkanDevice;
+//		//UIOverlay._queue = queue;
+//		engine::render::VulkanVertexLayout v;
+//		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
+//		UIOverlay.PreparePipeline(mainRenderPass);
+//	}
+//}
 
 void VulkanApplication::WaitForDevice()
 {
@@ -268,7 +268,7 @@ void VulkanApplication::UpdateOverlay()
 	if (!settings.overlay)
 		return;
 
-	ImGuiIO& io = ImGui::GetIO();
+	/*ImGuiIO& io = ImGui::GetIO();
 
 	io.DisplaySize = ImVec2((float)width, (float)height);
 	io.DeltaTime = frameTimer;
@@ -293,7 +293,8 @@ void VulkanApplication::UpdateOverlay()
 
 	ImGui::End();
 	ImGui::PopStyleVar();
-	ImGui::Render();
+	ImGui::Render();*/
+	ApplicationBase::UpdateOverlay();
 
 	if(UIOverlay.shouldRecreateBuffers())
 		vkWaitForFences(device, submitFences.size(), submitFences.data(), VK_TRUE, UINT64_MAX);
@@ -459,9 +460,7 @@ VulkanApplication::~VulkanApplication()
 	for (int i = 0; i < renderCompleteSemaphores.size(); i++)
 	vulkanDevice->DestroySemaphore(renderCompleteSemaphores[i]);
 
-	if (settings.overlay) {
-		UIOverlay.freeResources();
-	}
+	
 
 	delete vulkanDevice;
 

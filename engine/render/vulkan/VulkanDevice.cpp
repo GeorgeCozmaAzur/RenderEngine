@@ -295,18 +295,6 @@ namespace engine
             vkCmdCopyBuffer(copyCmd, src->GetVkBuffer(), dst->GetVkBuffer(), 1, &bufferCopy);
         }
 
-        void VulkanDevice::DestroyBuffer(Buffer* buffer)
-        {
-            std::vector<Buffer*>::iterator it;
-            it = find(m_buffers.begin(), m_buffers.end(), buffer);
-            if (it != m_buffers.end())
-            {
-                delete buffer;
-                m_buffers.erase(it);
-                return;
-            }
-        }
-
         VulkanTexture* VulkanDevice::GetTexture(TextureData* data, VkQueue copyQueue,
             VkImageUsageFlags imageUsageFlags,
             VkImageLayout imageLayout,

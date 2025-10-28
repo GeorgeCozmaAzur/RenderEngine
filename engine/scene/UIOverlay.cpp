@@ -79,7 +79,7 @@ namespace engine
 
 			render::Texture2DData tdata;
 			tdata.CreateFromBuffer(fontData, uploadSize, texWidth, texHeight);
-			m_fontTexture = _device->GetTexture(&tdata, descriptorPool, nullptr);
+			m_fontTexture = _device->GetTexture(&tdata, descriptorPool, _loadingCommandBuffer);
 
 			//m_fontTexture = new render::VulkanTexture;
 
@@ -151,7 +151,7 @@ namespace engine
 		}
 
 		/** Prepare a separate pipeline for the UI overlay rendering decoupled from the main application */
-		void UIOverlay::PreparePipeline(render::RenderPass* renderPass)
+		void UIOverlay::PreparePipeline(std::string vertexFilename, std::string fragmentFilename, render::RenderPass* renderPass)
 		{
 			_vertexLayout = _device->GetVertexLayout({
 			render::VERTEX_COMPONENT_POSITION2D,
@@ -169,12 +169,17 @@ namespace engine
 			//};
 			render::PipelineProperties props;
 			props.blendEnable = true;
+			props.cullMode = render::CullMode::NONE;
+			props.depthTestEnable = false;
 			props.vertexConstantBlockSize = sizeof(pushConstBlock);
 			render::VulkanDescriptorSetLayout* vklo = dynamic_cast<render::VulkanDescriptorSetLayout*>(_descriptorLayout);
 			//_pipeline = _device->GetPipeline(vklo->m_descriptorSetLayout, vertexInputBindings, vertexInputAttributes,
 			//	engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", renderPass, pipelineCache, props);
+			/*_pipeline = _device->GetPipeline(
+				engine::tools::getAssetPath() + GetShadersPath() + "shaders/overlay/uioverlay.vert.spv", "", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", "",
+				_vertexLayout, _descriptorLayout, props, renderPass);*/
 			_pipeline = _device->GetPipeline(
-				engine::tools::getAssetPath() + "shaders/overlay/uioverlay.vert.spv", "", engine::tools::getAssetPath() + "shaders/overlay/uioverlay.frag.spv", "",
+				vertexFilename, "VSMain", fragmentFilename, "PSMain",
 				_vertexLayout, _descriptorLayout, props, renderPass);
 		}
 
@@ -297,16 +302,16 @@ namespace engine
 
 			_pipeline->Draw(commandBuffer);
 			pushConstBlock.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
-			pushConstBlock.translate = glm::vec2(-1.0f);
+			pushConstBlock.translate = glm::vec2(-1.0f, -1.0f);
 			_pipeline->PushConstants(commandBuffer , &pushConstBlock);
 			//vkCmdPushConstants(commandBuffer, _pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
-
+			descriptorPool->Draw(commandBuffer);
 			m_descriptorSets[0]->Draw(commandBuffer, _pipeline, 0);
 
-			render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
-			render::VulkanMesh* vkmesh = dynamic_cast<render::VulkanMesh*>(m_geometries[0]);
-			VkDeviceSize offsets[1] = { 0 };
-			const VkBuffer vertexBuffer = vkmesh->_vertexBuffer->GetVkBuffer();
+			//render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
+			//render::VulkanMesh* vkmesh = dynamic_cast<render::VulkanMesh*>(m_geometries[0]);
+			//VkDeviceSize offsets[1] = { 0 };
+			//const VkBuffer vertexBuffer = vkmesh->_vertexBuffer->GetVkBuffer();
 			//vkCmdBindVertexBuffers(vkcmd->m_vkCommandBuffer, 0, 1, &vertexBuffer, offsets);
 			//vkCmdBindIndexBuffer(vkcmd->m_vkCommandBuffer, vkmesh->_indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
 

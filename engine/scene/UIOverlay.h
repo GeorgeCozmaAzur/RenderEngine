@@ -36,12 +36,14 @@ namespace engine
 
 			render::DescriptorPool* descriptorPool = nullptr;
 
+			render::CommandBuffer* _loadingCommandBuffer = nullptr;
+
 			UIOverlay();
 			~UIOverlay();
 
 			virtual std::vector<render::MeshData*> LoadGeometry(const std::string& filename, render::VulkanVertexLayout* vertexLayout, float scale = 1.0f, int instanceNo = 1, glm::vec3 atPos = glm::vec3(0.0f));
 
-			void PreparePipeline(render::RenderPass* renderPass);
+			void PreparePipeline(std::string vertexFilename, std::string fragmentFilename, render::RenderPass* renderPass);
 
 			bool shouldRecreateBuffers();
 

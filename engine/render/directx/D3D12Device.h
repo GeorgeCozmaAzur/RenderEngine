@@ -20,10 +20,17 @@ namespace engine
 
 			std::vector<CommandBuffer*> m_commandBuffers;//TODO remove this
 
+			char deviceName[9] = "dxdevice";
+
 		public:
 			D3D12Device(Microsoft::WRL::ComPtr<ID3D12Device> device) : m_device(device) {};
 
 			~D3D12Device();
+
+			virtual char* GetDeviceName()
+			{
+				return deviceName;
+			}
 
 			virtual Buffer* GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool);
 

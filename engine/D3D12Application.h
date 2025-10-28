@@ -53,7 +53,7 @@ public:
 	virtual bool InitAPI();
 
 	//Prepare ui elements
-	void PrepareUI();
+	//void PrepareUI();
 
 	void WaitForPreviousFrame();
 	// Pure virtual render function (override in derived class)

@@ -169,18 +169,30 @@ namespace engine
 
 			//mesh->Create(m_device.Get(),data,vlayout, d3dcommandBuffer->m_commandList.Get());
 			const UINT vertexBufferSize = data->m_vertexCount * vlayout->GetVertexSize(0);
-			D3D12Buffer* staggingBuffer = new D3D12Buffer();
-			staggingBuffer->Create(m_device.Get(), vertexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-			m_loadStaggingBuffers.push_back(staggingBuffer);
-			mesh->m_vertexBuffer.CreateGPUVisible(m_device.Get(), staggingBuffer->GetD3DBuffer(), d3dcommandBuffer->m_commandList.Get(), vertexBufferSize, data->m_vertices, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-			mesh->m_vertexBuffer.CreateView(vlayout->GetVertexSize(0));
+			if (vertexBufferSize)
+			{
+				D3D12Buffer* staggingBuffer = new D3D12Buffer();
+				staggingBuffer->Create(m_device.Get(), vertexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+				m_loadStaggingBuffers.push_back(staggingBuffer);
+				mesh->_vertexBuffer = new D3D12VertexBuffer();
+				mesh->_vertexBuffer->CreateGPUVisible(m_device.Get(), staggingBuffer->GetD3DBuffer(), d3dcommandBuffer->m_commandList.Get(), vertexBufferSize, data->m_vertices, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+				//mesh->_vertexBuffer->CreateCPUVisible(m_device.Get(), vertexBufferSize, data->m_vertices);// , D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+				mesh->_vertexBuffer->CreateView(vlayout->GetVertexSize(0));
+				m_buffers.push_back(mesh->_vertexBuffer);
+			}
 
 			const UINT indexBufferSize = data->m_indexCount * sizeof(UINT);
-			staggingBuffer = new D3D12Buffer();
-			staggingBuffer->Create(m_device.Get(), indexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-			m_loadStaggingBuffers.push_back(staggingBuffer);
-			mesh->m_indexBuffer.CreateGPUVisible(m_device.Get(), staggingBuffer->GetD3DBuffer(), d3dcommandBuffer->m_commandList.Get(), indexBufferSize, data->m_indices, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-			mesh->m_indexBuffer.CreateView();
+			if (indexBufferSize)
+			{
+				D3D12Buffer* staggingBuffer = new D3D12Buffer();
+				staggingBuffer->Create(m_device.Get(), indexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+				m_loadStaggingBuffers.push_back(staggingBuffer);
+				mesh->m_indexSize = data->m_indexSize;
+				mesh->_indexBuffer = new D3D12IndexBuffer();
+				mesh->_indexBuffer->CreateGPUVisible(m_device.Get(), staggingBuffer->GetD3DBuffer(), d3dcommandBuffer->m_commandList.Get(), indexBufferSize, data->m_indices, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+				mesh->_indexBuffer->CreateView(mesh->m_indexSize);
+				m_buffers.push_back(mesh->_indexBuffer);
+			}
 
 			m_meshes.push_back(mesh);
 
@@ -189,7 +201,42 @@ namespace engine
 
 		void D3D12Device::UpdateHostVisibleMesh(MeshData* data, Mesh* mesh)
 		{
+			render::D3D12Mesh* vkmesh = dynamic_cast<render::D3D12Mesh*>(mesh);
 
+			if (vkmesh->m_vertexCount != data->m_vertexCount)
+			{
+				if (vkmesh->_vertexBuffer && vkmesh->_vertexBuffer->GetSize() < data->m_verticesSize)
+				{
+					DestroyBuffer(vkmesh->_vertexBuffer);
+					vkmesh->_vertexBuffer = nullptr;
+				}
+				vkmesh->m_vertexCount = data->m_vertexCount;
+				if (!vkmesh->_vertexBuffer)
+				{
+					vkmesh->_vertexBuffer = new D3D12VertexBuffer();
+					vkmesh->_vertexBuffer->CreateCPUVisible(m_device.Get(), data->m_verticesSize, data->m_vertices);
+					vkmesh->_vertexBuffer->CreateView(data->m_verticesSize / vkmesh->m_vertexCount);
+					m_buffers.push_back(vkmesh->_vertexBuffer);
+				}
+			}
+			if (vkmesh->m_indexCount < data->m_indexCount)
+			{
+				if (vkmesh->_indexBuffer)
+				{
+					DestroyBuffer(vkmesh->_indexBuffer);
+					vkmesh->_indexBuffer = nullptr;
+				}
+
+				vkmesh->m_indexCount = data->m_indexCount;
+				vkmesh->m_indexSize = data->m_indexSize;
+				if (!vkmesh->_indexBuffer)
+				{
+					vkmesh->_indexBuffer = new D3D12IndexBuffer();
+					vkmesh->_indexBuffer->CreateCPUVisible(m_device.Get(), data->m_indexCount * data->m_indexSize, data->m_indices);
+					vkmesh->_indexBuffer->CreateView(vkmesh->m_indexSize);
+					m_buffers.push_back(vkmesh->_indexBuffer);
+				}
+			}
 		}
 	}
 }

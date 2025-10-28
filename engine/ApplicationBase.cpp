@@ -366,6 +366,54 @@ void ApplicationBase::HandleMouseMove(int32_t x, int32_t y)
 	mousePos = glm::vec2((float)x, (float)y);
 }
 
+void ApplicationBase::PrepareUI()
+{
+	settings.overlay = settings.overlay;
+	if (settings.overlay) {
+		UIOverlay._device = m_device;
+		//UIOverlay._queue = queue;
+		engine::render::VulkanVertexLayout v;
+		UIOverlay._loadingCommandBuffer = m_loadingCommandBuffer;
+		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
+		UIOverlay.PreparePipeline(engine::tools::getAssetPath() + GetShadersPath() + "overlay/uioverlay" + GetVertexShadersExt(),
+			engine::tools::getAssetPath() + GetShadersPath() + "overlay/uioverlay" + GetFragShadersExt(),
+			m_mainRenderPass);
+	}
+}
+
+void ApplicationBase::UpdateOverlay()
+{
+	if (!settings.overlay)
+		return;
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	io.DisplaySize = ImVec2((float)width, (float)height);
+	io.DeltaTime = frameTimer;
+
+	io.MousePos = ImVec2(mousePos.x, mousePos.y);
+	io.MouseDown[0] = mouseButtons.left;
+	io.MouseDown[1] = mouseButtons.right;
+
+	ImGui::NewFrame();
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+	ImGui::SetNextWindowPos(ImVec2(10, 10));
+	ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+	ImGui::Begin("Vulkan Example", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+	ImGui::TextUnformatted(title.c_str());
+	ImGui::TextUnformatted(m_device->GetDeviceName());
+	ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / lastFPS), lastFPS);
+
+	ImGui::PushItemWidth(110.0f * UIOverlay.m_scale);
+	OnUpdateUIOverlay(&UIOverlay);
+	ImGui::PopItemWidth();
+
+	ImGui::End();
+	ImGui::PopStyleVar();
+	ImGui::Render();
+}
+
 void ApplicationBase::UpdateFrame()
 {
 	auto tStart = std::chrono::high_resolution_clock::now();

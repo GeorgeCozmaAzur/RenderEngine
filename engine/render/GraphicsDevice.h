@@ -32,7 +32,11 @@ namespace engine
 			std::vector<CommandPool*> m_secondaryCommandPools;
 			
 		public:
-			virtual ~GraphicsDevice();
+
+			virtual char* GetDeviceName()
+			{
+				return nullptr;
+			}
 
 			virtual Buffer* GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool) = 0;
 
@@ -62,7 +66,11 @@ namespace engine
 
 			virtual void UpdateHostVisibleMesh(MeshData* data, Mesh* mesh) = 0;
 
+			void DestroyBuffer(Buffer* buffer);
+
 			void FreeLoadStaggingBuffers();
+
+			virtual ~GraphicsDevice();
 		};
 	}
 }

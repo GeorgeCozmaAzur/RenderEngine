@@ -17,8 +17,8 @@ namespace engine
         class D3D12Mesh : public Mesh
         {
         public:
-            render::D3D12VertexBuffer m_vertexBuffer;
-            render::D3D12IndexBuffer m_indexBuffer;
+            render::D3D12VertexBuffer* _vertexBuffer;
+            render::D3D12IndexBuffer* _indexBuffer;
 
 	        //void Load(ID3D12Device* device, std::string fileName, XMFLOAT3 atPosition, float scale, ID3D12GraphicsCommandList* commandList);
             void Create(ID3D12Device* device, MeshData* data, VertexLayout* vlayout, ID3D12GraphicsCommandList* commandList);
@@ -26,7 +26,7 @@ namespace engine
             virtual void UpdateIndexBuffer(void* data, size_t size, size_t offset);
             virtual void UpdateVertexBuffer(void* data, size_t size, size_t offset);
             virtual void UpdateInstanceBuffer(void* data, size_t size, size_t offset);
-            void Draw(ID3D12GraphicsCommandList* commandList);
+            void Draw(ID3D12GraphicsCommandList* commandList, const std::vector<MeshPart>& parts = std::vector<MeshPart>());
             virtual void Draw(CommandBuffer* commandBuffer, const std::vector<MeshPart>& parts = std::vector<MeshPart>());
         };
     }

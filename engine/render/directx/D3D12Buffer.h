@@ -23,6 +23,7 @@ namespace engine
 			~D3D12Buffer() { m_buffer.Reset(); }
 			ID3D12Resource* GetD3DBuffer() { return m_buffer.Get(); }
 			void Create(ID3D12Device* device, size_t size, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES finalState);
+			void CreateCPUVisible(ID3D12Device* device, size_t size, void* data);
 			void CreateGPUVisible(ID3D12Device* device, ID3D12Resource* staggingBuffer, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState);
 			void FreeStagingBuffer();
 		};
@@ -51,7 +52,7 @@ namespace engine
 			D3D12_INDEX_BUFFER_VIEW m_view;
 			UINT m_numIndices;
 		
-			void CreateView();
+			void CreateView(uint16_t indexSize);
 		};
 	}
 }

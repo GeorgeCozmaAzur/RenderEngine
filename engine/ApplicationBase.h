@@ -137,6 +137,7 @@ public:
 #endif
 	virtual void WindowResize() = 0;
 
+	void PrepareUI();
 	// Prepare commonly used Vulkan functions
 	virtual void Prepare() = 0;
 
@@ -175,7 +176,7 @@ public:
 	// Render one frame of a render loop on platforms that sync rendering
 	virtual void UpdateFrame();
 
-	virtual void UpdateOverlay()=0;
+	virtual void UpdateOverlay();
 
 	virtual void WaitForDevice() = 0;
 
@@ -188,6 +189,12 @@ public:
 	/** @brief (Virtual) Called when the UI overlay is updating, can be used to add custom elements to the overlay */
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay* overlay) {};
 	void DrawUI(render::CommandBuffer* commandBuffer);
+
+	~ApplicationBase() {
+		if (settings.overlay) {
+			UIOverlay.freeResources();
+		}
+	}
 };
 
 // OS specific macros for the example main entry points

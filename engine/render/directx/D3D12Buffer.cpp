@@ -17,6 +17,25 @@ namespace engine
                 IID_PPV_ARGS(&m_buffer)));
         }
 
+        void D3D12Buffer::CreateCPUVisible(ID3D12Device* device, size_t size, void* data)
+        {
+            m_size = size;
+            ThrowIfFailed(device->CreateCommittedResource(
+                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+                D3D12_HEAP_FLAG_NONE,
+                &CD3DX12_RESOURCE_DESC::Buffer(m_size),
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr,
+                IID_PPV_ARGS(&m_buffer)));
+
+            // Map and initialize the constant buffer. We don't unmap this until the
+            // app closes. Keeping things mapped for the lifetime of the resource is okay.
+            CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+            ThrowIfFailed(m_buffer->Map(0, &readRange, &m_mapped));
+            if(data)
+            memcpy(m_mapped, data, m_size);
+        }
+
 		void D3D12Buffer::CreateGPUVisible(ID3D12Device* device, ID3D12Resource* staggingBuffer, ID3D12GraphicsCommandList* commandList, size_t size, void* data, D3D12_RESOURCE_STATES finalState)
 		{
             m_size = size;
@@ -59,27 +78,28 @@ namespace engine
 
 		void D3D12UniformBuffer::Create(ID3D12Device* device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle)
 		{
-			m_size = size;
-			ThrowIfFailed(device->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(m_size),
-				D3D12_RESOURCE_STATE_GENERIC_READ,
-				nullptr,
-				IID_PPV_ARGS(&m_buffer)));
+			//m_size = size;
+			//ThrowIfFailed(device->CreateCommittedResource(
+			//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			//	D3D12_HEAP_FLAG_NONE,
+			//	&CD3DX12_RESOURCE_DESC::Buffer(m_size),
+			//	D3D12_RESOURCE_STATE_GENERIC_READ,
+			//	nullptr,
+			//	IID_PPV_ARGS(&m_buffer)));
 
-			// Describe and create a constant buffer view.
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-			cbvDesc.BufferLocation = m_buffer->GetGPUVirtualAddress();
-			cbvDesc.SizeInBytes = (UINT)m_size;
-			// m_device->CreateConstantBufferView(&cbvDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
-			device->CreateConstantBufferView(&cbvDesc, cpuHandle);
+			//// Map and initialize the constant buffer. We don't unmap this until the
+			//// app closes. Keeping things mapped for the lifetime of the resource is okay.
+			//CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+			//ThrowIfFailed(m_buffer->Map(0, &readRange, &m_mapped));
+			//memcpy(m_mapped, data, m_size);
+            CreateCPUVisible(device, size, data);
 
-			// Map and initialize the constant buffer. We don't unmap this until the
-			// app closes. Keeping things mapped for the lifetime of the resource is okay.
-			CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
-			ThrowIfFailed(m_buffer->Map(0, &readRange, &m_mapped));
-			memcpy(m_mapped, data, m_size);
+            // Describe and create a constant buffer view.
+            D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+            cbvDesc.BufferLocation = m_buffer->GetGPUVirtualAddress();
+            cbvDesc.SizeInBytes = (UINT)m_size;
+            // m_device->CreateConstantBufferView(&cbvDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+            device->CreateConstantBufferView(&cbvDesc, cpuHandle);
 
 			m_CPUHandle = cpuHandle;
 			m_GPUHandle = gpuHandle;
@@ -92,13 +112,13 @@ namespace engine
             m_view.SizeInBytes = m_size;
         }
 
-        void D3D12IndexBuffer::CreateView()
+        void D3D12IndexBuffer::CreateView(uint16_t indexSize)
         {
             m_view.BufferLocation = m_buffer->GetGPUVirtualAddress();
-            m_view.Format = DXGI_FORMAT_R32_UINT;
+            m_view.Format = indexSize > 2 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
             m_view.SizeInBytes = m_size;
 
-            m_numIndices = m_size / sizeof(UINT);
+            m_numIndices = m_size / indexSize;
             
         }
 	}

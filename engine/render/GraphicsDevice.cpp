@@ -30,6 +30,18 @@ namespace engine
                 delete cb;
 		}
 
+        void GraphicsDevice::DestroyBuffer(Buffer* buffer)
+        {
+            std::vector<Buffer*>::iterator it;
+            it = find(m_buffers.begin(), m_buffers.end(), buffer);
+            if (it != m_buffers.end())
+            {
+                delete buffer;
+                m_buffers.erase(it);
+                return;
+            }
+        }
+
         void GraphicsDevice::FreeLoadStaggingBuffers()
         {
             for (auto buffer : m_loadStaggingBuffers)

@@ -175,18 +175,18 @@ namespace engine
 
         void D3D12Mesh::FreeRamData()
         {
-            m_indexBuffer.FreeStagingBuffer();
-            m_vertexBuffer.FreeStagingBuffer();
+            _indexBuffer->FreeStagingBuffer();
+            _vertexBuffer->FreeStagingBuffer();
         }
 
         void D3D12Mesh::UpdateIndexBuffer(void* data, size_t size, size_t offset)
         {
-
+            _indexBuffer->MemCopy(data, size, offset);
         }
 
         void D3D12Mesh::UpdateVertexBuffer(void* data, size_t size, size_t offset)
         {
-
+            _vertexBuffer->MemCopy(data, size, offset);
         }
 
         void D3D12Mesh::UpdateInstanceBuffer(void* data, size_t size, size_t offset)
@@ -194,17 +194,23 @@ namespace engine
            // _instanceBuffer->MemCopy(data, size);
         }
 
-        void D3D12Mesh::Draw(ID3D12GraphicsCommandList* commandList)
+        void D3D12Mesh::Draw(ID3D12GraphicsCommandList* commandList, const std::vector<MeshPart>& parts)
         {
-            commandList->IASetIndexBuffer(&m_indexBuffer.m_view);
-            commandList->IASetVertexBuffers(0, 1, &m_vertexBuffer.m_view);
-            commandList->DrawIndexedInstanced(m_indexBuffer.m_numIndices, 1, 0, 0, 0);
+            commandList->IASetIndexBuffer(&_indexBuffer->m_view);
+            commandList->IASetVertexBuffers(0, 1, &_vertexBuffer->m_view);
+            if(parts.size()==0)
+            commandList->DrawIndexedInstanced(_indexBuffer->m_numIndices, 1, 0, 0, 0);
+            else
+                for (const MeshPart& part : parts)
+                {
+                    commandList->DrawIndexedInstanced(part.indexCount, part.instanceCount, part.firstIndex, part.vertexOffset, part.firstInstance);
+                }
         }
 
         void D3D12Mesh::Draw(CommandBuffer* commandBuffer, const std::vector<MeshPart>& parts)
         {
             D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
-            Draw(d3dcommandBuffer->m_commandList.Get());
+            Draw(d3dcommandBuffer->m_commandList.Get(), parts);
         }
     }
 }

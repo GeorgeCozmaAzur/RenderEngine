@@ -73,7 +73,7 @@ namespace engine
 			void CreateLogicalDevice(const std::vector<const char*> layers, void* pNextChain = nullptr);
 
 			// Returns the name of the device
-			char* GetDeviceName()
+			virtual char* GetDeviceName()
 			{
 				return m_properties.deviceName;
 			}
@@ -99,9 +99,6 @@ namespace engine
 
 			// Gets a geometry buffer
 			VulkanBuffer* GetGeometryBuffer(VkBufferUsageFlags usageFlags, VkQueue queue, VkDeviceSize size, void* data = nullptr, VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-			// Destroys a buffer
-			void DestroyBuffer(Buffer* buffer);
 
 			// Gets a texture from a file
 			VulkanTexture* GetTexture(TextureData* data, VkQueue copyQueue,

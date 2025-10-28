@@ -292,6 +292,9 @@ public:
 		//pipelineMT = m_device->GetPipeline(engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/shaders" + GetVertexShadersExt(), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
 		pipelineMT = m_device->GetPipeline(engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/scene" + GetVertexShadersExt(), "VSMain",
 			engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/scene" + GetFragShadersExt(), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
+
+		PrepareUI();
+
 		if (m_loadingCommandBuffer)	
 		{
 			// Close the command list and execute it to begin the initial GPU setup.
@@ -348,6 +351,8 @@ public:
 
 			for (auto m : meshesplane)
 				m->Draw(m_drawCommandBuffers[i]);
+
+			DrawUI(m_drawCommandBuffers[i]);
 			m_mainRenderPass->End(m_drawCommandBuffers[i], i);
 
 			m_drawCommandBuffers[i]->End();
@@ -362,7 +367,7 @@ public:
 	void Prepare()
 	{
 		init();
-		PrepareUI();
+		
 		BuildCommandBuffers();
 		prepared = true;
 	}
@@ -407,6 +412,13 @@ public:
 	virtual void ViewChanged()
 	{
 		updateUniformBuffers();
+	}
+
+	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay* overlay)
+	{
+		if (overlay->header("Settings")) {
+
+		}
 	}
 
 };

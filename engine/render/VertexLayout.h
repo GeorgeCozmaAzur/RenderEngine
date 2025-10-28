@@ -71,6 +71,7 @@ namespace engine
 			{
 				switch (component)
 				{
+					case VERTEX_COMPONENT_POSITION2D:
 					case VERTEX_COMPONENT_POSITION:	return "POSITION";
 
 					case VERTEX_COMPONENT_UV:			return "TEXCOORD";

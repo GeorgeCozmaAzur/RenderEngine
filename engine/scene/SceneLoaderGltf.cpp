@@ -394,7 +394,7 @@ namespace engine
 						case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
 							const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
 							for (size_t index = 0; index < accessor.count; index++) {
-								geometry->m_indices[index] = buf[index];
+								geometry->m_indices[index] = (uint32_t)buf[index];
 							}
 							break;
 						}

@@ -6,15 +6,15 @@
 #include <vector>
 
 #include "VulkanApplication.h"
-//#include "D3D12Application.h"
+#include "D3D12Application.h"
 
 using namespace engine;
 
-class VulkanExample : public VulkanApplication
+class VulkanExample : public D3D12Application
 {
 public:
 
-	VulkanExample() : VulkanApplication(true)
+	VulkanExample() : D3D12Application(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -36,7 +36,21 @@ public:
 
 	void init()
 	{	
+		if (m_loadingCommandBuffer)
+			m_loadingCommandBuffer->Begin();
 
+		PrepareUI();
+
+		if (m_loadingCommandBuffer)
+		{
+			// Close the command list and execute it to begin the initial GPU setup.
+			m_loadingCommandBuffer->End();
+			SubmitOnQueue(m_loadingCommandBuffer);
+		}
+
+		WaitForDevice();
+
+		m_device->FreeLoadStaggingBuffers();
 	}
 
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
@@ -62,7 +76,7 @@ public:
 
 			//draw here
 
-			//DrawUI(m_drawCommandBuffers[i]);
+			DrawUI(m_drawCommandBuffers[i]);
 
 			m_mainRenderPass->End(m_drawCommandBuffers[i], i);
 
@@ -80,7 +94,7 @@ public:
 	{
 		init();
 		setupDescriptorPool();
-		PrepareUI();
+		
 		BuildCommandBuffers();
 		prepared = true;
 	}

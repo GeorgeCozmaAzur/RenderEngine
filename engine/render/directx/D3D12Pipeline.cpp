@@ -9,7 +9,7 @@ namespace engine
 {
     namespace render
     {
-        inline DXGI_FORMAT GetVertexFormat(uint32_t size)
+        /*inline DXGI_FORMAT GetVertexFormat(uint32_t size)
         {
             switch (size)
             {
@@ -21,6 +21,37 @@ namespace engine
 
             case 16:	
             default:    return DXGI_FORMAT_R32G32B32A32_FLOAT;
+            }
+        }*/
+
+        DXGI_FORMAT GetDXFormat(Component component)
+        {
+            switch (component)
+            {
+            case VERTEX_COMPONENT_UV:
+            case VERTEX_COMPONENT_POSITION2D:	return DXGI_FORMAT_R32G32_FLOAT;
+
+            case VERTEX_COMPONENT_DUMMY_FLOAT:	return DXGI_FORMAT_R32_FLOAT;
+
+            case VERTEX_COMPONENT_DUMMY_INT:	return DXGI_FORMAT_R32_SINT;
+
+            case VERTEX_COMPONENT_COLOR_UINT:	return DXGI_FORMAT_R8G8B8A8_UNORM;
+
+            case VERTEX_COMPONENT_TANGENT4:		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+            case VERTEX_COMPONENT_DUMMY_VEC4:	return DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+            default:							return DXGI_FORMAT_R32G32B32_FLOAT;
+            }
+        }
+
+        inline D3D12_CULL_MODE ToD3DCullMode(CullMode cullMode) {
+            switch (cullMode) {
+            case CullMode::NONE: return D3D12_CULL_MODE_NONE;
+            case CullMode::FRONT: return D3D12_CULL_MODE_FRONT;
+            case CullMode::BACK: return D3D12_CULL_MODE_BACK;
+            case CullMode::FRONTBACK: return D3D12_CULL_MODE_NONE;
+            default: return D3D12_CULL_MODE_NONE;
             }
         }
 
@@ -66,7 +97,7 @@ namespace engine
                         properties.vertexConstantBlockSize / 4,   // number of 32-bit values
                         bsrcvb,    // register (b1)
                         0,    // space
-                        D3D12_SHADER_VISIBILITY_PIXEL);
+                        D3D12_SHADER_VISIBILITY_ALL);
                     m_constantsShaderRegister = i;
                 }
 
@@ -137,11 +168,12 @@ namespace engine
                 std::vector<std::string> componentNames(vlayout->m_components[0].size());
 
                 std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs(vlayout->m_components[0].size());
+                UINT offset = 0;
                 for (int i = 0; i < inputElementDescs.size(); i++)
                 {
-                    UINT offset = i == 0 ? 0 : vlayout->GetComponentSize(vlayout->m_components[0][i-1]);
+                    offset += (i == 0 ? 0 : vlayout->GetComponentSize(vlayout->m_components[0][i-1]));
                     componentNames[i] = vlayout->GetComponentName(vlayout->m_components[0][i]);
-                    DXGI_FORMAT format = GetVertexFormat(vlayout->GetComponentSize(vlayout->m_components[0][i]));
+                    DXGI_FORMAT format = GetDXFormat(vlayout->m_components[0][i]);
                     inputElementDescs[i] = { componentNames[i].c_str(), 0, format, 0, offset, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
                 }
 
@@ -152,6 +184,23 @@ namespace engine
                     { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
                 };*/
 
+                D3D12_BLEND_DESC blendDesc = {};
+                blendDesc.AlphaToCoverageEnable = FALSE;
+                blendDesc.IndependentBlendEnable = FALSE;
+
+                auto& rtBlend = blendDesc.RenderTarget[0];
+                rtBlend.BlendEnable = TRUE;
+                rtBlend.LogicOpEnable = FALSE;
+                rtBlend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+                rtBlend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+                rtBlend.BlendOp = D3D12_BLEND_OP_ADD;
+                rtBlend.SrcBlendAlpha = D3D12_BLEND_ONE;
+                rtBlend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+                rtBlend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+                rtBlend.LogicOp = D3D12_LOGIC_OP_NOOP;
+                rtBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+
                 // Describe and create the graphics pipeline state object (PSO).
                 D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
                 psoDesc.InputLayout = { inputElementDescs.data(), (UINT)inputElementDescs.size() };
@@ -159,6 +208,8 @@ namespace engine
                 psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
                 psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
                 psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+                psoDesc.RasterizerState.CullMode = ToD3DCullMode(properties.cullMode);
+                //psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
                 //if (texturesNo == 0)
                 if(properties.depthBias == true)
                 {
@@ -166,9 +217,9 @@ namespace engine
                     psoDesc.RasterizerState.DepthBiasClamp = 0.1f;
                     psoDesc.RasterizerState.SlopeScaledDepthBias = 0.01f;
                 }
-                psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+                psoDesc.BlendState = properties.blendEnable ? blendDesc : CD3DX12_BLEND_DESC(D3D12_DEFAULT);
                 psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-                //psoDesc.DepthStencilState.DepthEnable = TRUE;
+                psoDesc.DepthStencilState.DepthEnable = properties.depthTestEnable;
                 //psoDesc.DepthStencilState.StencilEnable = FALSE;
                 psoDesc.SampleMask = UINT_MAX;
                 psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -176,6 +227,7 @@ namespace engine
                 psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
                 psoDesc.SampleDesc.Count = 1;
                 psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+                
                 ThrowIfFailed(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
             }
         }
