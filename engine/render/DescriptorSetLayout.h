@@ -15,6 +15,7 @@ namespace engine
 		enum DescriptorType
 		{
 			UNIFORM_BUFFER,
+			UNIFORM_BUFFER_DYNAMIC,
 			IMAGE_SAMPLER,
 			STORAGE_BUFFER,
 			STORAGE_IMAGE,

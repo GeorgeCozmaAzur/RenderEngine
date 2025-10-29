@@ -60,7 +60,7 @@ namespace engine
 
 			render::VulkanVertexLayout* vertex_layout = nullptr;
 
-			uniform_manager.SetDevice(device->logicalDevice);
+			//uniform_manager.SetDevice(device->logicalDevice);
 			uniform_manager.SetEngineDevice(device);
 			_device = device;
 			sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_LIGHT0_SPACE_BIASED ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION });
@@ -204,14 +204,19 @@ namespace engine
 				areTransparents.resize(pScene->mNumMaterials);
 
 				//TODO see exactly how many descriptors are needed
-				std::vector<VkDescriptorPoolSize> poolSizes =
+				/*std::vector<VkDescriptorPoolSize> poolSizes =
 				{
 					VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size())},
 					VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size())},
 					VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 				};
 
-				descriptorPool = device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);
+				descriptorPool = device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);*/
+				descriptorPool = _device->GetDescriptorPool({
+			{ render::DescriptorType::UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size()) },
+			{render::DescriptorType::IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()) },
+			{render::DescriptorType::STORAGE_IMAGE, 2 }
+					}, static_cast<uint32_t>(2 * render_objects.size()) + 5);
 
 				for (size_t i = 0; i < render_objects.size(); i++)
 				{
@@ -224,10 +229,10 @@ namespace engine
 					pScene->mMaterials[i]->GetTexture(aiTextureType_NORMALS, 0, &texturefilen);
 					pScene->mMaterials[i]->GetTexture(aiTextureType_DISPLACEMENT, 0, &texturefiled);
 
-					std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
-					buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
+					std::vector<render::Buffer*> buffersDescriptors;
+					buffersDescriptors.push_back(sceneVertexUniformBuffer);
 
-					std::vector<VkDescriptorImageInfo*> texturesDescriptors;
+					std::vector<render::Texture*> texturesDescriptors;
 
 					render::VulkanDescriptorSetLayout* currentDesclayout = nullptr;
 					render::VulkanPipeline* currentPipeline = nullptr;
@@ -254,10 +259,10 @@ namespace engine
 						//render::VulkanTexture* tex = device->GetTexture(foldername + texfilename, texFormat, copyQueue);//TODO mipmaps for every format
 						render::Texture2DData data;
 						data.LoadFromFile(foldername + texfilename, texFormat);
-						render::VulkanTexture* tex = _device->GetTexture(&data, copyQueue);
+						render::Texture* tex = _device->GetTexture(&data, copyQueue);
 						//data.Destroy();
 
-						texturesDescriptors.push_back(&tex->m_descriptor);
+						texturesDescriptors.push_back(tex);
 
 						if (pScene->mMaterials[i]->GetTextureCount(aiTextureType_NORMALS) > 0)
 						{
@@ -267,16 +272,16 @@ namespace engine
 							data.LoadFromFile(foldername + texfilenamen, texFormat);
 							render::VulkanTexture* tex = _device->GetTexture(&data, copyQueue);
 							//data.Destroy();
-							texturesDescriptors.push_back(&tex->m_descriptor);
+							texturesDescriptors.push_back(tex);
 							for(auto tex : globalTextures)
-								texturesDescriptors.push_back(&tex->m_descriptor);
+								texturesDescriptors.push_back(tex);
 
 							std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 							{ { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT } };
 							if (sceneFragmentUniformBuffer)
 							{
 								bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
-								buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
+								buffersDescriptors.push_back(sceneFragmentUniformBuffer);
 							}
 
 							for (auto td : texturesDescriptors)
@@ -299,14 +304,14 @@ namespace engine
 								continue;
 
 							for (auto tex : globalTextures)
-								texturesDescriptors.push_back(&tex->m_descriptor);
+								texturesDescriptors.push_back(tex);
 
 							std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 							{ { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT } };
 							if (sceneFragmentUniformBuffer)
 							{
 								bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
-								buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
+								buffersDescriptors.push_back(sceneFragmentUniformBuffer);
 							}
 
 							for (auto td : texturesDescriptors)
@@ -343,7 +348,7 @@ namespace engine
 						individualFragmentUniformBuffers[i] = frag_buffer;
 
 						for (auto tex : globalTextures)
-							texturesDescriptors.push_back(&tex->m_descriptor);
+							texturesDescriptors.push_back(tex);
 
 						std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> bindings
 						{ 
@@ -353,11 +358,11 @@ namespace engine
 						if (sceneFragmentUniformBuffer)
 						{
 							bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
-							buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
+							buffersDescriptors.push_back(sceneFragmentUniformBuffer);
 						}
 
 						bindings.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
-						buffersDescriptors.push_back(&frag_buffer->m_descriptor);
+						buffersDescriptors.push_back(frag_buffer);
 
 						for (auto td : texturesDescriptors)
 							bindings.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT });
@@ -393,9 +398,10 @@ namespace engine
 						render_objects[i]->SetDescriptorSetLayout(currentDesclayout);
 						render_objects[i]->_vertexLayout = currentVertexLayout;
 						render_objects[i]->AddPipeline(currentPipeline);
-						render::VulkanDescriptorSet* desc = device->GetDescriptorSet(descriptorPool, buffersDescriptors, texturesDescriptors,
-							currentDesclayout->m_descriptorSetLayout, currentDesclayout->m_setLayoutBindings);
-						render_objects[i]->AddDescriptor(desc);
+						/*render::VulkanDescriptorSet* desc = device->GetDescriptorSet(descriptorPool, buffersDescriptors, texturesDescriptors,
+							currentDesclayout->m_descriptorSetLayout, currentDesclayout->m_setLayoutBindings);*/
+						render::DescriptorSet* set = _device->GetDescriptorSet(currentDesclayout, descriptorPool, buffersDescriptors, texturesDescriptors);
+						render_objects[i]->AddDescriptor(set);
 					}
 				}
 
@@ -632,10 +638,10 @@ namespace engine
 
 					render::VulkanDescriptorSetLayout* currentdescayout = nullptr;
 
-					std::vector<VkDescriptorBufferInfo*> buffersDescriptors{ &shadow_uniform_buffer->m_descriptor };
+					std::vector<render::Buffer*> buffersDescriptors{ shadow_uniform_buffer };
 					if (individualFragmentUniformBuffers[ro_index])
 					{
-						buffersDescriptors.push_back(&individualFragmentUniformBuffers[ro_index]->m_descriptor);
+						buffersDescriptors.push_back(individualFragmentUniformBuffers[ro_index]);
 						currentdescayout = descColorLayout;
 					}
 					else
@@ -674,8 +680,9 @@ namespace engine
 						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache, props);
 					sro->AddPipeline(p);			
 
-					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, {},
-						currentdescayout->m_descriptorSetLayout, currentdescayout->m_setLayoutBindings);
+					/*render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, {},
+						currentdescayout->m_descriptorSetLayout, currentdescayout->m_setLayoutBindings);*/
+					render::DescriptorSet* set = _device->GetDescriptorSet(currentdescayout, descriptorPool, buffersDescriptors, {});
 					sro->AddDescriptor(set);
 
 					vlayouts.push_back(l);
@@ -772,7 +779,7 @@ namespace engine
 			uniform_manager.UpdateGlobalParams(UNIFORM_PROJECTION_VIEW, &viewproj, 0, sizeof(viewproj));
 			glm::vec4 bias_near_far_pow = glm::vec4(0.002f, m_camera->getNearClip(), m_camera->getFarClip(), 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &bias_near_far_pow, 0, sizeof(bias_near_far_pow));*/
-			uniform_manager.Update(copyQueue);
+			uniform_manager.Update(nullptr);
 		}
 
 		void SceneLoader::UpdateView(float timer, VkQueue copyQueue)
@@ -788,7 +795,7 @@ namespace engine
 			glm::vec4 bias_near_far_pow = glm::vec4(0.002f, m_camera->getNearClip(), m_camera->getFarClip(), 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &bias_near_far_pow, 0, sizeof(bias_near_far_pow));*/
 
-			uniform_manager.Update(copyQueue);
+			uniform_manager.Update(nullptr);
 		}
 
 		SceneLoader::~SceneLoader()

@@ -59,7 +59,7 @@ public:
 	} modelUniformFS;
 	render::VulkanBuffer* modelFragmentUniformBuffer;
 
-	render::VulkanBuffer* sceneVertexUniformBuffer;
+	render::Buffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 
 	struct {
@@ -174,7 +174,7 @@ public:
 	void SetupUniforms()
 	{
 		//uniforms
-		uniform_manager.SetDevice(vulkanDevice->logicalDevice);
+		uniform_manager.SetDescriptorPool(descriptorPool);
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
@@ -202,7 +202,7 @@ public:
 		//cucu.y = -cucu.y;
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.GetPosition()));
 
-		uniform_manager.Update(queue);
+		uniform_manager.Update(nullptr);
 
 		modelFragmentUniformBuffer->MemCopy(&modelUniformFS, sizeof(modelUniformFS));
 

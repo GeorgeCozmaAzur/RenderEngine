@@ -51,7 +51,7 @@ namespace engine
 			return indices;
 		}
 
-		void TerrainUVSphere::Init(const std::string& filename, float radius, render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, VkDeviceSize vertexUniformBufferSize, VkDeviceSize fragmentUniformBufferSize, std::vector<render::Texture*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, render::RenderPass* renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue, int fallbackRings, int fallbackSlices)
+		void TerrainUVSphere::Init(const std::string& filename, float radius, render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::VertexLayout* vertex_layout, render::Buffer* globalUniformBufferVS, VkDeviceSize vertexUniformBufferSize, VkDeviceSize fragmentUniformBufferSize, std::vector<render::Texture*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, render::RenderPass* renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue, int fallbackRings, int fallbackSlices)
 		{
 			_vertexLayout = vertex_layout;
 

@@ -66,7 +66,7 @@ public:
 	render::VulkanTexture* bluenoise;
 	//render::VulkanTexture* envMap;
 
-	render::VulkanBuffer* sceneVertexUniformBuffer;
+	render::Buffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 
 	struct {
@@ -251,7 +251,7 @@ public:
 	void SetupUniforms()
 	{
 		//uniforms
-		uniform_manager.SetDevice(vulkanDevice->logicalDevice);
+		uniform_manager.SetDescriptorPool(descriptorPool);
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW, scene::UNIFORM_LIGHT0_SPACE ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 		uniformBufferMPVS = vulkanDevice->GetUniformBuffer(sizeof(uboVS), true, queue);
@@ -603,7 +603,7 @@ public:
 		glm::mat4 lightspace = depthProjectionMatrix * depthViewMatrix;
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_LIGHT0_SPACE, &lightspace, 0, sizeof(lightspace));
 
-		uniform_manager.Update(queue);
+		uniform_manager.Update(nullptr);
 	}
 
 	void Prepare()

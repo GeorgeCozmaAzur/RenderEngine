@@ -12,28 +12,29 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include "VulkanApplication.h"
+#include "D3D12Application.h"
 #include "scene/SimpleModel.h"
 #include "scene/UniformBuffersManager.h"
 
 using namespace engine;
 
-class VulkanExample : public VulkanApplication
+class VulkanExample : public D3D12Application
 {
 public:
 
 	render::VertexLayout* vertexLayout = nullptr;
 
 	engine::scene::SimpleModel plane;
-	render::VulkanTexture* colorMap;
+	render::Texture* colorMap;
 
-	render::VulkanBuffer* sceneVertexUniformBuffer;
+	render::Buffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 
 	glm::vec4 light_pos = glm::vec4(0.0f, -5.0f, 0.0f, 1.0f);
 
 	render::DescriptorPool* descriptorPool = nullptr;
 
-	VulkanExample() : VulkanApplication(true)
+	VulkanExample() : D3D12Application(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -41,6 +42,7 @@ public:
 		title = "Render Engine Empty Scene";
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
+		camera.SetFlipY(true);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		camera.SetPosition(glm::vec3(0.0f, 0.0f, -3.0f));
@@ -66,7 +68,7 @@ public:
 		std::vector<render::MeshData*> mdatas = plane.LoadGeometry(engine::tools::getAssetPath() + "models/chinesedragon.dae", vertexLayout, 0.1f, 1);
 		for (auto geo : mdatas)
 		{
-			plane.AddGeometry(vulkanDevice->GetMesh(geo, vertexLayout, nullptr));
+			plane.AddGeometry(m_device->GetMesh(geo, vertexLayout, m_loadingCommandBuffer));
 			delete geo;
 			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
@@ -93,15 +95,16 @@ public:
 		}*/
 		render::Texture2DData tdata;
 		tdata.LoadFromFile("./../data/textures/compass.jpg", render::GfxFormat::R8G8B8A8_UNORM);
-		colorMap = vulkanDevice->GetTexture(&tdata, queue);
+		colorMap = m_device->GetTexture(&tdata, descriptorPool, m_loadingCommandBuffer);
 		//data.Destroy();
 	}
 
 	void SetupUniforms()
 	{
 		//uniforms
-		uniform_manager.SetDevice(vulkanDevice->logicalDevice);
-		uniform_manager.SetEngineDevice(vulkanDevice);
+		//uniform_manager.SetDevice(vulkanDevice->logicalDevice);
+		uniform_manager.SetEngineDevice(m_device);
+		uniform_manager.SetDescriptorPool(descriptorPool);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 		updateUniformBuffers();
 	}
@@ -113,7 +116,7 @@ public:
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
 		};*/
-		descriptorPool = vulkanDevice->GetDescriptorPool(
+		descriptorPool = m_device->GetDescriptorPool(
 			{{render::DescriptorType::UNIFORM_BUFFER, 1},
 			{render::DescriptorType::IMAGE_SAMPLER, 1} }, 1); 
 	}
@@ -135,7 +138,7 @@ public:
 
 		/*plane.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor }, {&colorMap->m_descriptor},
 			plane._descriptorLayout->m_descriptorSetLayout, plane._descriptorLayout->m_setLayoutBindings));*/
-		plane.AddDescriptor(vulkanDevice->GetDescriptorSet(plane._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer }, { colorMap }));
+		plane.AddDescriptor(m_device->GetDescriptorSet(plane._descriptorLayout, descriptorPool, { sceneVertexUniformBuffer }, { colorMap }));
 	}
 
 	void setupPipelines()
@@ -144,22 +147,35 @@ public:
 		/*plane.AddPipeline(vulkanDevice->GetPipeline(
 			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv","", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv","",
 			vertexLayout, plane._descriptorLayout, props, mainRenderPass));*/
-		plane.AddPipeline(vulkanDevice->GetPipeline(
-			engine::tools::getAssetPath() + GetShadersPath() +"basic/phong" + GetVertexShadersExt(), "", engine::tools::getAssetPath() + GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "",
-			vertexLayout, plane._descriptorLayout, props, mainRenderPass));
+		plane.AddPipeline(m_device->GetPipeline(
+			engine::tools::getAssetPath() + GetShadersPath() +"basic/phong" + GetVertexShadersExt(), "VSMain", engine::tools::getAssetPath() + GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "PSMainTextured",
+			vertexLayout, plane._descriptorLayout, props, m_mainRenderPass));
 	}
 
 	void init()
 	{	
+		if (m_loadingCommandBuffer)
+			m_loadingCommandBuffer->Begin();
+
+		setupDescriptorPool();
 		setupGeometry();
 		SetupTextures();
 		SetupUniforms();
-		setupDescriptorPool();
 		SetupDescriptors();
 		setupPipelines();
-	}
+		PrepareUI();
 
-	
+		if (m_loadingCommandBuffer)
+		{
+			// Close the command list and execute it to begin the initial GPU setup.
+			m_loadingCommandBuffer->End();
+			SubmitOnQueue(m_loadingCommandBuffer);
+		}
+
+		WaitForDevice();
+
+		m_device->FreeLoadStaggingBuffers();
+	}	
 
 	void BuildCommandBuffers()
 	{
@@ -168,14 +184,15 @@ public:
 			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 			m_drawCommandBuffers[i]->Begin();
 
-			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
+			m_mainRenderPass->Begin(m_drawCommandBuffers[i], i);
 
+			descriptorPool->Draw(m_drawCommandBuffers[i]);
 			//draw here
 			plane.Draw(m_drawCommandBuffers[i]);
 
 			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(m_drawCommandBuffers[i]);
+			m_mainRenderPass->End(m_drawCommandBuffers[i], i);
 
 			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 			m_drawCommandBuffers[i]->End();
@@ -193,15 +210,12 @@ public:
 		glm::vec3 cucu = -camera.GetPosition();
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(cucu));
 
-		uniform_manager.Update(queue);
+		uniform_manager.Update(nullptr);
 	}
 
 	void Prepare()
 	{
-		
 		init();
-		
-		PrepareUI();
 		BuildCommandBuffers();
 		prepared = true;
 	}

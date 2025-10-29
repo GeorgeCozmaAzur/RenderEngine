@@ -68,7 +68,7 @@ namespace engine
 			Camera* m_camera = nullptr;
 			UniformBuffersManager uniform_manager;
 			std::vector<render::VulkanDescriptorSetLayout*> descriptorSetlayouts;
-			VkDescriptorPool descriptorPool;
+			render::DescriptorPool* descriptorPool;
 			std::vector<RenderObject*> render_objects;
 
 			std::string forwardShadersFolder = "basic";
@@ -82,7 +82,7 @@ namespace engine
 			struct {
 				glm::mat4 depthMVP;
 			} uboShadowOffscreenVS;
-			render::VulkanBuffer* shadow_uniform_buffer;
+			render::Buffer* shadow_uniform_buffer;
 			render::VulkanRenderPass* shadowPass;
 			render::VulkanTexture* shadowmap;
 			render::VulkanTexture* shadowmapColor;
@@ -90,9 +90,9 @@ namespace engine
 
 			std::vector<render::VulkanTexture*> globalTextures;
 
-			render::VulkanBuffer* sceneVertexUniformBuffer;
+			render::Buffer* sceneVertexUniformBuffer;
 
-			render::VulkanBuffer* sceneFragmentUniformBuffer = nullptr;
+			render::Buffer* sceneFragmentUniformBuffer = nullptr;
 
 			std::vector<render::VulkanBuffer*> individualFragmentUniformBuffers;
 			std::vector<bool> areTransparents;//TODO store all uniform data in an array because maybe we want to modify it at runtime

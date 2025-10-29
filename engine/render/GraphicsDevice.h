@@ -52,7 +52,7 @@ namespace engine
 
 			virtual DescriptorSetLayout* GetDescriptorSetLayout(std::vector<LayoutBinding> bindings) = 0;
 
-			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures) = 0;
+			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures, size_t dynamicAlignment = 0) = 0;
 
 			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, Texture *colorTexture, Texture *depthTexture) = 0;
 

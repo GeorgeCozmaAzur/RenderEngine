@@ -37,26 +37,27 @@ namespace engine
 		struct BufferEntry
 		{
 			int mask = 0;
-			render::VulkanBuffer *staging = nullptr;
-			render::VulkanBuffer *deviceLocal = nullptr;
+			render::Buffer *staging = nullptr;
+			render::Buffer *deviceLocal = nullptr;
 		};
 
 		class VulkanDevice;
 
 		class UniformBuffersManager
 		{
-			VkDevice _device = VK_NULL_HANDLE;
-			render::VulkanDevice* _engine_device;
-			VkCommandBuffer _copyCommand = VK_NULL_HANDLE;
+			//VkDevice _device = VK_NULL_HANDLE;
+			render::GraphicsDevice* _device;
+			render::DescriptorPool* _descriptorPool;
+			//render::CommandBuffer* _copyCommand = nullptr;
 			std::vector<BufferEntry> m_buffers;
 			std::unordered_map<UniformKey, UniformDataEntry*> m_uniforms;
 
 		public:
-			void SetDevice(VkDevice device) { _device = device; }
-			void SetEngineDevice(render::VulkanDevice* device);
-			render::VulkanBuffer* GetGlobalUniformBuffer(std::vector<UniformKey>);
+			void SetDescriptorPool(render::DescriptorPool* pool) { _descriptorPool = pool; }
+			void SetEngineDevice(render::GraphicsDevice* device);
+			render::Buffer* GetGlobalUniformBuffer(std::vector<UniformKey>);
 			void UpdateGlobalParams(UniformKey, void* value, size_t offset, size_t size);
-			void Update(VkQueue queue);
+			void Update(render::CommandBuffer *commandBuffer);
 			void Destroy();
 			~UniformBuffersManager() { Destroy(); }
 		};

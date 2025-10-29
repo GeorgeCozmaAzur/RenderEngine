@@ -1,5 +1,6 @@
 #include "UniformBuffersManager.h"
 #include "render/vulkan/VulkanDevice.h"
+#include <assert.h>
 
 namespace engine
 {
@@ -21,11 +22,11 @@ namespace engine
 			default:							return 0;
 			}
 		}
-		void UniformBuffersManager::SetEngineDevice(render::VulkanDevice* device) {
-			_engine_device = device; _copyCommand = _engine_device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
+		void UniformBuffersManager::SetEngineDevice(render::GraphicsDevice* device) {
+			_device = device;
 		}
 
-		render::VulkanBuffer* UniformBuffersManager::GetGlobalUniformBuffer(std::vector<UniformKey> keys)
+		render::Buffer* UniformBuffersManager::GetGlobalUniformBuffer(std::vector<UniformKey> keys)
 		{
 			std::map<int, render::VulkanBuffer*>::iterator it;
 
@@ -54,15 +55,21 @@ namespace engine
 				total_buffer_size += GetSize(key);
 			}
 
-			BufferEntry bentry; bentry.mask = mask;
-			bentry.staging = _engine_device->GetBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				total_buffer_size);
-			bentry.deviceLocal = _engine_device->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				total_buffer_size);
+			assert(total_buffer_size < 256);
 
-			VK_CHECK_RESULT(bentry.staging->Map());
+			total_buffer_size = 256;
+
+			BufferEntry bentry; bentry.mask = mask;
+			/*bentry.staging = _engine_device->GetBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				total_buffer_size);*/
+			/*bentry.deviceLocal = _engine_device->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				total_buffer_size);*/
+
+			//VK_CHECK_RESULT(bentry.staging->Map());
+
+			bentry.deviceLocal = _device->GetUniformBuffer(total_buffer_size, nullptr, _descriptorPool);
 			
 			m_buffers.push_back(bentry);
 
@@ -86,7 +93,7 @@ namespace engine
 			}
 		}
 
-		void UniformBuffersManager::Update(VkQueue queue)
+		void UniformBuffersManager::Update(render::CommandBuffer* commandBuffer)
 		{
 			for (auto buffer : m_buffers)
 			{
@@ -99,21 +106,22 @@ namespace engine
 					{
 						if (value.second->dirty)//TODO do dirty functionality
 						{
-							buffer.staging->MemCopy(value.second->data, value.second->size, old_size);
+							//buffer.staging->MemCopy(value.second->data, value.second->size, old_size);
+							buffer.deviceLocal->MemCopy(value.second->data, value.second->size, old_size);
 							value.second->dirty = false;
 							alldirty = true;
 						}
 						old_size += value.second->size;
 					}
 				}
-				if (alldirty)
+				/*if (alldirty)
 				{
 					VkCommandBufferBeginInfo cmdBufInfo{};
 					cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 					VK_CHECK_RESULT(vkBeginCommandBuffer(_copyCommand, &cmdBufInfo));
 					_engine_device->CopyBuffer(buffer.staging, buffer.deviceLocal, _copyCommand);
 					_engine_device->FlushCommandBuffer(_copyCommand, queue, false);
-				}
+				}*/
 			}
 		}
 

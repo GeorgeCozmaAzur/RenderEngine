@@ -33,7 +33,7 @@ public:
 	render::VulkanTexture* leavestex;
 	//render::VulkanTexture* perlinnoise;
 
-	render::VulkanBuffer* sceneVertexUniformBuffer;
+	render::Buffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 	struct {
 		glm::vec4 wind;
@@ -138,7 +138,7 @@ public:
 	void SetupUniforms()
 	{
 		//uniforms
-		uniform_manager.SetDevice(vulkanDevice->logicalDevice);
+		uniform_manager.SetDescriptorPool(descriptorPool);
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
@@ -259,7 +259,7 @@ public:
 
 		modelUniformVS.wind = glm::vec4(1.0f, 0.0f, 0.0f, 0.5f);
 
-		uniform_manager.Update(queue);
+		uniform_manager.Update(nullptr);
 	}
 
 	void Prepare()

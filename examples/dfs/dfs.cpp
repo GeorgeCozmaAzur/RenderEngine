@@ -48,7 +48,7 @@ public:
 	//scene::SceneLoader scene;
 	//std::vector<scene::RenderObject*> scene_render_objects;
 	engine::scene::SimpleModel plane;
-	render::VulkanBuffer* sceneVertexUniformBuffer;
+	render::Buffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 
 	render::DescriptorPool* descriptorPool;
@@ -274,7 +274,7 @@ public:
 
 		textureDFS = vulkanDevice->GetTextureStorage({ TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH }, VK_FORMAT_R16G16B16A16_SFLOAT, queue, VK_IMAGE_VIEW_TYPE_3D);
 
-		uniform_manager.SetDevice(vulkanDevice->logicalDevice);
+		uniform_manager.SetDescriptorPool(descriptorPool);
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 		updateUniformBuffers();
@@ -367,6 +367,26 @@ public:
 			VK_CHECK_RESULT(vkEndCommandBuffer(drawShadowCmdBuffers[i]));
 		}
 	}*/
+	/*void addBufferToComputeBarrier(VkCommandBuffer commandBuffer)
+	{
+		VkBufferMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+		barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+		barrier.buffer = myBuffer;
+		barrier.offset = 0;
+		barrier.size = VK_WHOLE_SIZE;
+
+		vkCmdPipelineBarrier(
+			commandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			0,
+			0, nullptr,
+			1, &barrier,
+			0, nullptr
+		);
+	}*/
 
 	void addComputeToGraphicsBarriers(VkCommandBuffer commandBuffer)
 	{
@@ -374,8 +394,8 @@ public:
 		bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		bufferBarrier.srcAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-		bufferBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+		bufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		bufferBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 		bufferBarrier.size = VK_WHOLE_SIZE;
 		std::vector<VkBufferMemoryBarrier> bufferBarriers;
 		bufferBarrier.buffer = indexStorageBuffer->GetVkBuffer();
@@ -405,6 +425,7 @@ public:
 			drawComputeCmdBuffers[i]->Begin();
 			VkCommandBuffer vkbuffer = ((render::VulkanCommandBuffer*)drawComputeCmdBuffers[i])->m_vkCommandBuffer;
 
+			addComputeToGraphicsBarriers(vkbuffer);
 			// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
 			/*scene.shadowmap->PipelineBarrier(drawComputeCmdBuffers[i],
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
@@ -481,7 +502,7 @@ public:
 		glm::vec3 cucu = -camera.GetPosition();
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(cucu));
 
-		uniform_manager.Update(queue);
+		uniform_manager.Update(nullptr);
 	}
 
 	void Prepare()

@@ -815,7 +815,7 @@ namespace engine
             return layout;
         }
 
-        DescriptorSet* VulkanDevice::GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures)
+        DescriptorSet* VulkanDevice::GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures, size_t dynamicAlignment)
         {
             VulkanDescriptorSetLayout* vklayout = dynamic_cast<VulkanDescriptorSetLayout*>(layout);
             VulkanDescriptorPool* vkpool = dynamic_cast<VulkanDescriptorPool*>(pool);
@@ -831,7 +831,7 @@ namespace engine
                 VulkanTexture* vktexture = dynamic_cast<VulkanTexture*>(textures[i]);
                 texturesDescriptors[i]= &vktexture->m_descriptor;
             }
-            VulkanDescriptorSet* set = GetDescriptorSet(vkpool->m_vkPool, buffersDescriptors, texturesDescriptors, vklayout->m_descriptorSetLayout, vklayout->m_setLayoutBindings);
+            VulkanDescriptorSet* set = GetDescriptorSet(vkpool->m_vkPool, buffersDescriptors, texturesDescriptors, vklayout->m_descriptorSetLayout, vklayout->m_setLayoutBindings, dynamicAlignment);
             //m_descriptorSets.push_back(set);
             return set;
         }

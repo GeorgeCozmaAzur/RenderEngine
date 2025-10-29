@@ -154,7 +154,7 @@ namespace engine
 
 		}
 
-		void DrawDebugBBs::Init(std::vector<std::vector<glm::vec3>> boundries, render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::VulkanBuffer* globalUniformBufferVS, VkQueue queue, render::RenderPass* renderPass, VkPipelineCache pipelineCache, uint32_t constantSize)
+		void DrawDebugBBs::Init(std::vector<std::vector<glm::vec3>> boundries, render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::Buffer* globalUniformBufferVS, VkQueue queue, render::RenderPass* renderPass, VkPipelineCache pipelineCache, uint32_t constantSize)
 		{
 			_vertexLayout = &debugVertexLayout;
 

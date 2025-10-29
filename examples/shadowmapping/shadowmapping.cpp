@@ -93,7 +93,7 @@ public:
 		VulkanDescriptorSetLayout *filter_layout;
 	} layouts;
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	struct {
 		VulkanPipeline *quad;
@@ -104,9 +104,9 @@ public:
 	} pipelines;
 
 	struct {
-		VulkanDescriptorSet *offscreen;
-		VulkanDescriptorSet *scene;
-		VulkanDescriptorSet *tree;
+		DescriptorSet *offscreen;
+		DescriptorSet *scene;
+		DescriptorSet *tree;
 		//VulkanDescriptorSet *filterSM;
 	} descriptorSets;
 
@@ -261,21 +261,26 @@ public:
 	void setupDescriptorPool()
 	{
 		// Example uses three ubos and two image samplers
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 12},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}
 		};
 
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 4);*/
+		descriptorPool = m_device->GetDescriptorPool(
+			{ {render::DescriptorType::UNIFORM_BUFFER, 12},
+			{render::DescriptorType::IMAGE_SAMPLER, 6} }, 4);
 	}
 
 	void setupDescriptorSets()
 	{
-		descriptorSets.offscreen = vulkanDevice->GetDescriptorSet(descriptorPool, {&uniformBuffers.offscreen->m_descriptor }, {},
-			layouts.offscreen_layout->m_descriptorSetLayout, layouts.offscreen_layout->m_setLayoutBindings);
+		/*descriptorSets.offscreen = vulkanDevice->GetDescriptorSet(descriptorPool, {&uniformBuffers.offscreen->m_descriptor }, {},
+			layouts.offscreen_layout->m_descriptorSetLayout, layouts.offscreen_layout->m_setLayoutBindings);*/
+		descriptorSets.offscreen = vulkanDevice->GetDescriptorSet(layouts.offscreen_layout, descriptorPool, { uniformBuffers.offscreen }, {});
 
-		descriptorSets.scene = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.scene->m_descriptor, &uniformBufferFS->m_descriptor }, { &shadowmapColor->m_descriptor },
-			layouts.scene_layout->m_descriptorSetLayout, layouts.scene_layout->m_setLayoutBindings);
+		/*descriptorSets.scene = vulkanDevice->GetDescriptorSet(descriptorPool, { &uniformBuffers.scene->m_descriptor, &uniformBufferFS->m_descriptor }, { &shadowmapColor->m_descriptor },
+			layouts.scene_layout->m_descriptorSetLayout, layouts.scene_layout->m_setLayoutBindings);*/
+		descriptorSets.scene = vulkanDevice->GetDescriptorSet(layouts.scene_layout, descriptorPool, { uniformBuffers.scene, uniformBufferFS }, { shadowmapColor });
 
 		for(auto scene:scenes)
 		scene->AddDescriptor(descriptorSets.scene);
@@ -316,7 +321,7 @@ public:
 	void prepareUniformBuffers()
 	{
 		// Debug quad vertex shader uniform buffer block		
-		uniform_manager.SetDevice(device);
+		uniform_manager.SetDescriptorPool(descriptorPool);
 		uniform_manager.SetEngineDevice(vulkanDevice);	
 
 		//uniformBuffers.tree = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW });

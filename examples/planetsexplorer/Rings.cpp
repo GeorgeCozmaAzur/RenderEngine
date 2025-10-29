@@ -49,7 +49,7 @@ namespace engine
 			return indices;
 		}
 
-		void Rings::Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::VertexLayout* vertex_layout, render::VulkanBuffer* globalUniformBufferVS, std::vector<render::Texture*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, render::RenderPass* renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue)
+		void Rings::Init(float innerRadius, float outerRadius, int resolution, render::VulkanDevice* vulkanDevice, render::DescriptorPool* descriptorPool, render::VertexLayout* vertex_layout, render::Buffer* globalUniformBufferVS, std::vector<render::Texture*> texturesDescriptors, std::string vertexShaderFilename, std::string fragmentShaderFilename, render::RenderPass* renderPass, VkPipelineCache pipelineCache, render::PipelineProperties pipelineProperties, VkQueue queue)
 		{
 			_vertexLayout = vertex_layout;
 

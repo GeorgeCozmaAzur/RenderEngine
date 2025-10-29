@@ -180,21 +180,23 @@ public:
 			light_colors[i].z = randomFloat();
 		}
 
-		for (auto geo : models.plane.m_geometries)
+		for (auto geo : pmd)
 		{
 			//geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			//geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
-		
+			models.plane.AddGeometry(vulkanDevice->GetMesh(geo, &vertexLayout, nullptr));
 		}
 
-		for (auto geo : models.example.m_geometries)
+		for (auto geo : emd)
 		{
 			/*geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 			geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 			geo->SetInstanceBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 				queue, models_positions.size() * sizeof(glm::vec3), models_positions.data(),
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));*/
-
+			geo->m_instanceBufferSize = models_positions.size() * sizeof(glm::vec3);
+			geo->_instanceExternalData = models_positions.data();
+			models.example.AddGeometry(vulkanDevice->GetMesh(geo, &vertexLayoutInstanced, nullptr));
 		}
 
 		//setup layouts

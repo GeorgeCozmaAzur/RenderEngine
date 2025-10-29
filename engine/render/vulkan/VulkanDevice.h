@@ -208,7 +208,7 @@ namespace engine
 
 			virtual DescriptorSetLayout* GetDescriptorSetLayout(std::vector<LayoutBinding> bindings);
 
-			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures);
+			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures, size_t dynamicAlignment = 0);
 
 			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, Texture* colorTexture, Texture* depthTexture);
 

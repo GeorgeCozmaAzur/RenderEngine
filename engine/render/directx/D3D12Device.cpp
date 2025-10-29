@@ -112,7 +112,7 @@ namespace engine
 			return layout;
 		}
 
-		DescriptorSet* D3D12Device::GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures)
+		DescriptorSet* D3D12Device::GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures, size_t dynamicAlignment)
 		{
 			D3D12DescriptorTable* table = new D3D12DescriptorTable();
 			std::vector <CD3DX12_GPU_DESCRIPTOR_HANDLE> bufferHandles(buffers.size());

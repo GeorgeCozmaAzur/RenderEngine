@@ -202,8 +202,8 @@ public:
 		scene.lightingTexturedFS = "phongtexturedshadowmap_vf.frag.spv";
 		scene.normalmapVS = "normalmapshadowmap.vert.spv";
 		scene.normalmapFS = "normalmapshadowmap_vf.frag.spv";
-		scene.sceneFragmentUniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(uboFSscene));
-		VK_CHECK_RESULT(scene.sceneFragmentUniformBuffer->Map());
+		scene.sceneFragmentUniformBuffer = m_device->GetUniformBuffer(sizeof(uboFSscene), nullptr, descriptorPool);
+		//VK_CHECK_RESULT(scene.sceneFragmentUniformBuffer->Map());
 		/*scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/sponza/", "crytek-sponza-huge-vray.obj", 0.01, vulkanDevice, queue, mainRenderPass->GetRenderPass(), pipelineCache);
 		scene.light_pos = glm::vec4(34.0f, -90.0f, 40.0f, 1.0f);*/
 		scene::ModelCreateInfo2 modelCreateInfo(1.0, 1.0f, glm::vec3(0.0,0,0.0));

@@ -85,7 +85,7 @@ namespace engine
 		{
 			render::VulkanVertexLayout* vertex_layout = nullptr;
 
-			uniform_manager.SetDevice(_device->logicalDevice);
+			//uniform_manager.SetDevice(_device->logicalDevice);
 			uniform_manager.SetEngineDevice(_device);
 			sceneVertexUniformBuffer = deferred == false ? uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION }) :
 				uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_CAMERA_POSITION });
@@ -121,14 +121,19 @@ namespace engine
 			if (deferred)
 				blendAttachmentStatestrans.push_back(transparentState);
 
-			std::vector<VkDescriptorPoolSize> poolSizes =
+			/*std::vector<VkDescriptorPoolSize> poolSizes =
 			{
 				VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size())},
 				VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size())},
 				VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 			};
+			descriptorPool = _device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);*/
+			descriptorPool = _device->GetDescriptorPool({
+			{ render::DescriptorType::UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size()) },
+			{render::DescriptorType::IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()) },
+			{render::DescriptorType::STORAGE_IMAGE, 2 }
+				}, static_cast<uint32_t>(2 * render_objects.size()) + 5);
 
-			descriptorPool = _device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);
 			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
 			{
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
@@ -181,11 +186,11 @@ namespace engine
 
 			for (size_t i = 0; i < input.materials.size(); i++) {
 				render_objects[i] = new RenderObject;
-				std::vector<VkDescriptorImageInfo*> texturesDescriptors;
-				std::vector<VkDescriptorBufferInfo*> buffersDescriptors;
-				buffersDescriptors.push_back(&sceneVertexUniformBuffer->m_descriptor);
+				std::vector<render::Texture*> texturesDescriptors;
+				std::vector<render::Buffer*> buffersDescriptors;
+				buffersDescriptors.push_back(sceneVertexUniformBuffer);
 				if(sceneFragmentUniformBuffer)
-				buffersDescriptors.push_back(&sceneFragmentUniformBuffer->m_descriptor);
+				buffersDescriptors.push_back(sceneFragmentUniformBuffer);
 				tinygltf::Material glTFMaterial = input.materials[i];
 				fdata.Reset();
 				hasNormalmap = false;
@@ -197,34 +202,36 @@ namespace engine
 				}
 				if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
 					int texIndex = modelsTexturesIds[glTFMaterial.values["baseColorTexture"].TextureIndex()];
-					texturesDescriptors.push_back(&modelsTextures[texIndex]->m_descriptor);
+					texturesDescriptors.push_back(modelsTextures[texIndex]);
 				}
 				else
 				{
-					texturesDescriptors.push_back(&m_placeholder->m_descriptor);
+					texturesDescriptors.push_back(m_placeholder);
 				}
 				if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) {
-					texturesDescriptors.push_back(&modelsTextures[modelsTexturesIds[glTFMaterial.values["metallicRoughnessTexture"].TextureIndex()]]->m_descriptor);
+					texturesDescriptors.push_back(modelsTextures[modelsTexturesIds[glTFMaterial.values["metallicRoughnessTexture"].TextureIndex()]]);
 				}
 				else
 				{
-					texturesDescriptors.push_back(&m_placeholder->m_descriptor);
+					texturesDescriptors.push_back(m_placeholder);
 				}
 				if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) {
-					texturesDescriptors.push_back(&modelsTextures[modelsTexturesIds[glTFMaterial.additionalValues["normalTexture"].TextureIndex()]]->m_descriptor);
+					texturesDescriptors.push_back(modelsTextures[modelsTexturesIds[glTFMaterial.additionalValues["normalTexture"].TextureIndex()]]);
 					hasNormalmap = true;
 				}
 
 				individualFragmentUniformBuffers[i] = _device->GetUniformBuffer(sizeof(fdata), false, queue, &fdata);
-				buffersDescriptors.push_back(&individualFragmentUniformBuffers[i]->m_descriptor);
+				buffersDescriptors.push_back(individualFragmentUniformBuffers[i]);
 
 				render::VulkanDescriptorSetLayout* currentDesclayout = hasNormalmap ? currentDesclayoutNormalmap : currentDesclayoutSimple;
 
 				render_objects[i]->SetDescriptorSetLayout(currentDesclayout);
 				render_objects[i]->_vertexLayout = hasNormalmap ? &vertexlayoutNormalmap : &vertexlayout;
 				render_objects[i]->AddPipeline(hasNormalmap ? currentPipelineNormalmap : currentPipeline);
-				render::VulkanDescriptorSet* desc = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, texturesDescriptors,
+				/*render::VulkanDescriptorSet* desc = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, texturesDescriptors,
 					currentDesclayout->m_descriptorSetLayout, currentDesclayout->m_setLayoutBindings);
+				render_objects[i]->AddDescriptor(desc);*/
+				render::DescriptorSet* desc = _device->GetDescriptorSet(currentDesclayout, descriptorPool, buffersDescriptors, texturesDescriptors);
 				render_objects[i]->AddDescriptor(desc);
 			}
 		}
@@ -518,10 +525,10 @@ namespace engine
 
 					render::VulkanDescriptorSetLayout* currentdescayout = nullptr;
 
-					std::vector<VkDescriptorBufferInfo*> buffersDescriptors{ &shadow_uniform_buffer->m_descriptor };
+					std::vector<render::Buffer*> buffersDescriptors{ shadow_uniform_buffer };
 					if (individualFragmentUniformBuffers[ro_index])
 					{
-						buffersDescriptors.push_back(&individualFragmentUniformBuffers[ro_index]->m_descriptor);
+						buffersDescriptors.push_back(individualFragmentUniformBuffers[ro_index]);
 						currentdescayout = descColorLayout;
 					}
 					else
@@ -560,8 +567,9 @@ namespace engine
 						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache, props);
 					sro->AddPipeline(p);
 
-					render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, {},
-						currentdescayout->m_descriptorSetLayout, currentdescayout->m_setLayoutBindings);
+					/*render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, {},
+						currentdescayout->m_descriptorSetLayout, currentdescayout->m_setLayoutBindings);*/
+					render::DescriptorSet* set = _device->GetDescriptorSet(currentdescayout, descriptorPool, buffersDescriptors, {});
 					sro->AddDescriptor(set);
 
 					vlayouts.push_back(l);
@@ -625,7 +633,7 @@ namespace engine
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_POSITION, &ll, 0, sizeof(ll));
 			//glm::vec4 lcolor = glm::vec4(flicker, flicker, flicker, 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_COLOR, &color, 0, sizeof(color));
-			uniform_manager.Update(queue);
+			uniform_manager.Update(nullptr);
 		}
 
 		void SceneLoaderGltf::Update(float timer, VkQueue queue)
@@ -674,7 +682,7 @@ namespace engine
 			cucu.y = -cucu.y;
 			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->GetPosition()));
 
-			uniform_manager.Update(queue);
+			uniform_manager.Update(nullptr);
 		}
 
 		void SceneLoaderGltf::UpdateView(float timer, VkQueue queue)
@@ -690,7 +698,7 @@ namespace engine
 			glm::vec4 bias_near_far_pow = glm::vec4(0.002f, m_camera->getNearClip(), m_camera->getFarClip(), 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_SPACE_BIASED, &bias_near_far_pow, 0, sizeof(bias_near_far_pow));*/
 
-			uniform_manager.Update(queue);
+			uniform_manager.Update(nullptr);
 		}
 
 		SceneLoaderGltf::~SceneLoaderGltf()

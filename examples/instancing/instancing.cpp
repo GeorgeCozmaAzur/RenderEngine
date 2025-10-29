@@ -40,7 +40,7 @@ public:
 	engine::scene::SimpleModel plane;
 	render::VulkanTexture* colorMap;
 
-	render::VulkanBuffer* sceneVertexUniformBuffer;
+	render::Buffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 	render::DescriptorPool* descriptorPool = nullptr;
 
@@ -130,7 +130,7 @@ public:
 	void SetupUniforms()
 	{
 		//uniforms
-		uniform_manager.SetDevice(vulkanDevice->logicalDevice);
+		uniform_manager.SetDescriptorPool(descriptorPool);
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 		updateUniformBuffers();
@@ -221,7 +221,7 @@ public:
 		glm::vec3 cucu = -camera.GetPosition();
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(cucu));
 
-		uniform_manager.Update(queue);
+		uniform_manager.Update(nullptr);
 	}
 
 	void Prepare()

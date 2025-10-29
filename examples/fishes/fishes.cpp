@@ -75,14 +75,14 @@ public:
 		
 		}, {});
 
-	VkDescriptorPool descriptorPool;
+	render::DescriptorPool* descriptorPool;
 
 	engine::scene::SimpleModel allfish;
 	//render::VulkanTexture* colorMap;
 	std::vector<std::string> textureNames;
 	render::VulkanTexture* textures;
 
-	render::VulkanBuffer* sceneVertexUniformBuffer;
+	render::Buffer* sceneVertexUniformBuffer;
 	scene::UniformBuffersManager uniform_manager;
 	render::VulkanBuffer* dynamicBuffer;
 
@@ -216,7 +216,7 @@ public:
 	void SetupUniforms()
 	{
 		//uniforms
-		uniform_manager.SetDevice(vulkanDevice->logicalDevice);
+		uniform_manager.SetDescriptorPool(descriptorPool);
 		uniform_manager.SetEngineDevice(vulkanDevice);
 		sceneVertexUniformBuffer = uniform_manager.GetGlobalUniformBuffer({ scene::UNIFORM_PROJECTION ,scene::UNIFORM_VIEW ,scene::UNIFORM_LIGHT0_POSITION, scene::UNIFORM_CAMERA_POSITION });
 
@@ -288,7 +288,7 @@ public:
 		glm::vec3 cucu = -camera.GetPosition();
 		uniform_manager.UpdateGlobalParams(scene::UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(camera.GetPosition()));
 
-		uniform_manager.Update(queue);
+		uniform_manager.Update(nullptr);
 	}
 	
 	std::vector<glm::vec3> bezierInterpolate(std::vector<glm::vec3> points, float time)
@@ -379,12 +379,18 @@ public:
 	//here a descriptor pool will be created for the entire app. Now it contains 1 sampler because this is what the ui overlay needs
 	void setupDescriptorPool()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
+		/*std::vector<VkDescriptorPoolSize> poolSizes = {
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1},
 			VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2}
 		};
-		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);
+		descriptorPool = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);*/
+		descriptorPool = vulkanDevice->GetDescriptorPool(
+			{
+			{render::DescriptorType::UNIFORM_BUFFER, 1},
+			{render::DescriptorType::UNIFORM_BUFFER_DYNAMIC, 4},
+			{render::DescriptorType::IMAGE_SAMPLER, 2}
+			}, 2);
 	}
 
 	void SetupDescriptors()
@@ -399,8 +405,9 @@ public:
 
 		render::VulkanDescriptorSetLayout* vklayout = static_cast<render::VulkanDescriptorSetLayout*>(allfish._descriptorLayout);
 
-		allfish.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &dynamicBuffer->m_descriptor }, { &textures->m_descriptor },
-			vklayout->m_descriptorSetLayout, vklayout->m_setLayoutBindings, dynamicAlignment));
+		/*allfish.AddDescriptor(vulkanDevice->GetDescriptorSet(descriptorPool, { &sceneVertexUniformBuffer->m_descriptor, &dynamicBuffer->m_descriptor }, { &textures->m_descriptor },
+			vklayout->m_descriptorSetLayout, vklayout->m_setLayoutBindings, dynamicAlignment));*/
+		allfish.AddDescriptor(vulkanDevice->GetDescriptorSet(vklayout, descriptorPool, { sceneVertexUniformBuffer, dynamicBuffer }, { textures }, dynamicAlignment));
 	}
 
 	void setupPipelines()
