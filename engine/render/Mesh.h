@@ -12,6 +12,8 @@ namespace engine
 			uint32_t* m_indices = nullptr;
 			void* _instanceExternalData = nullptr;
 
+			VertexLayout* m_vlayout = nullptr;
+
 			uint32_t m_indexCount = 0;
 			uint16_t m_indexSize = 4;//index size in bytes
 			uint64_t m_vertexCount = 0;

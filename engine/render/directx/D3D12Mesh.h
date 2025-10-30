@@ -18,6 +18,7 @@ namespace engine
         {
         public:
             render::D3D12VertexBuffer* _vertexBuffer;
+            render::D3D12VertexBuffer* _instanceBuffer;
             render::D3D12IndexBuffer* _indexBuffer;
 
 	        //void Load(ID3D12Device* device, std::string fileName, XMFLOAT3 atPosition, float scale, ID3D12GraphicsCommandList* commandList);

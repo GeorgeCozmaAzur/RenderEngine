@@ -191,15 +191,18 @@ namespace engine
 
         void D3D12Mesh::UpdateInstanceBuffer(void* data, size_t size, size_t offset)
         {
-           // _instanceBuffer->MemCopy(data, size);
+           _instanceBuffer->MemCopy(data, size, offset);
         }
 
         void D3D12Mesh::Draw(ID3D12GraphicsCommandList* commandList, const std::vector<MeshPart>& parts)
         {
             commandList->IASetIndexBuffer(&_indexBuffer->m_view);
             commandList->IASetVertexBuffers(0, 1, &_vertexBuffer->m_view);
+            if(_instanceBuffer)
+                commandList->IASetVertexBuffers(1, 1, &_instanceBuffer->m_view);
+
             if(parts.size()==0)
-            commandList->DrawIndexedInstanced(_indexBuffer->m_numIndices, 1, 0, 0, 0);
+            commandList->DrawIndexedInstanced(_indexBuffer->m_numIndices, m_instanceNo, 0, 0, 0);
             else
                 for (const MeshPart& part : parts)
                 {

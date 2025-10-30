@@ -28,7 +28,7 @@ void main()
 {
 	outNormal = inNormal;
 	outUV = inUV;
-	outPos = inPos;
+	outPos = inPos + instancePos;
 	outLightPos = ubo.light_pos.xyz;
 	outCamPos = ubo.camera_pos;
 	

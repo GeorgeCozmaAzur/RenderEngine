@@ -194,6 +194,15 @@ namespace engine
 				m_buffers.push_back(mesh->_indexBuffer);
 			}
 
+			if (data->m_instanceBufferSize > 0)
+			{
+				mesh->_instanceBuffer = new D3D12VertexBuffer();
+				mesh->_instanceBuffer->CreateCPUVisible(m_device.Get(), data->m_instanceBufferSize, data->_instanceExternalData);
+				mesh->_instanceBuffer->CreateView(vlayout->GetVertexSize(1));
+				mesh->m_instanceNo = data->m_instanceNo;
+				m_buffers.push_back(mesh->_instanceBuffer);
+			}
+
 			m_meshes.push_back(mesh);
 
 			return mesh;

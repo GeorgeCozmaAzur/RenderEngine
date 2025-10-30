@@ -164,19 +164,24 @@ namespace engine
                 }
                 ThrowIfFailed(hr);
 
-                //vlayout->GetComponentSize()
-                std::vector<std::string> componentNames(vlayout->m_components[0].size());
+                size_t inputElemntsNo = vlayout->m_components[0].size() + (vlayout->m_components.size() > 1 ? vlayout->m_components[1].size() : 0);
+                std::vector<std::string> componentNames;
+                componentNames.reserve(inputElemntsNo);
 
-                std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs(vlayout->m_components[0].size());
-                UINT offset = 0;
-                for (int i = 0; i < inputElementDescs.size(); i++)
+                std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
+                for (UINT c = 0; c < vlayout->m_components.size(); c++)
                 {
-                    offset += (i == 0 ? 0 : vlayout->GetComponentSize(vlayout->m_components[0][i-1]));
-                    componentNames[i] = vlayout->GetComponentName(vlayout->m_components[0][i]);
-                    DXGI_FORMAT format = GetDXFormat(vlayout->m_components[0][i]);
-                    inputElementDescs[i] = { componentNames[i].c_str(), 0, format, 0, offset, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+                    UINT offset = 0;
+                    for (int i = 0; i < vlayout->m_components[c].size(); i++)
+                    {         
+                        componentNames.push_back((c>0 ? "INSTANCE_" : "") + vlayout->GetComponentName(vlayout->m_components[c][i]));
+                        DXGI_FORMAT format = GetDXFormat(vlayout->m_components[c][i]);
+                        D3D12_INPUT_CLASSIFICATION slotClass = c == 0 ? D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA : D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+                        inputElementDescs.push_back({ componentNames.back().c_str(), 0, format, c, offset, slotClass, c});
+                        offset += vlayout->GetComponentSize(vlayout->m_components[c][i]);
+                    }
                 }
-
+                
                 // Define the vertex input layout.
               /*  D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =cdfvx f m vgc gfcvnmny bhjugtvjyv ouyvu jbbmn 
                 {

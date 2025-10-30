@@ -76,7 +76,7 @@ namespace engine
 
 					case VERTEX_COMPONENT_UV:			return "TEXCOORD";
 				
-					case VERTEX_COMPONENT_NORMAL:	return "NORMAl";
+					case VERTEX_COMPONENT_NORMAL:	return "NORMAL";
 
 					case VERTEX_COMPONENT_COLOR:
 					case VERTEX_COMPONENT_COLOR_UINT:		return "COLOR";
