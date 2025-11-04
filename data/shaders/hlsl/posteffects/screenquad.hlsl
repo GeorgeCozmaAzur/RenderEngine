@@ -31,6 +31,7 @@ PSInput VSMain(uint vertexID : SV_VertexID)
 
     o.position = float4(pos[vertexID], 0.0, 1.0);
     o.uv = 0.5f * (pos[vertexID] + 1.0f);
+    o.uv.y = 1.0-o.uv.y;
     return o;
 }
 

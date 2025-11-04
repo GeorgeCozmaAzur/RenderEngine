@@ -78,7 +78,6 @@ namespace engine
 				pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
 
 				m_constantBlockSize = properties.vertexConstantBlockSize;
-				std::cout << " " << properties.vertexConstantBlockSize;
 			}
 
 			// The pipeline layout is based on the descriptor set layout we created above
