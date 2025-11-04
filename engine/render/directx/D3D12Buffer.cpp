@@ -105,6 +105,18 @@ namespace engine
 			m_GPUHandle = gpuHandle;
 		}
 
+        void D3D12UniformBuffer::CreateView(ID3D12Device* device, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+        {
+            // Describe and create a constant buffer view.
+            D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+            cbvDesc.BufferLocation = m_buffer->GetGPUVirtualAddress();
+            cbvDesc.SizeInBytes = (UINT)m_size;
+            device->CreateConstantBufferView(&cbvDesc, cpuHandle);
+
+            m_CPUHandle = cpuHandle;
+            m_GPUHandle = gpuHandle;
+        }
+
         void D3D12VertexBuffer::CreateView(UINT vertexSize)
         {
             m_view.BufferLocation = m_buffer->GetGPUVirtualAddress();

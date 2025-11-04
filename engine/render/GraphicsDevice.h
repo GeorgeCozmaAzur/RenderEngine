@@ -38,7 +38,7 @@ namespace engine
 				return nullptr;
 			}
 
-			virtual Buffer* GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool) = 0;
+			virtual Buffer* GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool, bool onCPU = true, CommandBuffer* commandBuffer = nullptr) = 0;
 
 			virtual Texture* GetTexture(TextureData* data, DescriptorPool *descriptorPool, CommandBuffer* commandBuffer) = 0;
 
@@ -54,7 +54,7 @@ namespace engine
 
 			virtual DescriptorSet* GetDescriptorSet(DescriptorSetLayout* layout, DescriptorPool* pool, std::vector<Buffer*> buffers, std::vector <Texture*> textures, size_t dynamicAlignment = 0) = 0;
 
-			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, Texture *colorTexture, Texture *depthTexture) = 0;
+			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, std::vector<Texture*> colorTextures, Texture* depthTexture, std::vector<RenderSubpass> subpasses = {}) = 0;
 
 			virtual Pipeline* GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass) = 0;
 

@@ -16,9 +16,10 @@ namespace engine
 	{
 		struct FrameBufferObject
 		{
-			CD3DX12_CPU_DESCRIPTOR_HANDLE m_rtvHandle;
+			std::vector <CD3DX12_CPU_DESCRIPTOR_HANDLE> m_rtvHandles;
+			std::vector <ID3D12Resource*> m_colorTextures;
 			CD3DX12_CPU_DESCRIPTOR_HANDLE m_dsvHandle;
-			ID3D12Resource* m_colorTexture;
+			ID3D12Resource* m_depthTexture;
 		};
 
 		class D3D12RenderPass : public RenderPass
@@ -29,10 +30,12 @@ namespace engine
 			CD3DX12_RECT   m_scissorRect;
 			std::vector<FrameBufferObject> m_frameBuffers;
 			D3D12_RESOURCE_STATES m_stateBeforeRendering;
-			D3D12_RESOURCE_STATES m_stateAfterRendering;
-
+			D3D12_RESOURCE_STATES m_stateAfterRendering;		
+			
 		public:
-			void Create(uint32_t width, uint32_t height, std::vector<FrameBufferObject> frameBuffers, 
+			std::vector<DXGI_FORMAT> m_RTVFormats;//TODO make them private
+			DXGI_FORMAT m_DSVFormat;
+			void Create(uint32_t width, uint32_t height, std::vector<DXGI_FORMAT> rtvFormats, DXGI_FORMAT dvsFormat, std::vector<FrameBufferObject> frameBuffers,
 				D3D12_RESOURCE_STATES stateBeforeRendering = D3D12_RESOURCE_STATE_RENDER_TARGET, 
 				D3D12_RESOURCE_STATES stateAfterRendering = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 			void Begin(ID3D12GraphicsCommandList* commandList, uint32_t frameBufferIndex = 0);

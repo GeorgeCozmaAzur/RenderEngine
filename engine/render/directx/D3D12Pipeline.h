@@ -23,7 +23,7 @@ namespace engine
 
 			UINT m_constantsShaderRegister;
 
-			void Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, VertexLayout* vlayout, DescriptorSetLayout* dlayout, PipelineProperties properties);
+			void Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, VertexLayout* vlayout, DescriptorSetLayout* dlayout, PipelineProperties properties, class D3D12RenderPass* renderPass);
 			virtual void Draw(class CommandBuffer* commandBuffer);
 			virtual void PushConstants(class CommandBuffer* commandBuffer, void* constantsData = nullptr);
 		};

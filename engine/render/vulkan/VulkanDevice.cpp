@@ -763,10 +763,17 @@ namespace engine
             }
         }
 
-        Buffer* VulkanDevice::GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool)
+        Buffer* VulkanDevice::GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool, bool onCPU, CommandBuffer* commandBuffer)
         {
-            VulkanBuffer* buffer = GetUniformBuffer(size,true,copyQueue,data);
-            buffer->Map();
+            VulkanBuffer* buffer = GetUniformBuffer(size, onCPU, copyQueue, data);
+            if (onCPU)
+            {
+                buffer->Map();
+                if (data)
+                {
+                    buffer->MemCopy(data, size);
+                }
+            }
             //m_buffers.push_back(buffer);
             return buffer;
         }
@@ -836,12 +843,21 @@ namespace engine
             return set;
         }
 
-        RenderPass* VulkanDevice::GetRenderPass(uint32_t width, uint32_t height, Texture* colorTexture, Texture* depthTexture)
+        RenderPass* VulkanDevice::GetRenderPass(uint32_t width, uint32_t height, std::vector<Texture*> colorTextures, Texture* depthTexture, std::vector<RenderSubpass> subpasses)
         {
-            VulkanTexture* vktexture = dynamic_cast<VulkanTexture*>(colorTexture);
+            std::vector<VkImageView> texturesViews(colorTextures.size());
+            std::vector<VulkanTexture*> vktextures(colorTextures.size());
+            for (int i = 0; i < colorTextures.size(); i++)
+            {
+                vktextures[i] = dynamic_cast<VulkanTexture*>(colorTextures[i]);
+                texturesViews[i] = vktextures[i]->m_descriptor.imageView;
+            }
             VulkanTexture* vkdtexture = dynamic_cast<VulkanTexture*>(depthTexture);
-            VulkanRenderPass* scenepass = GetRenderPass({ vktexture , vkdtexture }, {});
-            VulkanFrameBuffer* fb = GetFrameBuffer(scenepass->GetRenderPass(), width, height, { vktexture->m_descriptor.imageView, vkdtexture->m_descriptor.imageView }, { { 0.0f, 0.0f, 0.0f, 1.0f } });
+            vktextures.push_back(vkdtexture);
+            texturesViews.push_back(vkdtexture->m_descriptor.imageView);
+
+            VulkanRenderPass* scenepass = GetRenderPass(vktextures, {});
+            VulkanFrameBuffer* fb = GetFrameBuffer(scenepass->GetRenderPass(), width, height, texturesViews, { { 0.0f, 0.0f, 0.0f, 1.0f } });
             scenepass->AddFrameBuffer(fb);
             //m_renderPasses.push_back(scenepass);
             return scenepass;

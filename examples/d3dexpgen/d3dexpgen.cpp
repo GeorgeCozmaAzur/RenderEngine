@@ -233,9 +233,9 @@ public:
 		m_dsvoHeap = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 1} },1);
 		m_srvHeap = m_device->GetDescriptorPool({ {render::DescriptorType::IMAGE_SAMPLER, 3},{render::DescriptorType::UNIFORM_BUFFER, 3} }, 6);
 
-		m_renderTargeto = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::R8G8B8A8_UNORM, m_srvHeap, m_rtvoHeap, m_loadingCommandBuffer);
+		m_renderTargeto = m_device->GetRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::R32G32B32A32_SFLOAT, m_srvHeap, m_rtvoHeap, m_loadingCommandBuffer);
 		m_depthStencilOffscreen = m_device->GetDepthRenderTarget(TextureWidth, TextureHeight, render::GfxFormat::D32_FLOAT, m_srvHeap, m_dsvoHeap, m_loadingCommandBuffer, false, true);
-		offscreenPass = m_device->GetRenderPass(TextureWidth, TextureHeight, m_renderTargeto, m_depthStencilOffscreen);
+		offscreenPass = m_device->GetRenderPass(TextureWidth, TextureHeight, { m_renderTargeto }, m_depthStencilOffscreen);
 
 		render::DescriptorSetLayout* odsl = m_device->GetDescriptorSetLayout({ {render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX} });
 

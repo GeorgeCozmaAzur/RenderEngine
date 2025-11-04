@@ -197,22 +197,24 @@ bool D3D12Application::InitAPI()
 			rtvHandle.Offset(1, m_rtvDescriptorSize);
 		}
 	}
+
+	DXGI_FORMAT depthFormat = DXGI_FORMAT_D32_FLOAT;
 	// Create the depth stencil view.
 	{
 		D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
-		depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		depthStencilDesc.Format = depthFormat;
 		depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 		depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
 
 		D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
-		depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+		depthOptimizedClearValue.Format = depthFormat;
 		depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 		depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
 		ThrowIfFailed(m_d3ddevice->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+			&CD3DX12_RESOURCE_DESC::Tex2D(depthFormat, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
 			D3D12_RESOURCE_STATE_DEPTH_WRITE,
 			&depthOptimizedClearValue,
 			IID_PPV_ARGS(&m_depthStencil)
@@ -227,11 +229,11 @@ bool D3D12Application::InitAPI()
 	std::vector<FrameBufferObject> frameBuffers;
 	for (UINT n = 0; n < FrameCount; n++)
 	{
-		FrameBufferObject fb = { frameBuffersHandles[n], CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvHeap->GetCPUDescriptorHandleForHeapStart()), m_renderTargets[n].Get() };
+		FrameBufferObject fb = { {frameBuffersHandles[n]}, {m_renderTargets[n].Get()}, CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvHeap->GetCPUDescriptorHandleForHeapStart()), m_depthStencil.Get() };
 		frameBuffers.push_back(fb);
 	}
 			//D3D12RenderTarget* colorRT = dynamic_cast<D3D12RenderTarget*>(colorTexture);
-	pass->Create(width, height, frameBuffers, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	pass->Create(width, height, {swapChainDesc.Format}, depthFormat, frameBuffers, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 			//m_renderPasses.push_back(pass);
 	m_mainRenderPass = pass;
 

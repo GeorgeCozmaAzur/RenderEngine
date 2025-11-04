@@ -20,14 +20,6 @@ namespace engine
 			~VulkanFrameBuffer();
 		};
 
-		struct RenderSubpass
-		{
-			RenderSubpass(std::vector<uint32_t> i, std::vector<uint32_t> o) :
-				inputAttachmanets(i), outputAttachmanets(o) {}		
-			std::vector<uint32_t> inputAttachmanets;
-			std::vector<uint32_t> outputAttachmanets;
-		};
-
 		class VulkanRenderPass : public RenderPass {
 
 			VkDevice _device = VK_NULL_HANDLE;

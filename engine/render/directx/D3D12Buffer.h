@@ -36,6 +36,7 @@ namespace engine
 			CD3DX12_GPU_DESCRIPTOR_HANDLE m_GPUHandle;
 		
 			void Create(ID3D12Device* device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cupHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
+			void CreateView(ID3D12Device* device, CD3DX12_CPU_DESCRIPTOR_HANDLE cupHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
 		};
 
 		class D3D12VertexBuffer : public D3D12Buffer

@@ -18,14 +18,29 @@ namespace engine
 			for (auto cmd : m_commandBuffers)
 				delete cmd;
 		}
-		Buffer* D3D12Device::GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool)
+
+		Buffer* D3D12Device::GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool, bool onCPU, CommandBuffer* commandBuffer)
 		{
 			D3D12UniformBuffer* buffer = new D3D12UniformBuffer();
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(descriptorPool);
+			D3D12CommandBuffer* d3dcmd = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+			
+			if (onCPU)
+			{
+				buffer->CreateCPUVisible(m_device.Get(), size, data);
+			}
+			else
+			{
+				D3D12Buffer* staggingBuffer = new D3D12Buffer();
+				staggingBuffer->Create(m_device.Get(), size, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+				m_loadStaggingBuffers.push_back(staggingBuffer);
+				buffer->CreateGPUVisible(m_device.Get(), staggingBuffer->GetD3DBuffer(), d3dcmd->m_commandList.Get(), size, data, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+			}
+			//buffer->Create(m_device.Get(), size, data, cbvSrvHandle, cbvSrvHandleGPU);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU;
-			descHeap->GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
-			buffer->Create(m_device.Get(), size, data, cbvSrvHandle, cbvSrvHandleGPU);
+			descHeap->GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);			
+			buffer->CreateView(m_device.Get(), cbvSrvHandle, cbvSrvHandleGPU);
 
 			m_buffers.push_back(buffer);
 			return buffer;
@@ -130,20 +145,32 @@ namespace engine
 			return table;
 		}
 
-		RenderPass* D3D12Device::GetRenderPass(uint32_t width, uint32_t height, Texture* colorTexture, Texture* depthTexture)
+		RenderPass* D3D12Device::GetRenderPass(uint32_t width, uint32_t height, std::vector<Texture*> colorTextures, Texture* depthTexture, std::vector<RenderSubpass> subpasses)
 		{
 			D3D12RenderPass* pass = new D3D12RenderPass();
-			D3D12RenderTarget* colorRT = dynamic_cast<D3D12RenderTarget*>(colorTexture);
-			pass->Create(width, height, { { colorRT->m_CPURTVHandle, dynamic_cast<D3D12RenderTarget*>(depthTexture)->m_CPURTVHandle, colorRT->m_texture.Get() } });
+			std::vector<DXGI_FORMAT> rtvFormats(colorTextures.size());
+			std::vector <CD3DX12_CPU_DESCRIPTOR_HANDLE> rtvHandles(colorTextures.size());
+			std::vector <ID3D12Resource*> rtvColorTextures(colorTextures.size());
+			D3D12RenderTarget* depthRT = dynamic_cast<D3D12RenderTarget*>(depthTexture);
+			for (int i = 0; i < colorTextures.size(); i++)
+			{
+				D3D12RenderTarget* colorRT = dynamic_cast<D3D12RenderTarget*>(colorTextures[i]);
+				rtvFormats[i] = colorRT->m_dxgiFormat;
+				rtvHandles[i] = colorRT->m_CPURTVHandle;
+				rtvColorTextures[i] = colorRT->m_texture.Get();
+			}
+			pass->Create(width, height, rtvFormats, depthRT->m_dxgiFormat, 
+				{ { rtvHandles, rtvColorTextures, depthRT->m_CPURTVHandle, depthRT->m_texture.Get() } });
 			m_renderPasses.push_back(pass);
 			return pass;
 		}
 
 		Pipeline* D3D12Device::GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass)
 		{
+			D3D12RenderPass* d3dRenderPass = dynamic_cast<D3D12RenderPass*>(renderPass);
 			D3D12Pipeline* pipeline = new D3D12Pipeline();
 			std::wstring ws(vertexFileName.begin(), vertexFileName.end());
-			pipeline->Load(m_device.Get(), ws, vertexEntry, fragmentEntry, vertexLayout, descriptorSetlayout, properties);
+			pipeline->Load(m_device.Get(), ws, vertexEntry, fragmentEntry, vertexLayout, descriptorSetlayout, properties, d3dRenderPass);
 			m_pipelines.push_back(pipeline);
 			return pipeline;
 		}
