@@ -22,7 +22,18 @@ namespace engine
 	{
 #define SHADOWMAP_DIM 1024
 
-		void SceneLoaderGltf::LoadImages(tinygltf::Model& input, VkQueue queue)
+		void SceneLoaderGltf::CreateDescriptorPool(tinygltf::Model& input)
+		{
+			render_objects.resize(input.materials.size());
+
+			descriptorPool = _device->GetDescriptorPool({
+			{ render::DescriptorType::UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size()) },
+			{render::DescriptorType::IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()) },
+			{render::DescriptorType::STORAGE_IMAGE, 2 }
+				}, static_cast<uint32_t>(2 * render_objects.size()) + 5);
+		}
+
+		void SceneLoaderGltf::LoadImages(tinygltf::Model& input)
 		{
 			modelsTextures.resize(input.images.size());
 			for (size_t i = 0; i < input.images.size(); i++) {
@@ -60,9 +71,10 @@ namespace engine
 				render::Texture2DData data;
 				data.CreateFromBuffer(buffer, bufferSize, glTFImage.width, glTFImage.height, format);
 
-				modelsTextures[i] = _device->GetTexture(&data, queue,
+				/*modelsTextures[i] = _device->GetTexture(&data, queue,
 					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);	
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, TRUE);	*/
+				modelsTextures[i] = _device->GetTexture(&data, descriptorPool, m_loadingCommandBuffer);
 				//data.Destroy();
 
 				if (deleteBuffer) {
@@ -71,7 +83,8 @@ namespace engine
 			}
 			render::Texture2DData data;
 			data.LoadFromFile(engine::tools::getAssetPath() + "textures/white_placeholder.png", render::GfxFormat::R8G8B8A8_UNORM);
-			m_placeholder = _device->GetTexture(&data, queue);
+			//m_placeholder = _device->GetTexture(&data, queue);
+			m_placeholder = _device->GetTexture(&data, descriptorPool, m_loadingCommandBuffer);
 			//data.Destroy();
 			//m_placeholder = _device->GetTexture(engine::tools::getAssetPath() + "textures/white_placeholder.png", VK_FORMAT_R8G8B8A8_UNORM, queue);
 
@@ -81,18 +94,16 @@ namespace engine
 			}
 		}
 
-		void SceneLoaderGltf::LoadMaterials(tinygltf::Model& input, VkQueue queue, bool deferred)
+		void SceneLoaderGltf::LoadMaterials(tinygltf::Model& input, bool deferred)
 		{
 			render::VulkanVertexLayout* vertex_layout = nullptr;
 
-			//uniform_manager.SetDevice(_device->logicalDevice);
+			uniform_manager.SetDescriptorPool(descriptorPool);
 			uniform_manager.SetEngineDevice(_device);
 			sceneVertexUniformBuffer = deferred == false ? uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION }) :
 				uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_CAMERA_POSITION });
 			sceneFragmentUniformBuffer = deferred == false ? uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_COLOR }) : nullptr;
 			shadow_uniform_buffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_SPACE });
-
-			render_objects.resize(input.materials.size());
 
 			render::BlendAttachmentState opaqueState{false};
 			std::vector <render::BlendAttachmentState> blendAttachmentStates;
@@ -128,44 +139,46 @@ namespace engine
 				VkDescriptorPoolSize {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2}
 			};
 			descriptorPool = _device->CreateDescriptorSetsPool(poolSizes, static_cast<uint32_t>(2 * render_objects.size()) + 5);*/
-			descriptorPool = _device->GetDescriptorPool({
-			{ render::DescriptorType::UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size()) },
-			{render::DescriptorType::IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()) },
-			{render::DescriptorType::STORAGE_IMAGE, 2 }
-				}, static_cast<uint32_t>(2 * render_objects.size()) + 5);
+			
 
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
+			std::vector<render::LayoutBinding> modelbindings
 			{
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX},
+				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::FRAGMENT},
+				{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT},
+				{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT},
 			};
 			if(deferred == false)
-				modelbindings.insert(modelbindings.begin()+2, { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT });
+				modelbindings.insert(modelbindings.begin()+2, { render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::FRAGMENT });
 
-			render::VulkanDescriptorSetLayout* currentDesclayoutSimple = _device->GetDescriptorSetLayout(modelbindings);
-			render::VulkanDescriptorSetLayout* currentDesclayoutNormalmap = nullptr;
+			render::DescriptorSetLayout* currentDesclayoutSimple = _device->GetDescriptorSetLayout(modelbindings);
+			render::DescriptorSetLayout* currentDesclayoutNormalmap = nullptr;
 
-			std::string shaderfolder = engine::tools::getAssetPath() + "shaders/" + (deferred ? deferredShadersFolder : forwardShadersFolder) + "/";
+			std::string shaderfolder = (deferred ? deferredShadersFolder : forwardShadersFolder) + "/";
 			render::PipelineProperties props;
 			props.cullMode = render::CullMode::FRONT;
 			props.attachmentCount = blendAttachmentStates.size();
 			props.pAttachments = blendAttachmentStates.data();
-			render::VulkanPipeline* currentPipeline = _device->GetPipeline(currentDesclayoutSimple->m_descriptorSetLayout, vertexlayout.m_vertexInputBindings, vertexlayout.m_vertexInputAttributes,
-				shaderfolder + lightingVS, shaderfolder + lightingFS, modelsVkRenderPass, vKpipelineCache, props);
+			/*render::VulkanPipeline* currentPipeline = _device->GetPipeline(currentDesclayoutSimple->m_descriptorSetLayout, vertexlayout.m_vertexInputBindings, vertexlayout.m_vertexInputAttributes,
+				shaderfolder + lightingVS, shaderfolder + lightingFS, modelsVkRenderPass, vKpipelineCache, props);*/
+			render::Pipeline* currentPipeline = _device->GetPipeline(
+				shaderfolder + lightingVS, "VSMain", shaderfolder + lightingFS, "PSMain",
+				vertexlayout, currentDesclayoutSimple, props, modelsVkRenderPass);
 
-			render::VulkanPipeline* currentPipelineNormalmap = nullptr;
+			render::Pipeline* currentPipelineNormalmap = nullptr;
 			bool hasNormalmap = false;
 			for (size_t i = 0; i < input.materials.size(); i++)
 			{
 				if (input.materials[i].additionalValues.find("normalTexture") != input.materials[i].additionalValues.end())
 				{
 					hasNormalmap = true;
-					modelbindings.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT });
+					modelbindings.push_back({ render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT });
 					currentDesclayoutNormalmap = _device->GetDescriptorSetLayout(modelbindings);
-					currentPipelineNormalmap = _device->GetPipeline(currentDesclayoutNormalmap->m_descriptorSetLayout, vertexlayoutNormalmap.m_vertexInputBindings, vertexlayoutNormalmap.m_vertexInputAttributes,
-						shaderfolder + normalmapVS, shaderfolder + normalmapFS, modelsVkRenderPass, vKpipelineCache, props);
+					/*currentPipelineNormalmap = _device->GetPipeline(currentDesclayoutNormalmap->m_descriptorSetLayout, vertexlayoutNormalmap.m_vertexInputBindings, vertexlayoutNormalmap.m_vertexInputAttributes,
+						shaderfolder + normalmapVS, shaderfolder + normalmapFS, modelsVkRenderPass, vKpipelineCache, props);*/
+					currentPipelineNormalmap = _device->GetPipeline(
+						shaderfolder + normalmapVS, "VSMain", shaderfolder + normalmapFS, "PSMain",
+						vertexlayoutNormalmap, currentDesclayoutNormalmap, props, modelsVkRenderPass);
 					break;
 				}
 			}
@@ -220,13 +233,14 @@ namespace engine
 					hasNormalmap = true;
 				}
 
-				individualFragmentUniformBuffers[i] = _device->GetUniformBuffer(sizeof(fdata), false, queue, &fdata);
+				//individualFragmentUniformBuffers[i] = _device->GetUniformBuffer(sizeof(fdata), false, queue, &fdata);
+				individualFragmentUniformBuffers[i] = _device->GetUniformBuffer(sizeof(fdata), &fdata, descriptorPool, true);//TODO make it gpu visible
 				buffersDescriptors.push_back(individualFragmentUniformBuffers[i]);
 
-				render::VulkanDescriptorSetLayout* currentDesclayout = hasNormalmap ? currentDesclayoutNormalmap : currentDesclayoutSimple;
+				render::DescriptorSetLayout* currentDesclayout = hasNormalmap ? currentDesclayoutNormalmap : currentDesclayoutSimple;
 
 				render_objects[i]->SetDescriptorSetLayout(currentDesclayout);
-				render_objects[i]->_vertexLayout = hasNormalmap ? &vertexlayoutNormalmap : &vertexlayout;
+				render_objects[i]->_vertexLayout = hasNormalmap ? vertexlayoutNormalmap : vertexlayout;
 				render_objects[i]->AddPipeline(hasNormalmap ? currentPipelineNormalmap : currentPipeline);
 				/*render::VulkanDescriptorSet* desc = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, texturesDescriptors,
 					currentDesclayout->m_descriptorSetLayout, currentDesclayout->m_setLayoutBindings);
@@ -314,10 +328,10 @@ namespace engine
 						{
 							hasNormalmap = true;
 						}
-						render::VulkanVertexLayout vlayout = hasNormalmap ? vertexlayoutNormalmap : vertexlayout;
+						render::VertexLayout* vlayout = hasNormalmap ? vertexlayoutNormalmap : vertexlayout;
 
 						geometry->m_vertexCount = vertexCount;
-						geometry->m_verticesSize = geometry->m_vertexCount * vlayout.GetVertexSize(0) / sizeof(float);
+						geometry->m_verticesSize = geometry->m_vertexCount * vlayout->GetVertexSize(0) / sizeof(float);
 						geometry->m_vertices = new float[geometry->m_verticesSize];
 
 						int vertex_index = 0;
@@ -332,7 +346,7 @@ namespace engine
 							tangent = mymatrix * tangent;
 							//tangent.y = -tangent.y;
 
-							for (auto& component : vlayout.m_components[0])
+							for (auto& component : vlayout->m_components[0])
 							{
 								switch (component) {
 								case render::VERTEX_COMPONENT_POSITION:
@@ -411,7 +425,7 @@ namespace engine
 						}
 
 					}
-					render_objects[glTFPrimitive.material]->AddGeometry(_device->GetMesh(geometry, &vlayout, nullptr));
+					render_objects[glTFPrimitive.material]->AddGeometry(_device->GetMesh(geometry, vlayout, m_loadingCommandBuffer));
 					delete geometry;
 				}
 			}
@@ -429,15 +443,32 @@ namespace engine
 			}
 		}
 
-		std::vector<RenderObject*> SceneLoaderGltf::LoadFromFile(const std::string& foldername, const std::string& filename, float scale, engine::render::VulkanDevice* device, VkQueue copyQueue
-			, VkRenderPass renderPass, VkPipelineCache pipelineCache, bool deferred)
+		std::vector<RenderObject*> SceneLoaderGltf::LoadFromFile(const std::string& foldername, const std::string& filename, float scale, engine::render::GraphicsDevice* device
+			, render::RenderPass* renderPass, bool deferred)
 		{
 			_device = device;
 			modelsVkRenderPass = renderPass;
-			vKpipelineCache = pipelineCache;
+			//vKpipelineCache = pipelineCache;
 			tinygltf::Model glTFInput;
 			tinygltf::TinyGLTF gltfContext;
 			std::string error, warning;
+
+			if(!vertexlayout)
+			vertexlayout = _device->GetVertexLayout(
+				{
+					render::VERTEX_COMPONENT_POSITION,
+					render::VERTEX_COMPONENT_NORMAL,
+					render::VERTEX_COMPONENT_UV
+				}, {});
+			if(!vertexlayoutNormalmap)
+			vertexlayoutNormalmap = _device->GetVertexLayout(
+				{
+					render::VERTEX_COMPONENT_POSITION,
+					render::VERTEX_COMPONENT_NORMAL,
+					render::VERTEX_COMPONENT_UV,
+					render::VERTEX_COMPONENT_TANGENT4
+				}, {});
+
 
 			bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, foldername + filename);
 			if (!fileLoaded)
@@ -445,8 +476,9 @@ namespace engine
 				std::cerr << "Could not load " << filename << std::endl;
 				return render_objects;
 			}
-			LoadImages(glTFInput, copyQueue);
-			LoadMaterials(glTFInput, copyQueue, deferred);
+			CreateDescriptorPool(glTFInput);
+			LoadImages(glTFInput);
+			LoadMaterials(glTFInput, deferred);
 
 			const tinygltf::Scene& scene = glTFInput.scenes[0];
 			for (size_t i = 0; i < scene.nodes.size(); i++) {
@@ -464,34 +496,39 @@ namespace engine
 					}
 			}*/
 
+			if (lightPositions.size() == 0)
+				lightPositions.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
 			return render_objects;
 		};
 
-		void SceneLoaderGltf::CreateShadow(VkQueue copyQueue)
+		void SceneLoaderGltf::CreateShadow()
 		{
-			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true, VK_IMAGE_ASPECT_DEPTH_BIT, false);
+			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true, VK_IMAGE_ASPECT_DEPTH_BIT, false);
+			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, render::GfxFormat::D32_FLOAT, descriptorPool, descriptorPoolRTV, m_loadingCommandBuffer, true, false);
 			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true);
-			shadowmapColor = _device->GetColorRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, FB_COLOR_FORMAT);
-			shadowPass = _device->GetRenderPass({ { shadowmapColor->m_format, shadowmapColor->m_descriptor.imageLayout}, { shadowmap->m_format, shadowmap->m_descriptor.imageLayout} });
+			shadowmapColor = _device->GetRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, render::GfxFormat::R8G8B8A8_UNORM, descriptorPool, descriptorPoolRTV, m_loadingCommandBuffer);
+			/*shadowPass = _device->GetRenderPass({ { shadowmapColor->m_format, shadowmapColor->m_descriptor.imageLayout}, { shadowmap->m_format, shadowmap->m_descriptor.imageLayout} });
 			render::VulkanFrameBuffer* fb = _device->GetFrameBuffer(shadowPass->GetRenderPass(), SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor->m_descriptor.imageView, shadowmap->m_descriptor.imageView });
 			shadowPass->AddFrameBuffer(fb);
-			shadowPass->SetClearColor({ 1.0f,1.0f,1.0f }, 0);
+			shadowPass->SetClearColor({ 1.0f,1.0f,1.0f }, 0);*/
+			shadowPass = _device->GetRenderPass(SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor }, shadowmap);
 		}
 
-		void SceneLoaderGltf::CreateShadowObjects(VkPipelineCache pipelineCache)
+		void SceneLoaderGltf::CreateShadowObjects()
 		{
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> offscreenbindings
+			std::vector<render::LayoutBinding> offscreenbindings
 			{
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT}
+				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX}
 			};
-			render::VulkanDescriptorSetLayout* desc_layout = _device->GetDescriptorSetLayout(offscreenbindings);
+			render::DescriptorSetLayout* desc_layout = _device->GetDescriptorSetLayout(offscreenbindings);
 
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> offscreencolorbindings
+			std::vector<render::LayoutBinding> offscreencolorbindings
 			{
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
+				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX},
+				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::FRAGMENT}
 			};
-			render::VulkanDescriptorSetLayout* descColorLayout = _device->GetDescriptorSetLayout(offscreencolorbindings);
+			render::DescriptorSetLayout* descColorLayout = _device->GetDescriptorSetLayout(offscreencolorbindings);
 
 			std::vector<render::VulkanVertexLayout*> vlayouts;
 
@@ -523,7 +560,7 @@ namespace engine
 					//sro->m_geometries.insert(sro->m_geometries.end(), ro->m_geometries.begin(), ro->m_geometries.end());
 					sro->AdoptGeometriesFrom(*ro);
 
-					render::VulkanDescriptorSetLayout* currentdescayout = nullptr;
+					render::DescriptorSetLayout* currentdescayout = nullptr;
 
 					std::vector<render::Buffer*> buffersDescriptors{ shadow_uniform_buffer };
 					if (individualFragmentUniformBuffers[ro_index])
@@ -563,8 +600,11 @@ namespace engine
 						//blendAttachmentStates[0].colorWriteMask = 0xf;//We want to write to color only for transparents;
 					}
 
-					render::VulkanPipeline* p = _device->GetPipeline(currentdescayout->m_descriptorSetLayout, l->m_vertexInputBindings, l->m_vertexInputAttributes,
-						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache, props);
+					/*render::VulkanPipeline* p = _device->GetPipeline(currentdescayout->m_descriptorSetLayout, l->m_vertexInputBindings, l->m_vertexInputAttributes,
+						sm_vertex_file, sm_fragment_file, shadowPass->GetRenderPass(), pipelineCache, props);*/
+					render::Pipeline* p = _device->GetPipeline(
+						sm_vertex_file, "VSMain", sm_fragment_file, "PSMain",
+						l, currentdescayout, props, shadowPass);
 					sro->AddPipeline(p);
 
 					/*render::VulkanDescriptorSet* set = _device->GetDescriptorSet(descriptorPool, buffersDescriptors, {},
@@ -600,7 +640,7 @@ namespace engine
 			shadowPass->End(command_buffer);
 		}
 
-		render::VulkanDescriptorSetLayout* SceneLoaderGltf::GetDescriptorSetlayout(std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> layoutBindigs)
+		/*render::VulkanDescriptorSetLayout* SceneLoaderGltf::GetDescriptorSetlayout(std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> layoutBindigs)
 		{
 			for (auto dl : descriptorSetlayouts)
 			{
@@ -624,9 +664,9 @@ namespace engine
 			render::VulkanDescriptorSetLayout* dsl = _device->GetDescriptorSetLayout(layoutBindigs);
 			descriptorSetlayouts.push_back(dsl);
 			return dsl;
-		}
+		}*/
 		float time = 0.0f;
-		void SceneLoaderGltf::UpdateLights(int index, glm::vec4 position, glm::vec4 color, float timer, VkQueue queue)
+		void SceneLoaderGltf::UpdateLights(int index, glm::vec4 position, glm::vec4 color, float timer)
 		{
 			glm::vec3 ll = lightPositions.size() > 0 ? lightPositions[0] : glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
 			ll += position;
@@ -636,7 +676,7 @@ namespace engine
 			uniform_manager.Update(nullptr);
 		}
 
-		void SceneLoaderGltf::Update(float timer, VkQueue queue)
+		void SceneLoaderGltf::Update(float timer)
 		{
 			time += timer;
 			//float flicker = 8 + 2 * sin(3.0 * time) + 1 * glm::fract(sin(time * 12.9898) * 43758.5453);
@@ -679,18 +719,18 @@ namespace engine
 			glm::vec4 lcolor = glm::vec4(1.0f);//flicker, flicker, flicker, 1.0f);
 			uniform_manager.UpdateGlobalParams(UNIFORM_LIGHT0_COLOR, &lcolor, 0, sizeof(lcolor));
 			glm::vec3 cucu = m_camera->GetPosition();
-			cucu.y = -cucu.y;
+			cucu = -cucu;
 			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->GetPosition()));
 
 			uniform_manager.Update(nullptr);
 		}
 
-		void SceneLoaderGltf::UpdateView(float timer, VkQueue queue)
+		void SceneLoaderGltf::UpdateView(float timer)
 		{
 			glm::mat4 viewMatrix = m_camera->GetViewMatrix();
 			uniform_manager.UpdateGlobalParams(UNIFORM_VIEW, &viewMatrix, 0, sizeof(viewMatrix));
 			glm::vec3 cucu = m_camera->GetPosition();
-			cucu.y = -cucu.y;
+			cucu = -cucu;
 			uniform_manager.UpdateGlobalParams(UNIFORM_CAMERA_POSITION, &cucu, 0, sizeof(m_camera->GetPosition()));
 
 			/*glm::mat4 viewproj = m_camera->matrices.perspective * m_camera->matrices.view;

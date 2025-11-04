@@ -117,19 +117,20 @@ public:
 		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f }, 4);
 		scenepass->AddFrameBuffer(fb);
 
-		scene.normalmapVS = "normalmap.vert.spv";
-		scene.normalmapFS = "normalmap.frag.spv";
-		scene.lightingVS = "basic.vert.spv";
-		scene.lightingFS = "basic.frag.spv";
+		scene.deferredShadersFolder = engine::tools::getAssetPath() + GetShadersPath() + "scenedeferred/";
+		scene.lightingVS = "basic" + GetVertexShadersExt();
+		scene.lightingFS = "basic" + GetFragShadersExt();
+		scene.normalmapVS = "normalmap" + GetVertexShadersExt();
+		scene.normalmapFS = "normalmap" + GetFragShadersExt();
 
 		scene._device = vulkanDevice;
-		scene.CreateShadow(queue);
+		scene.CreateShadow();
 		scene.globalTextures.push_back(scene.shadowmap);
 
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "castle.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/mypot/", "mypot.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, vulkanDevice, scenepass, true);
 		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
@@ -192,7 +193,7 @@ public:
 
 	void updateUniformBuffers()
 	{
-		scene.Update(timer * 0.05f, queue);
+		scene.Update(timer * 0.05f);
 	}
 	struct UBOLights {
 		glm::mat4 projection;
@@ -263,7 +264,7 @@ public:
 	virtual void ViewChanged()
 	{
 		//updateUniformBuffers();
-		scene.UpdateView(timer * 0.05f, queue);
+		scene.UpdateView(timer * 0.05f);
 	}
 
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay)
@@ -274,17 +275,17 @@ public:
 				std::string lx = std::string("Light position x ") + std::to_string(i);
 				if (ImGui::SliderFloat(lx.c_str(), &scene.lightPositions[i].x, -50.0f, 50.0f))
 				{
-					scene.Update(0.0f, queue);
+					scene.Update(0.0f);
 				}
 				std::string ly = std::string("Light position y ") + std::to_string(i);
 				if (ImGui::SliderFloat(ly.c_str(), &scene.lightPositions[i].y, -50.0f, 50.0f))
 				{
-					scene.Update(0.0f, queue);
+					scene.Update(0.0f);
 				}
 				std::string lz = std::string("Light position z ") + std::to_string(i);
 				if (ImGui::SliderFloat(lz.c_str(), &scene.lightPositions[i].z, -50.0f, 50.0f))
 				{
-					scene.Update(0.0f, queue);
+					scene.Update(0.0f);
 				}
 			}
 		}

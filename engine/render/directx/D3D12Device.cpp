@@ -24,10 +24,12 @@ namespace engine
 			D3D12UniformBuffer* buffer = new D3D12UniformBuffer();
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(descriptorPool);
 			D3D12CommandBuffer* d3dcmd = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+
+			assert(size <= 256);
 			
 			if (onCPU)
 			{
-				buffer->CreateCPUVisible(m_device.Get(), size, data);
+				buffer->CreateCPUVisible(m_device.Get(), 256, data);//TODO make sure we read just what we need
 			}
 			else
 			{

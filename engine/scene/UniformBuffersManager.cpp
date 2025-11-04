@@ -55,7 +55,7 @@ namespace engine
 				total_buffer_size += GetSize(key);
 			}
 
-			assert(total_buffer_size < 256);
+			assert(total_buffer_size <= 256);
 
 			total_buffer_size = 256;
 

@@ -504,6 +504,8 @@ void D3D12Application::WindowResized()
 
 void D3D12Application::DrawFullScreenQuad(render::CommandBuffer* commandBuffer)
 {
+	ID3D12GraphicsCommandList* cmdList = ((render::D3D12CommandBuffer*)commandBuffer)->m_commandList.Get();
+	cmdList->DrawInstanced(3, 1, 0, 0);
 }
 
 const std::string D3D12Application::GetShadersPath()

@@ -81,6 +81,7 @@ namespace engine
 					case VERTEX_COMPONENT_COLOR:
 					case VERTEX_COMPONENT_COLOR_UINT:		return "COLOR";
 
+					case VERTEX_COMPONENT_TANGENT4:
 					case VERTEX_COMPONENT_TANGENT:	return "TANGENT";
 
 					case VERTEX_COMPONENT_BITANGENT:	return "BITANGENT";
