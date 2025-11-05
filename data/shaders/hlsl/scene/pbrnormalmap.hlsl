@@ -1,6 +1,8 @@
 
 #pragma pack_matrix(row_major)
 
+#include "../pbr/common.hlsl"   // contains BRDF() and helper functions
+
 struct VSInput
 {
     float3 position    : POSITION;
@@ -14,6 +16,7 @@ struct PSInput
     float4 position : SV_POSITION;
     float3 positionw : POSITION;
     float3 normal : NORMAL;
+    float3 tangent : TANGENT;
     float2 uv : TEXCOORD;
 	float3 lightPos : LIGHT;
     float3 camPos : CAMERA;
@@ -29,7 +32,7 @@ cbuffer cb0 : register(b0)
 
 cbuffer global_frag_ubo : register(b1)
 {
-	float4 light_color;
+	float4 light0Color;
 };
 
 cbuffer frag_ubo : register(b2)
@@ -40,10 +43,10 @@ cbuffer frag_ubo : register(b2)
 	float aoFactor;
 };
 
-Texture2D g_texture_albedo : register(t0);
-Texture2D g_texture_rm : register(t1);
-Texture2D g_texture_normalmap : register(t2);
-SamplerState g_sampler : register(s0);
+Texture2D albedoSampler             : register(t0);
+Texture2D roughnessMetallicSampler  : register(t1);
+Texture2D normalsSampler            : register(t2);
+SamplerState samLinear              : register(s0);
 
 
 PSInput VSMain(VSInput input)
@@ -55,20 +58,58 @@ PSInput VSMain(VSInput input)
 	result.positionw = input.position;
     result.uv = input.uv;
 	result.normal = input.normal;
+	result.tangent = input.tangent.xyz;
 	result.lightPos = light_pos.xyz;
 	result.camPos = camera_pos;
 
     return result;
 }
 
+float3 CalculateNormal(PSInput input)
+{
+    float3 tangentNormal = normalsSampler.Sample(samLinear, input.uv).xyz * 2.0f - 1.0f;
+
+    float3 N = normalize(input.normal);
+    float3 T = normalize(input.tangent.xyz);
+    float3 B = normalize(cross(N, T)); // or cross(N, T) * input.tangent.w if handedness is needed
+    float3x3 TBN = float3x3(T, B, N);
+
+    return normalize(mul(tangentNormal, TBN)); // note: mul(vector, matrix) in HLSL
+}
+
 float4 PSMain(PSInput input) : SV_TARGET
 {
-	float3 lightDir = normalize(input.lightPos - input.positionw);  
-	float3 N = normalize(input.normal);
-	float diff = max(dot(N, lightDir), 0.0);
-	float3 viewDir = normalize(input.camPos - input.positionw);
-	float3 reflectDir = reflect(-lightDir, N); 
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+	// Base color (gamma → linear)
+    float3 albedo = pow(albedoSampler.Sample(samLinear, input.uv).rgb, 2.2f.xxx) * baseColorFactor;
+
+ // Roughness/metallic map
+    float3 rm = roughnessMetallicSampler.Sample(samLinear, input.uv).rgb;
+    float roughness = rm.g * roughnessFactor;
+    float metallic  = rm.b * metallicFactor;
 	
-    return ( diff + spec ) * g_texture_albedo.Sample(g_sampler, input.uv);
+	 // View direction & normal
+    float3 viewDir = normalize(input.camPos - input.positionw);
+    float3 N = CalculateNormal(input);
+	
+	float3 Lo = 0.0f.xxx;
+	
+	// Single point light
+    float3 lightDir = normalize(input.lightPos - input.positionw);
+    float distance = length(input.lightPos - input.positionw);
+    float attenuation = 1.0f / (distance * distance);
+    float3 radiance = light0Color.rgb * attenuation;
+	
+	Lo += BRDF(lightDir, viewDir, N, albedo, metallic, roughness) * radiance;
+	
+	 // Ambient (AO)
+    float3 ambient = aoFactor.xxx * albedo;
+
+    float3 color = ambient + Lo;
+	
+	// HDR tonemapping
+    color = color / (color + 1.0f.xxx);
+    // Gamma correction
+    color = pow(color, 1.0f / 2.2f);
+
+    return float4(color, 1.0f);
 }

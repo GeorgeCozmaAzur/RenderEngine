@@ -151,14 +151,14 @@ namespace engine
 
                 HRESULT hr;
 
-                hr = D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, vertexEntry.c_str(), "vs_5_0", compileFlags, 0, &vertexShader, &errors);
+                hr = D3DCompileFromFile(fileName.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, vertexEntry.c_str(), "vs_5_0", compileFlags, 0, &vertexShader, &errors);
                 if (errors != nullptr)
                 {
                     OutputDebugStringA((char*)errors->GetBufferPointer());
                 }
                 ThrowIfFailed(hr);
 
-                hr = D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, fragmentEntry.c_str(), "ps_5_0", compileFlags, 0, &pixelShader, &errors);
+                hr = D3DCompileFromFile(fileName.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, fragmentEntry.c_str(), "ps_5_0", compileFlags, 0, &pixelShader, &errors);
                 if (errors != nullptr)
                 {
                     OutputDebugStringA((char*)errors->GetBufferPointer());
