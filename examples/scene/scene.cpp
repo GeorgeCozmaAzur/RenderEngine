@@ -28,21 +28,23 @@ public:
 	scene::SceneLoaderGltf scene;
 	std::vector<scene::RenderObject*> scene_render_objects;
 
-	render::VulkanRenderPass* scenepass = nullptr;
+	render::RenderPass* scenepass = nullptr;
 
-	render::VulkanPipeline* blackandwhitepipeline = nullptr;
+	render::Pipeline* blackandwhitepipeline = nullptr;
 
 	DescriptorSet* pfdesc = nullptr;
 
-	render::VulkanTexture* scenecolor;
-	render::VulkanTexture* scenepositions;
-	render::VulkanTexture* scenenormals;
-	render::VulkanTexture* sceneroughnessmetallic;
-	render::VulkanTexture* sceneLightscolor;
+	render::Texture* scenecolor;
+	render::Texture* scenepositions;
+	render::Texture* scenenormals;
+	render::Texture* sceneroughnessmetallic;
+	render::Texture* sceneLightscolor;
 
 	scene::DeferredLights deferredLights;
 
 	render::DescriptorPool* descriptorPoolPostEffects;
+	render::DescriptorPool* descriptorPoolRTV;
+	render::DescriptorPool* descriptorPoolPostEffectsDSV;
 
 	VulkanExample() : VulkanApplication(true)
 	{
@@ -80,17 +82,22 @@ public:
 			{render::DescriptorType::IMAGE_SAMPLER, 1},
 			{render::DescriptorType::INPUT_ATTACHMENT, 4}
 			}, 2);
+		descriptorPoolRTV = m_device->GetDescriptorPool({ {render::DescriptorType::RTV, 5} }, 5);
+		descriptorPoolPostEffectsDSV = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 1} }, 1);
 	}
 
 	void init()
 	{
+		if (m_loadingCommandBuffer)
+			m_loadingCommandBuffer->Begin();
+
 		setupDescriptorPool();
 
 		scene.SetCamera(&camera);
-		scene.uniform_manager.SetEngineDevice(vulkanDevice);	
+		scene.uniform_manager.SetEngineDevice(m_device);
 
 		//render::VulkanTexture* scenecolor = vulkanDevice->GetColorRenderTarget(width, height, swapChain.m_surfaceFormat.format);
-		scenecolor =				vulkanDevice->GetRenderTarget(width, height, swapChain.m_surfaceFormat.format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+		/*scenecolor =				vulkanDevice->GetRenderTarget(width, height, swapChain.m_surfaceFormat.format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		scenepositions =			vulkanDevice->GetRenderTarget(width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
@@ -115,8 +122,18 @@ public:
 		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f }, 2);
 		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f }, 3);
 		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f }, 4);
-		scenepass->AddFrameBuffer(fb);
+		scenepass->AddFrameBuffer(fb);*/
+		float cc[4] = { 0.0f,0.0f,0.0f,0.0f };
+		float cc2[4] = { 0.0f,0.0f,0.0f,0.0f };
+		scenecolor = m_device->GetRenderTarget(width, height, render::GfxFormat::R8G8B8A8_UNORM, descriptorPoolPostEffects, descriptorPoolRTV, m_loadingCommandBuffer, cc);
+		scenepositions = m_device->GetRenderTarget(width, height, render::GfxFormat::R16G16B16A16_SFLOAT, descriptorPoolPostEffects, descriptorPoolRTV, m_loadingCommandBuffer, cc);
+		scenenormals = m_device->GetRenderTarget(width, height, render::GfxFormat::R16G16B16A16_SFLOAT, descriptorPoolPostEffects, descriptorPoolRTV, m_loadingCommandBuffer, cc2);
+		sceneroughnessmetallic = m_device->GetRenderTarget(width, height, render::GfxFormat::R8G8B8A8_UNORM, descriptorPoolPostEffects, descriptorPoolRTV, m_loadingCommandBuffer, cc);
+		sceneLightscolor = m_device->GetRenderTarget(width, height, render::GfxFormat::R8G8B8A8_UNORM, descriptorPoolPostEffects, descriptorPoolRTV, m_loadingCommandBuffer, cc);
+		render::Texture* scenedepth = m_device->GetDepthRenderTarget(width, height, render::GfxFormat::D32_FLOAT, descriptorPoolPostEffects, descriptorPoolPostEffectsDSV, m_loadingCommandBuffer, false, false);
+		scenepass = m_device->GetRenderPass(width, height, { scenecolor ,scenepositions, scenenormals, sceneroughnessmetallic, sceneLightscolor }, scenedepth, { render::RenderSubpass({}, {0,1,2,3,5}), render::RenderSubpass({0,1,2,3}, {4}) });
 
+		scene.m_loadingCommandBuffer = m_loadingCommandBuffer;
 		scene.deferredShadersFolder = GetShadersPath() + "scenedeferred/";
 		scene.lightingVS = "basic" + GetVertexShadersExt();
 		scene.lightingFS = "basic" + GetFragShadersExt();
@@ -136,25 +153,44 @@ public:
 
 		//scene.CreateShadowObjects(pipelineCache);
 
-		std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> blurbindings
+		/*std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> blurbindings
 		{
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 		};
-		VulkanDescriptorSetLayout* blur_layout = vulkanDevice->GetDescriptorSetLayout(blurbindings);
+		VulkanDescriptorSetLayout* blur_layout = vulkanDevice->GetDescriptorSetLayout(blurbindings);*/
+		render::DescriptorSetLayout* blur_layout = m_device->GetDescriptorSetLayout({
+						{render::DescriptorType::IMAGE_SAMPLER,render::ShaderStage::FRAGMENT }
+			});
 
 		render::PipelineProperties props;
-		blackandwhitepipeline = vulkanDevice->GetPipeline(blur_layout->m_descriptorSetLayout, {}, {},
-			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/posteffects/simpletexture.frag.spv",
-			mainRenderPass->GetRenderPass(), pipelineCache, props);
+		/*blackandwhitepipeline = vulkanDevice->GetPipeline(blur_layout->m_descriptorSetLayout, {}, {},
+			engine::tools::getAssetPath() + "shaders/posteffects/screenquad.vert.spv", engine::tools::getAssetPath() + "shaders/posteffects/blackandwhite.frag.spv",
+			mainRenderPass->GetRenderPass(), pipelineCache, props);*/
+		render::VertexLayout* emptylayout = m_device->GetVertexLayout({}, {});
+		blackandwhitepipeline = m_device->GetPipeline(
+			GetShadersPath() + "posteffects/screenquad" + GetVertexShadersExt(), "VSMain", GetShadersPath() + "posteffects/simpletexture" + GetFragShadersExt(), "PSMainTextured",
+			emptylayout, blur_layout, props, m_mainRenderPass);
 
 		//pfdesc = vulkanDevice->GetDescriptorSet(descriptorPoolPostEffects, {}, { &sceneLightscolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);
 		pfdesc = vulkanDevice->GetDescriptorSet(blur_layout, descriptorPoolPostEffects, {}, { sceneLightscolor });
+		PrepareUI();
+
+		if (m_loadingCommandBuffer)
+		{
+			// Close the command list and execute it to begin the initial GPU setup.
+			m_loadingCommandBuffer->End();
+			SubmitOnQueue(m_loadingCommandBuffer);
+		}
+
+		WaitForDevice();
+
+		m_device->FreeLoadStaggingBuffers();
 	}
 
 	void BuildCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		/*VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;*/
 
 		for (int32_t i = 0; i < m_drawCommandBuffers.size(); ++i)
 		{
@@ -164,6 +200,7 @@ public:
 
 			scenepass->Begin(m_drawCommandBuffers[i], 0);
 
+			scene.descriptorPool->Draw(m_drawCommandBuffers[i]);
 			for (int j = 0; j < scene_render_objects.size(); j++) {
 				scene_render_objects[j]->Draw(m_drawCommandBuffers[i]);
 			}
@@ -175,8 +212,9 @@ public:
 			scenepass->End(m_drawCommandBuffers[i]);
 
 
-			mainRenderPass->Begin(m_drawCommandBuffers[i], i);
-			
+			m_mainRenderPass->Begin(m_drawCommandBuffers[i], i);
+
+			descriptorPoolPostEffects->Draw(m_drawCommandBuffers[i]);
 			blackandwhitepipeline->Draw(m_drawCommandBuffers[i]);
 			pfdesc->Draw(m_drawCommandBuffers[i], blackandwhitepipeline);
 			//vkCmdDraw(drawCommandBuffers[i], 3, 1, 0, 0);
@@ -184,7 +222,7 @@ public:
 
 			DrawUI(m_drawCommandBuffers[i]);
 
-			mainRenderPass->End(m_drawCommandBuffers[i]);
+			m_mainRenderPass->End(m_drawCommandBuffers[i], i);
 
 			//VK_CHECK_RESULT(vkEndCommandBuffer(drawCommandBuffers[i]));
 			m_drawCommandBuffers[i]->End();
@@ -217,9 +255,7 @@ public:
 
 	void Prepare()
 	{
-		
 		init();
-		PrepareUI();
 		BuildCommandBuffers();
 		//scene.uniform_manager.UpdateGlobalParams(scene::UNIFORM_PROJECTION, &perspectiveMatrix, 0, sizeof(perspectiveMatrix));
 		updateUniformBuffers();
