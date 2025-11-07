@@ -436,7 +436,7 @@ void VulkanApplication::DrawFullScreenQuad(render::CommandBuffer* commandBuffer)
 
 const std::string VulkanApplication::GetShadersPath()
 {
-	return "shaders/";
+	return engine::tools::getAssetPath() + "shaders/";
 }
 
 const std::string VulkanApplication::GetVertexShadersExt()

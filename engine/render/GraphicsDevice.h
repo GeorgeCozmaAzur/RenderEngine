@@ -42,7 +42,7 @@ namespace engine
 
 			virtual Texture* GetTexture(TextureData* data, DescriptorPool *descriptorPool, CommandBuffer* commandBuffer) = 0;
 
-			virtual Texture* GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer) = 0;
+			virtual Texture* GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, float* clearValues = nullptr) = 0;
 			
 			virtual Texture* GetDepthRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, bool useInShaders, bool withStencil) = 0;
 

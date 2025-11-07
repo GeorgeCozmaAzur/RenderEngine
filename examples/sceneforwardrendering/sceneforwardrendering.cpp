@@ -91,7 +91,7 @@ public:
 		scenepass->AddFrameBuffer(fb);*/
 
 		scene.m_loadingCommandBuffer = m_loadingCommandBuffer;
-		scene.forwardShadersFolder = engine::tools::getAssetPath() + GetShadersPath() + "scene/";
+		scene.forwardShadersFolder = GetShadersPath() + "scene/";
 		scene.lightingVS = "pbr" + GetVertexShadersExt();
 		scene.lightingFS = "pbrtextured" + GetFragShadersExt();
 		scene.normalmapVS = "pbrnormalmap" + GetVertexShadersExt();
@@ -123,7 +123,7 @@ public:
 			mainRenderPass->GetRenderPass(), pipelineCache, props);*/
 		render::VertexLayout* emptylayout = m_device->GetVertexLayout({}, {});
 		blackandwhitepipeline = m_device->GetPipeline(
-			engine::tools::getAssetPath() + GetShadersPath() + "posteffects/screenquad" + GetVertexShadersExt(), "VSMain", engine::tools::getAssetPath() + GetShadersPath() + "posteffects/simpletexture" + GetFragShadersExt(), "PSMainTextured",
+			GetShadersPath() + "posteffects/screenquad" + GetVertexShadersExt(), "VSMain", GetShadersPath() + "posteffects/simpletexture" + GetFragShadersExt(), "PSMainTextured",
 			emptylayout, blur_layout, props, m_mainRenderPass);
 
 		//pfdesc = vulkanDevice->GetDescriptorSet(descriptorPoolPostEffects, {}, { &scenecolor->m_descriptor }, blur_layout->m_descriptorSetLayout, blur_layout->m_setLayoutBindings);

@@ -15,6 +15,7 @@ struct PSInput
 };
 
 Texture2D g_texture : register(t0);
+Texture2D g_texture1 : register(t1);
 SamplerState g_sampler : register(s0);
 
 
@@ -38,4 +39,9 @@ PSInput VSMain(uint vertexID : SV_VertexID)
 float4 PSMainTextured(PSInput input) : SV_TARGET
 {
     return g_texture.Sample(g_sampler, input.uv);
+}
+
+float4 PSMainDoubleTextured(PSInput input) : SV_TARGET
+{
+    return g_texture.Sample(g_sampler, input.uv) * g_texture1.Sample(g_sampler, input.uv);
 }

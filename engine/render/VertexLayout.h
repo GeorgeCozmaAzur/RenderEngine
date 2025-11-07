@@ -11,8 +11,10 @@ namespace engine
 		typedef enum Component {
 			VERTEX_COMPONENT_POSITION = 0,
 			VERTEX_COMPONENT_POSITION2D,
+			VERTEX_COMPONENT_POSITION4D,
 			VERTEX_COMPONENT_NORMAL,
 			VERTEX_COMPONENT_COLOR,
+			VERTEX_COMPONENT_COLOR4,
 			VERTEX_COMPONENT_COLOR_UINT,
 			VERTEX_COMPONENT_UV,
 			VERTEX_COMPONENT_TANGENT,
@@ -59,6 +61,8 @@ namespace engine
 
 				case VERTEX_COMPONENT_COLOR_UINT:	return sizeof(uint32_t);
 
+				case VERTEX_COMPONENT_POSITION4D:
+				case VERTEX_COMPONENT_COLOR4:
 				case VERTEX_COMPONENT_TANGENT4:		return 4 * sizeof(float);
 
 				case VERTEX_COMPONENT_DUMMY_VEC4:	return 4 * sizeof(float);
@@ -72,6 +76,7 @@ namespace engine
 				switch (component)
 				{
 					case VERTEX_COMPONENT_POSITION2D:
+					case VERTEX_COMPONENT_POSITION4D:
 					case VERTEX_COMPONENT_POSITION:	return "POSITION";
 
 					case VERTEX_COMPONENT_UV:			return "TEXCOORD";
@@ -79,6 +84,7 @@ namespace engine
 					case VERTEX_COMPONENT_NORMAL:	return "NORMAL";
 
 					case VERTEX_COMPONENT_COLOR:
+					case VERTEX_COMPONENT_COLOR4:
 					case VERTEX_COMPONENT_COLOR_UINT:		return "COLOR";
 
 					case VERTEX_COMPONENT_TANGENT4:

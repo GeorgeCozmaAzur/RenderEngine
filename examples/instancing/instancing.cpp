@@ -185,7 +185,7 @@ public:
 			vertexLayoutInstanced,plane._descriptorLayout, props, mainRenderPass));*/
 
 		plane.AddPipeline(m_device->GetPipeline(
-			engine::tools::getAssetPath() + GetShadersPath() + "instancing/phong" + GetVertexShadersExt(), "VSMain", engine::tools::getAssetPath() + GetShadersPath() + "instancing/phongtextured" + GetFragShadersExt(), "PSMainTextured",
+			GetShadersPath() + "instancing/phong" + GetVertexShadersExt(), "VSMain", GetShadersPath() + "instancing/phongtextured" + GetFragShadersExt(), "PSMainTextured",
 			vertexLayoutInstanced, plane._descriptorLayout, props, m_mainRenderPass));
 	}
 

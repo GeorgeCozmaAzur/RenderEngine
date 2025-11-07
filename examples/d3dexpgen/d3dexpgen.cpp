@@ -283,15 +283,15 @@ public:
 		render::PipelineProperties props;
 		props.depthBias = true;
 		//pipelineOffscreen = m_device->GetPipeline(engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/shaders" + GetVertexShadersExt(), "VSMain", "", "PSMainOffscreen", vertexLayout, odsl, props, m_mainRenderPass);
-		pipelineOffscreen = m_device->GetPipeline(engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/scene" + GetVertexShadersExt(), "VSMain",
-			engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/offscreenvariancecolor" + GetFragShadersExt(), "PSMainOffscreen",
+		pipelineOffscreen = m_device->GetPipeline(GetShadersPath() + "d3dexpgen/scene" + GetVertexShadersExt(), "VSMain",
+			GetShadersPath() + "d3dexpgen/offscreenvariancecolor" + GetFragShadersExt(), "PSMainOffscreen",
 			vertexLayout, odsl, props, offscreenPass);
 		//pipelineOffscreen = m_device->GetPipeline(GetAssetFullPath("shaders/d3dexp/scene.vert.spv"), "VSMain", GetAssetFullPath("shaders/d3dexp/offscreenvariancecolor.frag.spv"), "PSMainOffscreen",vertexLayout, odsl, props, offscreenPass);
 		props.depthBias = false;
 		props.vertexConstantBlockSize = sizeof(glm::vec4);
 		//pipelineMT = m_device->GetPipeline(engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/shaders" + GetVertexShadersExt(), "VSMain", "", "PSMainMT", vertexLayout, pdsl, props, nullptr);
-		pipelineMT = m_device->GetPipeline(engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/scene" + GetVertexShadersExt(), "VSMain",
-			engine::tools::getAssetPath() + GetShadersPath() + "d3dexpgen/scene" + GetFragShadersExt(), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
+		pipelineMT = m_device->GetPipeline(GetShadersPath() + "d3dexpgen/scene" + GetVertexShadersExt(), "VSMain",
+			GetShadersPath() + "d3dexpgen/scene" + GetFragShadersExt(), "PSMainMT", vertexLayout, pdsl, props, m_mainRenderPass);
 
 		PrepareUI();
 

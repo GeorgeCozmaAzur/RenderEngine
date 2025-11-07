@@ -47,7 +47,7 @@ namespace engine
             {
                 if ((resourceFlags & D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)>0)
                 {
-                    clearValue = { m_dxgiFormat, { 1.0f, 1.0f, 1.0f, 1.0f } };
+                    clearValue = { m_dxgiFormat, { m_ClearColor[0], m_ClearColor[1], m_ClearColor[2], m_ClearColor[3]}};
                     clearValuep = &clearValue;
                 }
             }

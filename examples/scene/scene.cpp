@@ -117,7 +117,7 @@ public:
 		scenepass->SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f }, 4);
 		scenepass->AddFrameBuffer(fb);
 
-		scene.deferredShadersFolder = engine::tools::getAssetPath() + GetShadersPath() + "scenedeferred/";
+		scene.deferredShadersFolder = GetShadersPath() + "scenedeferred/";
 		scene.lightingVS = "basic" + GetVertexShadersExt();
 		scene.lightingFS = "basic" + GetFragShadersExt();
 		scene.normalmapVS = "normalmap" + GetVertexShadersExt();
@@ -208,7 +208,11 @@ public:
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboSharedLights));
 
 		VK_CHECK_RESULT(vsdeferred->Map());
-		deferredLights.Init(vsdeferred, vulkanDevice, descriptorPoolPostEffects, queue, scenepass, pipelineCache, scene.lightPositions.size(), scenepositions, scenenormals, sceneroughnessmetallic, scenecolor);
+		deferredLights._commandBuffer = m_loadingCommandBuffer;
+		deferredLights.shadersPath = GetShadersPath();
+		deferredLights.vertext = GetVertexShadersExt();
+		deferredLights.fragext = GetFragShadersExt();
+		deferredLights.Init(vsdeferred, vulkanDevice, descriptorPoolPostEffects, scenepass, scene.lightPositions.size(), scenepositions, scenenormals, sceneroughnessmetallic, scenecolor);
 	}
 
 	void Prepare()

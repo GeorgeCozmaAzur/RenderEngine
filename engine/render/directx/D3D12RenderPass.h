@@ -30,16 +30,21 @@ namespace engine
 			CD3DX12_RECT   m_scissorRect;
 			std::vector<FrameBufferObject> m_frameBuffers;
 			D3D12_RESOURCE_STATES m_stateBeforeRendering;
-			D3D12_RESOURCE_STATES m_stateAfterRendering;		
+			D3D12_RESOURCE_STATES m_stateAfterRendering;
+
+			uint32_t currentSubpass = 0;
 			
 		public:
+			std::vector<RenderSubpass> m_subPasses;
 			std::vector<DXGI_FORMAT> m_RTVFormats;//TODO make them private
+			std::vector<DirectX::XMFLOAT4> m_clearColors;
 			DXGI_FORMAT m_DSVFormat;
 			void Create(uint32_t width, uint32_t height, std::vector<DXGI_FORMAT> rtvFormats, DXGI_FORMAT dvsFormat, std::vector<FrameBufferObject> frameBuffers,
 				D3D12_RESOURCE_STATES stateBeforeRendering = D3D12_RESOURCE_STATE_RENDER_TARGET, 
 				D3D12_RESOURCE_STATES stateAfterRendering = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-			void Begin(ID3D12GraphicsCommandList* commandList, uint32_t frameBufferIndex = 0);
-			void End(ID3D12GraphicsCommandList* commandList, uint32_t frameBufferIndex = 0);
+			void SetSubPasses(std::vector<RenderSubpass> subpasses) { m_subPasses = subpasses; }
+			void Begin(ID3D12GraphicsCommandList* commandList, uint32_t frameBufferIndex = 0, uint32_t subpass = 0);
+			void End(ID3D12GraphicsCommandList* commandList, uint32_t frameBufferIndex = 0, uint32_t subpass = 0);
 			virtual void Begin(CommandBuffer* commandBuffer, uint32_t frameBufferIndex = 0);
 			virtual void End(CommandBuffer* commandBuffer, uint32_t frameBufferIndex = 0);
 			virtual void NextSubPass(CommandBuffer* commandBuffer);

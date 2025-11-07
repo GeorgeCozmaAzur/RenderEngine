@@ -42,6 +42,8 @@ namespace engine
             CD3DX12_CPU_DESCRIPTOR_HANDLE m_CPUHandle;
             CD3DX12_GPU_DESCRIPTOR_HANDLE m_GPUHandle;
 
+            FLOAT m_ClearColor[4] = {0.0f,0.0f,0.0f,0.0f};
+
             UINT64 GetSize();
 
             void Create(ID3D12Device* device, uint32_t width, uint32_t height, GfxFormat format, D3D12_RESOURCE_FLAGS resourceFlags, D3D12_RESOURCE_STATES resourceState);

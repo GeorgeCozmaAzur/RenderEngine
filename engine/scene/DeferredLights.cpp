@@ -1,4 +1,5 @@
 #include "DeferredLights.h"
+#include "CommandBuffer.h"
 
 namespace engine
 {
@@ -8,7 +9,7 @@ namespace engine
 			return (float)rand() / ((float)RAND_MAX + 1);
 		}
 
-		void DeferredLights::Init(render::VulkanBuffer* ub, render::VulkanDevice* device, render::DescriptorPool* descriptorPool, VkQueue queue, render::RenderPass* renderPass, VkPipelineCache pipelineCache, int lightsNumber, render::VulkanTexture* positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic, render::VulkanTexture* albedo)
+		void DeferredLights::Init(render::Buffer* ub, render::GraphicsDevice* device, render::DescriptorPool* descriptorPool, render::RenderPass* renderPass, int lightsNumber, render::Texture* positions, render::Texture* normals, render::Texture* roughnessMetallic, render::Texture* albedo)
 		{
 			vulkanDevice = device;
 			_vertexLayout = device->GetVertexLayout(//new render::VulkanVertexLayout(
@@ -16,14 +17,14 @@ namespace engine
 					render::VERTEX_COMPONENT_POSITION
 				},
 				{ 
-					render::VERTEX_COMPONENT_DUMMY_VEC4,
-					render::VERTEX_COMPONENT_DUMMY_VEC4 
+					render::VERTEX_COMPONENT_POSITION4D,
+					render::VERTEX_COMPONENT_COLOR4 
 				});
 
 			std::vector<render::MeshData*> meshDatas = LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", _vertexLayout, 0.05f, lightsNumber, glm::vec3(0.0, 0.0, 0.0));
 
-			std::string shaderVertexName = "shaders/basicdeferred/deferredlights.vert.spv";
-			std::string shaderFragmentName = "shaders/basicdeferred/deferredlights.frag.spv";
+			std::string shaderVertexName = shadersPath + "basicdeferred/deferredlights" + vertext;
+			std::string shaderFragmentName = shadersPath + "basicdeferred/deferredlights" + fragext;
 
 			
 			m_pointLights.resize(lightsNumber * 2);
@@ -37,8 +38,8 @@ namespace engine
 			{
 				geo->m_instanceBufferSize = m_pointLights.size() * sizeof(glm::vec4);
 				geo->_instanceExternalData = m_pointLights.data();
-				m_geometries.push_back(vulkanDevice->GetMesh(geo, _vertexLayout, nullptr));
-
+				m_geometries.push_back(vulkanDevice->GetMesh(geo, _vertexLayout, _commandBuffer));
+				delete geo;
 			/*	geo->SetIndexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_indexCount * sizeof(uint32_t), geo->m_indices));
 				geo->SetVertexBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, queue, geo->m_verticesSize * sizeof(float), geo->m_vertices));
 				geo->SetInstanceBuffer(vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -46,23 +47,29 @@ namespace engine
 					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));*/
 			}
 
-			std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
+			std::vector<render::LayoutBinding> modelbindings{
+						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX},
+						{render::DescriptorType::INPUT_ATTACHMENT, render::ShaderStage::FRAGMENT},
+						{render::DescriptorType::INPUT_ATTACHMENT, render::ShaderStage::FRAGMENT}
+				};
+
+			/*std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> modelbindings
 			{
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
 				{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT},
 				{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT}
-			};
+			};*/
 			std::vector<render::Texture*> texturesDescriptors = { positions, normals };
 
 			//we have a pbr lighting system
 			if (roughnessMetallic && albedo)
 			{
-				modelbindings.push_back({ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT });
-				modelbindings.push_back({ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT });
+				modelbindings.push_back({ render::DescriptorType::INPUT_ATTACHMENT, render::ShaderStage::FRAGMENT });
+				modelbindings.push_back({ render::DescriptorType::INPUT_ATTACHMENT, render::ShaderStage::FRAGMENT });
 				texturesDescriptors.insert(texturesDescriptors.begin(), albedo);
 				texturesDescriptors.push_back(roughnessMetallic);	
-				shaderVertexName = "shaders/basicdeferred/deferredlightspbr.vert.spv";
-				shaderFragmentName = "shaders/basicdeferred/deferredlightspbr.frag.spv";
+				shaderVertexName = shadersPath + "basicdeferred/deferredlightspbr" + vertext;
+				shaderFragmentName = shadersPath + "basicdeferred/deferredlightspbr" + fragext;
 			}
 
 			_descriptorLayout = vulkanDevice->GetDescriptorSetLayout(modelbindings);
@@ -90,7 +97,7 @@ namespace engine
 			/*_pipeline = vulkanDevice->GetPipeline(_descriptorLayout->m_descriptorSetLayout, _vertexLayout->m_vertexInputBindings, _vertexLayout->m_vertexInputAttributes,
 				engine::tools::getAssetPath() + shaderVertexName, engine::tools::getAssetPath() + shaderFragmentName,
 				renderPass, pipelineCache, props);*/
-			_pipeline = vulkanDevice->GetPipeline(engine::tools::getAssetPath() + shaderVertexName, "", engine::tools::getAssetPath() + shaderFragmentName, "",
+			_pipeline = vulkanDevice->GetPipeline(shaderVertexName, "VSMain", shaderFragmentName, "PSMain",
 				_vertexLayout, _descriptorLayout, props, renderPass);
 		}
 

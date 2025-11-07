@@ -15,12 +15,16 @@ namespace engine
 
 		class DeferredLights : public SimpleModel
 		{
-			render::VulkanDevice* vulkanDevice;
+			render::GraphicsDevice* vulkanDevice;
 		public:
 			std::vector<glm::vec4> m_pointLights;
+			class render::CommandBuffer* _commandBuffer = nullptr;
+			std::string shadersPath;
+			std::string vertext;
+			std::string fragext;
 
-			void Init(render::VulkanBuffer *ub, render::VulkanDevice *device, render::DescriptorPool* descriptorPool, VkQueue queue, render::RenderPass* renderPass, VkPipelineCache pipelineCache, int lightsNumber,
-				render::VulkanTexture *positions, render::VulkanTexture* normals, render::VulkanTexture* roughnessMetallic = nullptr, render::VulkanTexture* albedo = nullptr);
+			void Init(render::Buffer *ub, render::GraphicsDevice*device, render::DescriptorPool* descriptorPool, render::RenderPass* renderPass, int lightsNumber,
+				render::Texture *positions, render::Texture* normals, render::Texture* roughnessMetallic = nullptr, render::Texture* albedo = nullptr);
 			void Update();
 			~DeferredLights();
 		};

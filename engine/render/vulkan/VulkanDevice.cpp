@@ -368,9 +368,9 @@ namespace engine
 
         VulkanTexture* VulkanDevice::GetColorRenderTarget(uint32_t width, uint32_t height, VkFormat format)
         {
-            return GetRenderTarget(width, height, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            return GetRenderTarget(width, height, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
                 VK_IMAGE_ASPECT_COLOR_BIT,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);//TODO no need for input attachment if it's not used as input attachment
         }
 
         VulkanTexture* VulkanDevice::GetDepthRenderTarget(uint32_t width, uint32_t height, bool useInShaders, VkImageAspectFlags aspectMask, bool withStencil, bool updateLayout, VkQueue copyQueue)
@@ -785,7 +785,7 @@ namespace engine
             return texture;
         }
 
-        Texture* VulkanDevice::GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer)
+        Texture* VulkanDevice::GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, float* clearValues)
         {
             Texture* texture = GetColorRenderTarget(width, height, ToVkFormat(format));
             //m_textures.push_back(texture);
@@ -856,7 +856,7 @@ namespace engine
             vktextures.push_back(vkdtexture);
             texturesViews.push_back(vkdtexture->m_descriptor.imageView);
 
-            VulkanRenderPass* scenepass = GetRenderPass(vktextures, {});
+            VulkanRenderPass* scenepass = GetRenderPass(vktextures, subpasses);
             VulkanFrameBuffer* fb = GetFrameBuffer(scenepass->GetRenderPass(), width, height, texturesViews, { { 0.0f, 0.0f, 0.0f, 1.0f } });
             scenepass->AddFrameBuffer(fb);
             //m_renderPasses.push_back(scenepass);

@@ -16,7 +16,8 @@ namespace engine
 			int dsv_count = std::count_if(m_poolSizes.begin(), m_poolSizes.end(), [&](const DescriptorPoolSize& ps) {return ps.type == DescriptorType::DSV; });
 			if (rtv_count > 0)
 			{
-				heapDesc.NumDescriptors = rtv_count;
+				heapDesc.NumDescriptors = std::accumulate(m_poolSizes.begin(), m_poolSizes.end(), 0,
+					[](int acc, const auto& thepair) {return thepair.type == DescriptorType::RTV ? acc + thepair.size : 0; });
 				heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 			}
 			else

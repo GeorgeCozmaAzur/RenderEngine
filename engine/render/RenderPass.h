@@ -7,6 +7,7 @@ namespace engine
 	{
 		struct RenderSubpass
 		{
+			RenderSubpass() {}
 			RenderSubpass(std::vector<uint32_t> i, std::vector<uint32_t> o) :
 				inputAttachmanets(i), outputAttachmanets(o) {
 			}

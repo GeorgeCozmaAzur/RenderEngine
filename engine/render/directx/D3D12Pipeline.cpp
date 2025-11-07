@@ -38,8 +38,9 @@ namespace engine
 
             case VERTEX_COMPONENT_COLOR_UINT:	return DXGI_FORMAT_R8G8B8A8_UNORM;
 
-            case VERTEX_COMPONENT_TANGENT4:		return DXGI_FORMAT_R32G32B32A32_FLOAT;
-
+            case VERTEX_COMPONENT_POSITION4D:
+            case VERTEX_COMPONENT_COLOR4:
+            case VERTEX_COMPONENT_TANGENT4:
             case VERTEX_COMPONENT_DUMMY_VEC4:	return DXGI_FORMAT_R32G32B32A32_FLOAT;
 
             default:							return DXGI_FORMAT_R32G32B32_FLOAT;
@@ -252,13 +253,20 @@ namespace engine
                 psoDesc.BlendState = blendDesc;
                 psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
                 psoDesc.DepthStencilState.DepthEnable = properties.depthTestEnable;
+                psoDesc.DepthStencilState.DepthWriteMask = properties.depthWriteEnable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
                 //psoDesc.DepthStencilState.StencilEnable = FALSE;
                 psoDesc.SampleMask = UINT_MAX;
                 psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
                 std::vector<DXGI_FORMAT> formats;
-                psoDesc.NumRenderTargets = renderPass->m_RTVFormats.size();
-                for(int i=0;i< renderPass->m_RTVFormats.size();i++)
-                psoDesc.RTVFormats[i] = renderPass->m_RTVFormats[i];
+                psoDesc.NumRenderTargets = 0;//renderPass->m_RTVFormats.size();
+                for (int i = 0; i < renderPass->m_subPasses[properties.subpass].outputAttachmanets.size(); i++)
+                {
+                    if (renderPass->m_subPasses[properties.subpass].outputAttachmanets[i] < renderPass->m_RTVFormats.size())
+                    {
+                        psoDesc.RTVFormats[i] = renderPass->m_RTVFormats[renderPass->m_subPasses[properties.subpass].outputAttachmanets[i]];
+                        psoDesc.NumRenderTargets++;
+                    }
+                }
                 psoDesc.SampleDesc.Count = 1;
                 psoDesc.DSVFormat = renderPass->m_DSVFormat;
                 

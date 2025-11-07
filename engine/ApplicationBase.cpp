@@ -375,8 +375,8 @@ void ApplicationBase::PrepareUI()
 		engine::render::VulkanVertexLayout v;
 		UIOverlay._loadingCommandBuffer = m_loadingCommandBuffer;
 		UIOverlay.LoadGeometry(engine::tools::getAssetPath() + "Roboto-Medium.ttf", &v);
-		UIOverlay.PreparePipeline(engine::tools::getAssetPath() + GetShadersPath() + "overlay/uioverlay" + GetVertexShadersExt(),
-			engine::tools::getAssetPath() + GetShadersPath() + "overlay/uioverlay" + GetFragShadersExt(),
+		UIOverlay.PreparePipeline(GetShadersPath() + "overlay/uioverlay" + GetVertexShadersExt(),
+			GetShadersPath() + "overlay/uioverlay" + GetFragShadersExt(),
 			m_mainRenderPass);
 	}
 }

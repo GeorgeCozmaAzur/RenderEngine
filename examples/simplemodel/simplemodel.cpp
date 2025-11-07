@@ -148,7 +148,7 @@ public:
 			engine::tools::getAssetPath() + "shaders/basic/phong.vert.spv","", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv","",
 			vertexLayout, plane._descriptorLayout, props, mainRenderPass));*/
 		plane.AddPipeline(m_device->GetPipeline(
-			engine::tools::getAssetPath() + GetShadersPath() +"basic/phong" + GetVertexShadersExt(), "VSMain", engine::tools::getAssetPath() + GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "PSMainTextured",
+			GetShadersPath() +"basic/phong" + GetVertexShadersExt(), "VSMain", GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "PSMainTextured",
 			vertexLayout, plane._descriptorLayout, props, m_mainRenderPass));
 	}
 

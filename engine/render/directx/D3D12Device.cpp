@@ -25,11 +25,12 @@ namespace engine
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(descriptorPool);
 			D3D12CommandBuffer* d3dcmd = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
 
-			assert(size <= 256);
+			//assert(size <= 256);
+			size = (size / 256) * 256 + 256;
 			
 			if (onCPU)
 			{
-				buffer->CreateCPUVisible(m_device.Get(), 256, data);//TODO make sure we read just what we need
+				buffer->CreateCPUVisible(m_device.Get(), size, data);//TODO make sure we read just what we need
 			}
 			else
 			{
@@ -69,9 +70,14 @@ namespace engine
 			return texture;
 		}
 
-		Texture* D3D12Device::GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer)
+		Texture* D3D12Device::GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, float* clearValues)
 		{
 			D3D12RenderTarget* texture = new D3D12RenderTarget();
+
+			if (clearValues)
+			{
+				memcpy(texture->m_ClearColor, clearValues, sizeof(float)*4);//TODO a little unsafe
+			}
 
 			texture->Create(m_device.Get(), width, height, format, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(srvDescriptorPool);
@@ -153,6 +159,8 @@ namespace engine
 			std::vector<DXGI_FORMAT> rtvFormats(colorTextures.size());
 			std::vector <CD3DX12_CPU_DESCRIPTOR_HANDLE> rtvHandles(colorTextures.size());
 			std::vector <ID3D12Resource*> rtvColorTextures(colorTextures.size());
+			//pass->m_clearColors.resize(colorTextures.size());
+			
 			D3D12RenderTarget* depthRT = dynamic_cast<D3D12RenderTarget*>(depthTexture);
 			for (int i = 0; i < colorTextures.size(); i++)
 			{
@@ -160,9 +168,12 @@ namespace engine
 				rtvFormats[i] = colorRT->m_dxgiFormat;
 				rtvHandles[i] = colorRT->m_CPURTVHandle;
 				rtvColorTextures[i] = colorRT->m_texture.Get();
+				pass->m_clearColors.push_back({ colorRT->m_ClearColor[0], colorRT->m_ClearColor[1], colorRT->m_ClearColor[2], colorRT->m_ClearColor[3] });
 			}
 			pass->Create(width, height, rtvFormats, depthRT->m_dxgiFormat, 
 				{ { rtvHandles, rtvColorTextures, depthRT->m_CPURTVHandle, depthRT->m_texture.Get() } });
+			if(subpasses.size() > 0)
+			pass->SetSubPasses(subpasses);
 			m_renderPasses.push_back(pass);
 			return pass;
 		}
