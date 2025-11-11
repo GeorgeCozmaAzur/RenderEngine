@@ -57,6 +57,8 @@ namespace engine
 			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, std::vector<Texture*> colorTextures, Texture* depthTexture, std::vector<RenderSubpass> subpasses = {}) = 0;
 
 			virtual Pipeline* GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass) = 0;
+			
+			virtual Pipeline* GetComputePipeline(std::string computeFileName, std::string computeEntry, DescriptorSetLayout* descriptorSetlayout, uint32_t constanBlockSize = 0) = 0;
 
 			virtual CommandPool* GetCommandPool(uint32_t queueIndex, bool primary = true) = 0;
 			

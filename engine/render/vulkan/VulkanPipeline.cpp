@@ -61,6 +61,7 @@ namespace engine
 			_renderPass = renderPass;
 			_pipelineCache = cache;
 
+			m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			/*
 				[POI] Create a pipeline layout used for our graphics pipeline
 			*/
@@ -235,9 +236,9 @@ namespace engine
 			m_shaderModules.clear();
 		}
 
-		void VulkanPipeline::Draw(VkCommandBuffer command_buffer, VkPipelineBindPoint bindpoint)
+		void VulkanPipeline::Draw(VkCommandBuffer command_buffer)
 		{
-			vkCmdBindPipeline(command_buffer, bindpoint, m_vkPipeline);
+			vkCmdBindPipeline(command_buffer, m_bindPoint, m_vkPipeline);
 		}
 
 		void VulkanPipeline::Draw(CommandBuffer* commandBuffer)
@@ -260,7 +261,10 @@ namespace engine
 		{
 			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
 			if (m_constantBlockSize > 0)
-				vkCmdPushConstants(cb->m_vkCommandBuffer, getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_constantBlockSize, constantsData);
+			{
+				VkShaderStageFlags flags = (m_bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS ? VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_COMPUTE_BIT);
+				vkCmdPushConstants(cb->m_vkCommandBuffer, getPipelineLayout(), flags, 0, m_constantBlockSize, constantsData);
+			}
 		}
 
 		void VulkanPipeline::CreateCompute(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, PipelineProperties properties)
@@ -270,6 +274,8 @@ namespace engine
 
 			_device = device;
 			_pipelineCache = cache;
+
+			m_bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 
 			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 			pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

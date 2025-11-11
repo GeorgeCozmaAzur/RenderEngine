@@ -85,7 +85,7 @@ namespace engine
 		{
 			VulkanCommandBuffer* cb = static_cast<VulkanCommandBuffer*>(commandBuffer);
 			VulkanPipeline* p = static_cast<VulkanPipeline*>(pipeline);
-			Draw(cb->m_vkCommandBuffer, p->getPipelineLayout(), indexInDynamicUniformBuffer);
+			Draw(cb->m_vkCommandBuffer, p->getPipelineLayout(), indexInDynamicUniformBuffer, p->getBindPoint());
 		}
 	}
 }

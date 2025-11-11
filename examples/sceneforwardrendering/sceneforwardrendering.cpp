@@ -50,7 +50,7 @@ public:
 		camera.SetFlipY(false);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera.SetPosition(glm::vec3(0.0f, -1.0f, -6.0f));
 		//settings.overlay = false;
 	}
 

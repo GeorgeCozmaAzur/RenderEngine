@@ -285,7 +285,7 @@ public:
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
 				);
 
-			lightinjectionpipeline->Draw(vkbuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
+			lightinjectionpipeline->Draw(vkbuffer);
 			lightinjectiondescriptorSet->Draw(vkbuffer, lightinjectionpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
 			vkCmdDispatch(vkbuffer, TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, TEX_DEPTH / COMPUTE_GROUP_SIZE_Z);
 
@@ -295,7 +295,7 @@ public:
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
 				);
 
-			raymarchpipeline->Draw(vkbuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
+			raymarchpipeline->Draw(vkbuffer);
 			raymarchdescriptorSet->Draw(vkbuffer, raymarchpipeline->getPipelineLayout(), 0, VK_PIPELINE_BIND_POINT_COMPUTE);
 			vkCmdDispatch(vkbuffer, TEX_WIDTH / COMPUTE_GROUP_SIZE, TEX_HEIGHT / COMPUTE_GROUP_SIZE, COMPUTE_GROUP_SIZE_Z);
 

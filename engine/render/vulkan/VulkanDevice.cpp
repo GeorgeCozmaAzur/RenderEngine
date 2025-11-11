@@ -475,12 +475,12 @@ namespace engine
             return pipeline;
         }
 
-        VulkanPipeline* VulkanDevice::GetComputePipeline(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, uint32_t constanBlockSize)
+        VulkanPipeline* VulkanDevice::GetComputePipeline(std::string file, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, uint32_t constanBlockSize)
         {
             VulkanPipeline* pipeline = new VulkanPipeline;
             PipelineProperties props;
             props.vertexConstantBlockSize = constanBlockSize;
-            pipeline->CreateCompute(file, device, descriptorSetLayout, cache, props);
+            pipeline->CreateCompute(file, logicalDevice, descriptorSetLayout, cache, props);
             m_pipelines.push_back(pipeline);
             return pipeline;
         }
@@ -871,6 +871,13 @@ namespace engine
             VulkanPipeline* pipeline = GetPipeline(vkdlayout->m_descriptorSetLayout, vkvlayout->m_vertexInputBindings, vkvlayout->m_vertexInputAttributes, 
                 vertexFileName, fragmentFilename, pass->GetRenderPass(), pipelineCache, properties);
             //m_pipelines.push_back(pipeline);
+            return pipeline;
+        }
+
+        Pipeline* VulkanDevice::GetComputePipeline(std::string computeFileName, std::string computeEntry, DescriptorSetLayout* descriptorSetlayout, uint32_t constanBlockSize)
+        {
+            VulkanDescriptorSetLayout* vkdlayout = dynamic_cast<VulkanDescriptorSetLayout*>(descriptorSetlayout);
+            VulkanPipeline* pipeline = GetComputePipeline(computeFileName, vkdlayout->m_descriptorSetLayout, pipelineCache, constanBlockSize);
             return pipeline;
         }
 

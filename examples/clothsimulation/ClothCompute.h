@@ -37,9 +37,9 @@ namespace engine
 
 			render::VulkanBuffer* m_uniformBuffer;
 
-			std::vector <render::VulkanDescriptorSet*> m_vulkanDescriptorSets;
-			render::VulkanDescriptorSetLayout* _vulkanDescriptorLayout = nullptr;
-			render::VulkanPipeline* _vulkanPipeline = nullptr;
+			std::vector <render::DescriptorSet*> m_vulkanDescriptorSets;
+			render::DescriptorSetLayout* _vulkanDescriptorLayout = nullptr;
+			render::Pipeline* _vulkanPipeline = nullptr;
 
 			std::vector<render::CommandBuffer*> commandBuffers;
 

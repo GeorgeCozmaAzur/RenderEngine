@@ -188,6 +188,12 @@ namespace engine
 			return pipeline;
 		}
 
+		Pipeline* D3D12Device::GetComputePipeline(std::string computeFileName, std::string computeEntry, DescriptorSetLayout* descriptorSetlayout, uint32_t constanBlockSize)
+		{
+			D3D12Pipeline* pipeline = new D3D12Pipeline();
+			return pipeline;
+		}
+
 		CommandPool* D3D12Device::GetCommandPool(uint32_t queueIndex, bool primary)
 		{
 			return nullptr;

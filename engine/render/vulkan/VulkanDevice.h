@@ -137,7 +137,7 @@ namespace engine
 				PipelineProperties properties);
 
 			// Gets a compute pipeline
-			VulkanPipeline* GetComputePipeline(std::string file, VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, uint32_t constanBlockSize = 0);
+			VulkanPipeline* GetComputePipeline(std::string file, VkDescriptorSetLayout descriptorSetLayout, VkPipelineCache cache, uint32_t constanBlockSize = 0);
 
 			// Creates a descriptor sets pool
 			VkDescriptorPool CreateDescriptorSetsPool(std::vector<VkDescriptorPoolSize> poolSizes, uint32_t maxSets);
@@ -213,6 +213,8 @@ namespace engine
 			virtual RenderPass* GetRenderPass(uint32_t width, uint32_t height, std::vector<Texture*> colorTextures, Texture* depthTexture, std::vector<RenderSubpass> subpasses = {});
 
 			virtual Pipeline* GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass);
+			
+			virtual Pipeline* GetComputePipeline(std::string computeFileName, std::string computeEntry, DescriptorSetLayout* descriptorSetlayout, uint32_t constanBlockSize = 0);
 
 			virtual CommandPool* GetCommandPool(uint32_t queueIndex, bool primary = true);
 

@@ -52,6 +52,8 @@ namespace engine
 
 			virtual Pipeline* GetPipeline(std::string vertexFileName, std::string vertexEntry, std::string fragmentFilename, std::string fragmentEntry, VertexLayout* vertexLayout, DescriptorSetLayout* descriptorSetlayout, PipelineProperties properties, RenderPass* renderPass);
 
+			virtual Pipeline* GetComputePipeline(std::string computeFileName, std::string computeEntry, DescriptorSetLayout* descriptorSetlayout, uint32_t constanBlockSize = 0);
+
 			virtual CommandPool* GetCommandPool(uint32_t queueIndex, bool primary = true);
 
 			virtual CommandBuffer* GetCommandBuffer(CommandPool* pool, bool primary = true);

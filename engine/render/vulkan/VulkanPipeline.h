@@ -32,6 +32,8 @@ namespace engine
 			VkRenderPass _renderPass = VK_NULL_HANDLE;
 			VkPipelineCache _pipelineCache = VK_NULL_HANDLE;
 
+			VkPipelineBindPoint m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
 			// List of shader modules created (stored for cleanup)
 			std::vector<VkShaderModule> m_shaderModules;//TODO remove this
 
@@ -50,6 +52,7 @@ namespace engine
 
 			VkPipeline			getPipeline() { return m_vkPipeline; }
 			VkPipelineLayout	getPipelineLayout() { return m_pipelineLayout; }
+			VkPipelineBindPoint getBindPoint() { return m_bindPoint; }
 
 			void Create(VkDevice device, VkDescriptorSetLayout descriptorSetLayout,
 				std::vector<VkVertexInputBindingDescription> vertexInputBindings,
@@ -59,7 +62,7 @@ namespace engine
 				PipelineProperties properties
 			);
 
-			void Draw(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindpoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
+			void Draw(VkCommandBuffer commandBuffer);
 
 			virtual void Draw(class CommandBuffer* commandBuffer);
 			virtual void PushConstants(class CommandBuffer* commandBuffer, void* constantsData = nullptr);
