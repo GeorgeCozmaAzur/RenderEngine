@@ -35,8 +35,8 @@ namespace engine
 		public:
 			CD3DX12_GPU_DESCRIPTOR_HANDLE m_GPUHandle;
 		
-			void Create(ID3D12Device* device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cupHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
-			void CreateView(ID3D12Device* device, CD3DX12_CPU_DESCRIPTOR_HANDLE cupHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
+			void Create(ID3D12Device* device, size_t size, void* data, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
+			void CreateView(ID3D12Device* device, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
 		};
 
 		class D3D12VertexBuffer : public D3D12Buffer
@@ -45,6 +45,18 @@ namespace engine
 			D3D12_VERTEX_BUFFER_VIEW m_view;
 		
 			void CreateView(UINT vertexSize);
+		};
+
+		class D3D12StorageVertexBuffer : public D3D12VertexBuffer
+		{
+		public:
+			CD3DX12_CPU_DESCRIPTOR_HANDLE m_uavCPUHandle;
+			CD3DX12_CPU_DESCRIPTOR_HANDLE m_srvCPUHandle;
+
+			CD3DX12_GPU_DESCRIPTOR_HANDLE m_uavGPUHandle;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE m_srvGPUHandle;
+
+			void CreateView(UINT vertexSize, ID3D12Device* device, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle, CD3DX12_CPU_DESCRIPTOR_HANDLE cpuUAVHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuUAVHandle);
 		};
 
 		class D3D12IndexBuffer : public D3D12Buffer

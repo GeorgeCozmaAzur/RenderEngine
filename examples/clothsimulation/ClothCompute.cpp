@@ -5,7 +5,7 @@ namespace engine
 {
 	namespace scene
 	{
-		void ClothComputeObject::PrepareStorageBuffers(glm::vec2 size, glm::uvec2 gridSize, render::VulkanDevice *vulkanDevice, VkQueue queue)
+		void ClothComputeObject::PrepareStorageBuffers(glm::vec2 size, glm::uvec2 gridSize, render::GraphicsDevice *vulkanDevice, render::DescriptorPool* descriptorPool, render::CommandBuffer* commandBuffer)
 		{
 			m_gridSize = gridSize;
 			m_size = size;
@@ -28,7 +28,7 @@ namespace engine
 			
 			VkDeviceSize storageBufferSize = vertexBuffer.size() * sizeof(ClothVertex);
 
-			render::VulkanBuffer* stagingBuffer;
+			/*render::VulkanBuffer* stagingBuffer;
 			stagingBuffer = vulkanDevice->CreateStagingBuffer(storageBufferSize, vertexBuffer.data());
 
 			storageBuffers.inbuffer = vulkanDevice->GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
@@ -42,7 +42,10 @@ namespace engine
 			vkCmdCopyBuffer(copyCmd, stagingBuffer->GetVkBuffer(), storageBuffers.inbuffer->GetVkBuffer(), 1, &copyRegion);
 			vkCmdCopyBuffer(copyCmd, stagingBuffer->GetVkBuffer(), storageBuffers.outbuffer->GetVkBuffer(), 1, &copyRegion);
 			vulkanDevice->FlushCommandBuffer(copyCmd, queue, true);
-			vulkanDevice->DestroyBuffer(stagingBuffer);
+			vulkanDevice->DestroyBuffer(stagingBuffer);*/
+
+			storageBuffers.inbuffer = vulkanDevice->GetStorageVertexBuffer(storageBufferSize, vertexBuffer.data(), sizeof(ClothVertex), descriptorPool, false, commandBuffer);
+			storageBuffers.outbuffer = vulkanDevice->GetStorageVertexBuffer(storageBufferSize, vertexBuffer.data(), sizeof(ClothVertex), descriptorPool, false, commandBuffer);
 
 			m_indices.resize((m_gridSize.y - 1) * (m_gridSize.x * 2 + 1));
 			int index = 0;
@@ -55,10 +58,10 @@ namespace engine
 			}
 		}
 
-		void ClothComputeObject::PrepareUniformBuffer(render::VulkanDevice* vulkanDevice, float projectionWidth, float projectionDepth)
+		void ClothComputeObject::PrepareUniformBuffer(render::GraphicsDevice* vulkanDevice, render::DescriptorPool* descriptorPool, float projectionWidth, float projectionDepth)
 		{
-			m_uniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(ubo));
-			VK_CHECK_RESULT(m_uniformBuffer->Map());
+			m_uniformBuffer = vulkanDevice->GetUniformBuffer(sizeof(ubo),nullptr, descriptorPool,true,nullptr);//vulkanDevice->GetUniformBuffer(sizeof(ubo));
+			//VK_CHECK_RESULT(m_uniformBuffer->Map());
 
 			float dx = m_size.x / (m_gridSize.x - 1);
 			float dy = m_size.y / (m_gridSize.y - 1);

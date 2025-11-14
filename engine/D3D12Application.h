@@ -99,6 +99,7 @@ public:
 	virtual const std::string GetShadersPath();
 	virtual const std::string GetVertexShadersExt();
 	virtual const std::string GetFragShadersExt();
+	virtual const std::string GetComputeShadersExt();
 
 	virtual ~D3D12Application();
 };

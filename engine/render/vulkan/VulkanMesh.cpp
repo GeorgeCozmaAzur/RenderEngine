@@ -62,5 +62,10 @@ namespace engine
 		{
 			_vertexBuffer->Flush();
 		}
+
+		void VulkanMesh::SetVertexBuffer(class render::Buffer* buffer)
+		{
+			_vertexBuffer = dynamic_cast<VulkanBuffer*>(buffer);
+		}
     }
 }

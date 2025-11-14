@@ -49,7 +49,30 @@ namespace engine
 			return buffer;
 		}
 
-		Texture* D3D12Device::GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer)
+		Buffer* D3D12Device::GetStorageVertexBuffer(size_t size, void* data, size_t vertexSize, DescriptorPool* descriptorPool, bool onCPU, CommandBuffer* commandBuffer)
+		{
+			D3D12StorageVertexBuffer* buffer = new D3D12StorageVertexBuffer();
+			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(descriptorPool);
+			D3D12CommandBuffer* d3dcmd = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
+
+			D3D12Buffer* staggingBuffer = new D3D12Buffer();
+			staggingBuffer->Create(m_device.Get(), size, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+			m_loadStaggingBuffers.push_back(staggingBuffer);
+			buffer->CreateGPUVisible(m_device.Get(), staggingBuffer->GetD3DBuffer(), d3dcmd->m_commandList.Get(), size, data, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+			CD3DX12_CPU_DESCRIPTOR_HANDLE SrvHandle;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE SrvHandleGPU;
+			descHeap->GetAvailableHandles(SrvHandle, SrvHandleGPU);
+			CD3DX12_CPU_DESCRIPTOR_HANDLE UAVHandle;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE UAVHandleGPU;
+			descHeap->GetAvailableHandles(UAVHandle, UAVHandleGPU);
+			buffer->CreateView(vertexSize, m_device.Get(), SrvHandle, SrvHandleGPU, UAVHandle, UAVHandleGPU);
+
+			m_buffers.push_back(buffer);
+			return buffer;
+		}
+
+		Texture* D3D12Device::GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer, bool generateMipmaps)
 		{
 			D3D12Texture* texture = new D3D12Texture();
 
@@ -140,10 +163,27 @@ namespace engine
 			D3D12DescriptorTable* table = new D3D12DescriptorTable();
 			std::vector <CD3DX12_GPU_DESCRIPTOR_HANDLE> bufferHandles(buffers.size());
 			std::vector <CD3DX12_GPU_DESCRIPTOR_HANDLE> textureHandles(textures.size());
-			for (int i = 0; i < buffers.size(); i++)
+			UINT buffer_index = 0;
+			for (UINT i = 0; i < layout->m_bindings.size(); i++)
+			{
+				if (layout->m_bindings[i].descriptorType == UNIFORM_BUFFER)
+				{
+					bufferHandles[buffer_index] = dynamic_cast<D3D12UniformBuffer*>(buffers[i])->m_GPUHandle;
+				}else
+				if (layout->m_bindings[i].descriptorType == INPUT_STORAGE_BUFFER)
+				{
+					bufferHandles[buffer_index] = dynamic_cast<D3D12StorageVertexBuffer*>(buffers[i])->m_srvGPUHandle;
+				}else
+				if (layout->m_bindings[i].descriptorType == OUTPUT_STORAGE_BUFFER)
+				{
+					bufferHandles[buffer_index] = dynamic_cast<D3D12StorageVertexBuffer*>(buffers[i])->m_uavGPUHandle;
+				}
+				buffer_index++;
+			}
+			/*for (int i = 0; i < buffers.size(); i++)
 			{
 				bufferHandles[i] = dynamic_cast<D3D12UniformBuffer*>(buffers[i])->m_GPUHandle;
-			}
+			}*/
 			for (int i = 0; i < textures.size(); i++)
 			{
 				textureHandles[i] = dynamic_cast<D3D12Texture*>(textures[i])->m_GPUHandle;

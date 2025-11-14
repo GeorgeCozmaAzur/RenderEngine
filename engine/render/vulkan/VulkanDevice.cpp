@@ -778,9 +778,28 @@ namespace engine
             return buffer;
         }
 
-        Texture* VulkanDevice::GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer)
+        Buffer* VulkanDevice::GetStorageVertexBuffer(size_t size, void* data, size_t vertexSize, DescriptorPool* descriptorPool, bool onCPU, CommandBuffer* commandBuffer)
         {
-            VulkanTexture* texture = GetTexture(data, copyQueue);
+            if (onCPU)
+            {
+                GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, copyQueue, size, data, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            }
+            else
+                return GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, copyQueue, size, data);
+        }
+
+        Texture* VulkanDevice::GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer, bool generateMipmaps)
+        {
+            /*VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                true*/
+            VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            if (generateMipmaps)
+                imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            VulkanTexture* texture = GetTexture(data, copyQueue, imageUsageFlags, imageLayout, generateMipmaps);
            // m_textures.push_back(texture);
             return texture;
         }
@@ -960,7 +979,9 @@ namespace engine
                     vkmesh->_vertexBuffer = nullptr;
                 }
                 if (!vkmesh->_vertexBuffer)
-                    vkmesh->_vertexBuffer = GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, data->m_verticesSize);
+                   // vkmesh->_vertexBuffer = GetBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, data->m_verticesSize);
+                vkmesh->_vertexBuffer = GetGeometryBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, copyQueue, data->m_verticesSize, nullptr, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
                 vkmesh->m_vertexCount = data->m_vertexCount;
                 vkmesh->_vertexBuffer->Unmap();
                 vkmesh->_vertexBuffer->Map();

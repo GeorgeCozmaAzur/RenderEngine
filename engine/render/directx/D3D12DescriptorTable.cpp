@@ -12,13 +12,16 @@ namespace engine
 			//for (auto binding : layout->m_bindings)
 			for (UINT i = 0; i < layout->m_bindings.size(); i++)
 			{
-				if (layout->m_bindings[i].descriptorType == UNIFORM_BUFFER)
+				if (layout->m_bindings[i].descriptorType == UNIFORM_BUFFER || layout->m_bindings[i].descriptorType == INPUT_STORAGE_BUFFER || layout->m_bindings[i].descriptorType == OUTPUT_STORAGE_BUFFER)
 				{
-					m_entries.push_back({i,*(buffersit++)});
+					layout->m_bindings[i].stage != COMPUTE ? m_entries.push_back({i,*(buffersit++)}) : m_entriesCompute.push_back({ i,*(buffersit++) });
 				}
 				else
 				{
-					m_entries.push_back({ i,*(texturesit++) });
+					if (layout->m_bindings[i].stage != COMPUTE)
+						m_entries.push_back({ i,*(texturesit++) });
+						else
+						m_entriesCompute.push_back({ i,*(texturesit++) });
 				}
 			}
 		}
@@ -28,6 +31,10 @@ namespace engine
 			for (int i = 0; i < m_entries.size(); i++)
 			{
 				commandList->SetGraphicsRootDescriptorTable(m_entries[i].parameterIndex, m_entries[i].gpuHandle);
+			}
+			for (int i = 0; i < m_entriesCompute.size(); i++)
+			{
+				commandList->SetComputeRootDescriptorTable(m_entries[i].parameterIndex, m_entries[i].gpuHandle);
 			}
 		}
 

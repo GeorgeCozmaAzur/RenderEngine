@@ -33,6 +33,7 @@ namespace engine
             virtual void UpdateVertexBuffer(void* data, size_t size, size_t offset);
             virtual void FlushVertexBuffer();
             virtual void UpdateInstanceBuffer(void* data, size_t size, size_t offset);
+            virtual void SetVertexBuffer(class render::Buffer* buffer);
 
             void Draw(VkCommandBuffer commandBuffer, const std::vector<MeshPart>& parts);
             virtual void Draw(CommandBuffer* commandBuffer, const std::vector<MeshPart>& parts = std::vector<MeshPart>());

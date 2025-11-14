@@ -449,6 +449,47 @@ const std::string VulkanApplication::GetFragShadersExt()
 	return ".frag.spv";
 }
 
+const std::string VulkanApplication::GetComputeShadersExt()
+{
+	return ".comp.spv";
+}
+
+void VulkanApplication::PipelineBarrier(render::CommandBuffer* commandBuffer, std::vector<render::Buffer*> buffers, std::vector<render::Texture*> textures)
+{
+	render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
+	VkBufferMemoryBarrier bufferBarrier{};
+	bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	bufferBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+	bufferBarrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+	bufferBarrier.size = VK_WHOLE_SIZE;
+	std::vector<VkBufferMemoryBarrier> bufferBarriers(buffers.size());
+	for (int i = 0; i < buffers.size(); i++)
+	{
+		bufferBarrier.buffer = ((render::VulkanBuffer*)buffers[i])->GetVkBuffer();
+		bufferBarriers[i] = bufferBarrier;
+	}
+	/*bufferBarrier.buffer = ((render::VulkanBuffer*)clothcompute.storageBuffers.inbuffer)->GetVkBuffer();
+	bufferBarriers.push_back(bufferBarrier);
+	bufferBarrier.buffer = ((render::VulkanBuffer*)clothcompute.storageBuffers.outbuffer)->GetVkBuffer();
+	bufferBarriers.push_back(bufferBarrier);*/
+	vkCmdPipelineBarrier(
+		vkcmd->m_vkCommandBuffer,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+		VK_FLAGS_NONE,
+		0, nullptr,
+		static_cast<uint32_t>(bufferBarriers.size()), bufferBarriers.data(),
+		0, nullptr);
+}
+
+void VulkanApplication::DispatchCompute(render::CommandBuffer* commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+	render::VulkanCommandBuffer* vkcmd = static_cast<render::VulkanCommandBuffer*>(commandBuffer);
+	vkCmdDispatch(vkcmd->m_vkCommandBuffer, groupCountX, groupCountY, groupCountZ);
+}
+
 VulkanApplication::~VulkanApplication()
 {
 	// Clean up Vulkan resources

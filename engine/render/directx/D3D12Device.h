@@ -34,7 +34,9 @@ namespace engine
 
 			virtual Buffer* GetUniformBuffer(size_t size, void* data, DescriptorPool* descriptorPool, bool onCPU = true, CommandBuffer* commandBuffer = nullptr);
 
-			virtual Texture* GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer);
+			virtual Buffer* GetStorageVertexBuffer(size_t size, void* data, size_t vertexSize, DescriptorPool* descriptorPool, bool onCPU, CommandBuffer* commandBuffer);
+
+			virtual Texture* GetTexture(TextureData* data, DescriptorPool* descriptorPool, CommandBuffer* commandBuffer, bool generateMipmaps = false);
 
 			virtual Texture* GetRenderTarget(uint32_t width, uint32_t height, GfxFormat format, DescriptorPool* srvDescriptorPool, DescriptorPool* rtvDescriptorPool, CommandBuffer* commandBuffer, float* clearValues = nullptr);
 			

@@ -185,10 +185,15 @@ public:
 	virtual const std::string GetShadersPath() = 0;
 	virtual const std::string GetVertexShadersExt() = 0;
 	virtual const std::string GetFragShadersExt() = 0;
+	virtual const std::string GetComputeShadersExt() = 0;
 
 	/** @brief (Virtual) Called when the UI overlay is updating, can be used to add custom elements to the overlay */
 	virtual void OnUpdateUIOverlay(engine::scene::UIOverlay* overlay) {};
 	void DrawUI(render::CommandBuffer* commandBuffer);
+
+	virtual void PipelineBarrier(render::CommandBuffer* commandBuffer, std::vector<render::Buffer*> muffers, std::vector<render::Texture*> textures) {};
+
+	virtual void DispatchCompute(render::CommandBuffer* commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {};
 
 	~ApplicationBase() {
 		if (settings.overlay) {

@@ -524,6 +524,11 @@ const std::string D3D12Application::GetFragShadersExt()
 	return ".hlsl";
 }
 
+const std::string D3D12Application::GetComputeShadersExt()
+{
+	return ".comp.spv";
+}
+
 //void VulkanApplication::OnUpdateUIOverlay(engine::scene::UIOverlay *overlay) {}
 
 D3D12Application::~D3D12Application()

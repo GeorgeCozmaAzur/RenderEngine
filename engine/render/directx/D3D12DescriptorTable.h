@@ -25,6 +25,7 @@ namespace engine
 		{
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_Heap;
 			std::vector<TableEntry> m_entries;
+			std::vector<TableEntry> m_entriesCompute;
 		public:
 
 			void Create(DescriptorSetLayout* layout, std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> buffers, std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> textures);

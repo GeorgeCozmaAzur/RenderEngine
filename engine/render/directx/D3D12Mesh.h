@@ -27,6 +27,7 @@ namespace engine
             virtual void UpdateIndexBuffer(void* data, size_t size, size_t offset);
             virtual void UpdateVertexBuffer(void* data, size_t size, size_t offset);
             virtual void UpdateInstanceBuffer(void* data, size_t size, size_t offset);
+            virtual void SetVertexBuffer(render::Buffer* buffer);
             void Draw(ID3D12GraphicsCommandList* commandList, const std::vector<MeshPart>& parts = std::vector<MeshPart>());
             virtual void Draw(CommandBuffer* commandBuffer, const std::vector<MeshPart>& parts = std::vector<MeshPart>());
         };

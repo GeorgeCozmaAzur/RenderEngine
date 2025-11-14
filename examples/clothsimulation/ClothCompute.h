@@ -31,11 +31,11 @@ namespace engine
 			std::vector<uint32_t> m_indices;
 
 			struct StorageBuffers {
-				render::VulkanBuffer* inbuffer;
-				render::VulkanBuffer* outbuffer;
+				render::Buffer* inbuffer;
+				render::Buffer* outbuffer;
 			} storageBuffers;
 
-			render::VulkanBuffer* m_uniformBuffer;
+			render::Buffer* m_uniformBuffer;
 
 			std::vector <render::DescriptorSet*> m_vulkanDescriptorSets;
 			render::DescriptorSetLayout* _vulkanDescriptorLayout = nullptr;
@@ -59,8 +59,8 @@ namespace engine
 			} ubo;
 			glm::ivec4 pinnedCorners = glm::ivec4(1, 1, 1, 1);
 
-			void PrepareStorageBuffers(glm::vec2 size, glm::uvec2 gridSize, render::VulkanDevice* vulkanDevice, VkQueue queue);
-			void PrepareUniformBuffer(render::VulkanDevice* vulkanDevice, float projectionWidth, float projectionDepth);
+			void PrepareStorageBuffers(glm::vec2 size, glm::uvec2 gridSize, render::GraphicsDevice* vulkanDevice, render::DescriptorPool *descriptorPool, render::CommandBuffer* commandBuffer);
+			void PrepareUniformBuffer(render::GraphicsDevice* vulkanDevice, render::DescriptorPool* descriptorPool, float projectionWidth, float projectionDepth);
 			void UpdateUniformBuffer();
 		};
 	}

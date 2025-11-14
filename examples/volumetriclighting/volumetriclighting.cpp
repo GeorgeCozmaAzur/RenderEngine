@@ -175,10 +175,10 @@ public:
 			raymarchdescriptorSetLayout->m_descriptorSetLayout, raymarchdescriptorSetLayout->m_setLayoutBindings);
 
 		std::string fileName = engine::tools::getAssetPath() + "shaders/computeshader/" + "lightinjection" + ".comp.spv";
-		lightinjectionpipeline = vulkanDevice->GetComputePipeline(fileName, device, lightinjectiondescriptorSetLayout->m_descriptorSetLayout, pipelineCache);
+		lightinjectionpipeline = vulkanDevice->GetComputePipeline(fileName, lightinjectiondescriptorSetLayout->m_descriptorSetLayout, pipelineCache);
 
 		fileName = engine::tools::getAssetPath() + "shaders/computeshader/" + "raymarch" + ".comp.spv";
-		raymarchpipeline = vulkanDevice->GetComputePipeline(fileName, device, raymarchdescriptorSetLayout->m_descriptorSetLayout, pipelineCache);
+		raymarchpipeline = vulkanDevice->GetComputePipeline(fileName, raymarchdescriptorSetLayout->m_descriptorSetLayout, pipelineCache);
 	}
 
 	void init()

@@ -153,6 +153,11 @@ public:
 	virtual const std::string GetShadersPath();
 	virtual const std::string GetVertexShadersExt();
 	virtual const std::string GetFragShadersExt();
+	virtual const std::string GetComputeShadersExt();
+
+	virtual void PipelineBarrier(render::CommandBuffer* commandBuffer, std::vector<render::Buffer*> buffers, std::vector<render::Texture*> textures);
+
+	virtual void DispatchCompute(render::CommandBuffer* commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 
 	virtual ~VulkanApplication();
 };
