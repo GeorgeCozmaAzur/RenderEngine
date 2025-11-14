@@ -55,7 +55,7 @@ namespace engine
 				glm::vec4 externalForce = glm::vec4(0.0f, 9.8f, 0.0f, 0.0f);
 				glm::vec4 pinnedCorners = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 				glm::vec2 projectionSizes;
-				glm::ivec2 particleCount;
+				glm::uvec2 particleCount;
 			} ubo;
 			glm::ivec4 pinnedCorners = glm::ivec4(1, 1, 1, 1);
 

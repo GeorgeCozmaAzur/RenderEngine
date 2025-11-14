@@ -23,7 +23,10 @@ namespace engine
 
 			UINT m_constantsShaderRegister;
 
+			D3D_PRIMITIVE_TOPOLOGY m_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
 			void Load(ID3D12Device* device, std::wstring fileName, std::string vertexEntry, std::string fragmentEntry, VertexLayout* vlayout, DescriptorSetLayout* dlayout, PipelineProperties properties, class D3D12RenderPass* renderPass);
+			void LoadCompute(ID3D12Device* device, std::wstring fileName, DescriptorSetLayout* dlayout, size_t constantsSize = 0);
 			virtual void Draw(class CommandBuffer* commandBuffer);
 			virtual void PushConstants(class CommandBuffer* commandBuffer, void* constantsData = nullptr);
 		};

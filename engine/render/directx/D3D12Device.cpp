@@ -231,6 +231,9 @@ namespace engine
 		Pipeline* D3D12Device::GetComputePipeline(std::string computeFileName, std::string computeEntry, DescriptorSetLayout* descriptorSetlayout, uint32_t constanBlockSize)
 		{
 			D3D12Pipeline* pipeline = new D3D12Pipeline();
+			std::wstring ws(computeFileName.begin(), computeFileName.end());
+			pipeline->LoadCompute(m_device.Get(), ws, descriptorSetlayout, constanBlockSize);
+			m_pipelines.push_back(pipeline);
 			return pipeline;
 		}
 

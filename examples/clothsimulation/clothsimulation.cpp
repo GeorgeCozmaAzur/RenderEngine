@@ -78,10 +78,11 @@ public:
 		rotation = glm::vec3(15.0f, 0.f, 0.0f);
 		title = "Render Engine Empty Scene";
 		settings.overlay = true;
+		camera.SetFlipY(false);
 		camera.movementSpeed = 2.5f;
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, 5.0f, -5.0f));
+		camera.SetPosition(glm::vec3(0.0f, 6.0f, -5.0f));
 	}
 
 	~VulkanExample()
@@ -292,7 +293,7 @@ public:
 
 		props.depthBias = false;
 		models.AddPipeline(m_device->GetPipeline(
-			GetShadersPath() + "basic/phong" + GetVertexShadersExt(), "", GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "",
+			GetShadersPath() + "basic/phong" + GetVertexShadersExt(), "VSMain", GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "PSMainTextured",
 			models._vertexLayout, models._descriptorLayout, props, m_mainRenderPass));
 
 		/*std::vector<VkVertexInputBindingDescription> inputBindings = {
@@ -319,7 +320,7 @@ public:
 		//	engine::tools::getAssetPath() + "shaders/clothsimulation/clothphong.vert.spv", engine::tools::getAssetPath() + "shaders/basic/phongtextured.frag.spv", mainRenderPass->GetRenderPass(), pipelineCache, props));
 	
 		clothobject.AddPipeline(m_device->GetPipeline(
-			GetShadersPath() + "clothsimulation/clothphong" + GetVertexShadersExt(), "", GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "",
+			GetShadersPath() + "clothsimulation/clothphong" + GetVertexShadersExt(), "VSMain", GetShadersPath() + "basic/phongtextured" + GetFragShadersExt(), "PSMainTextured",
 			clothobject._vertexLayout, clothobject._descriptorLayout, props, m_mainRenderPass));
 	}
 
@@ -437,12 +438,6 @@ public:
 
 			offscreenPass->Begin(drawShadowCmdBuffers[i], 0);
 
-			/*vkCmdSetDepthBias(
-				drawShadowCmdBuffers[i],
-				depthBiasConstant,
-				0.0f,
-				depthBiasSlope);*/
-
 			shadowobjects.Draw(drawShadowCmdBuffers[i]);
 
 			offscreenPass->End(drawShadowCmdBuffers[i]);
@@ -486,6 +481,8 @@ public:
 			//addComputeToGraphicsBarriers(drawCmdBuffers[i]);
 
 			m_mainRenderPass->Begin(m_drawCommandBuffers[i], i);
+
+			descriptorPool->Draw(m_drawCommandBuffers[i]);
 
 			models.Draw(m_drawCommandBuffers[i]);
 		

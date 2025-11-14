@@ -234,7 +234,7 @@ bool D3D12Application::InitAPI()
 	}
 			//D3D12RenderTarget* colorRT = dynamic_cast<D3D12RenderTarget*>(colorTexture);
 	pass->Create(width, height, {swapChainDesc.Format}, depthFormat, frameBuffers, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	pass->m_clearColors.push_back({ 0.0f,0.0f,0.0f,0.0f });
+	pass->m_clearColors.push_back({ 0.5f,0.5f,0.5f,0.0f });
 			//m_renderPasses.push_back(pass);
 	m_mainRenderPass = pass;
 
@@ -526,7 +526,7 @@ const std::string D3D12Application::GetFragShadersExt()
 
 const std::string D3D12Application::GetComputeShadersExt()
 {
-	return ".comp.spv";
+	return ".hlsl";
 }
 
 //void VulkanApplication::OnUpdateUIOverlay(engine::scene::UIOverlay *overlay) {}

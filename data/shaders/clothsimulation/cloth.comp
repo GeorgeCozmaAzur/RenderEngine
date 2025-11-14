@@ -30,7 +30,7 @@ layout (binding = 2) uniform UBO
 	vec4 externalForce;
 	vec4 pinnedCorners;
 	vec2 projectionSizes;
-	ivec2 particleCount;
+	uvec2 particleCount;
 } params;
 
 layout (binding = 3) uniform sampler2D sampleShadow;
