@@ -34,7 +34,7 @@ namespace engine
 			}
 			for (int i = 0; i < m_entriesCompute.size(); i++)
 			{
-				commandList->SetComputeRootDescriptorTable(m_entries[i].parameterIndex, m_entries[i].gpuHandle);
+				commandList->SetComputeRootDescriptorTable(m_entriesCompute[i].parameterIndex, m_entriesCompute[i].gpuHandle);
 			}
 		}
 

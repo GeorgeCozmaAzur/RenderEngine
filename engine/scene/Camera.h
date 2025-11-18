@@ -82,6 +82,7 @@ namespace engine
 			{
 				flipY = value;
 			}
+			float GetFlipY() { return flipY; }
 
 			void SetPerspective(float fov, float aspect, float znear, float zfar);
 			void UpdateAspectRatio(float aspect);

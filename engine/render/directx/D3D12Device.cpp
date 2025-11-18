@@ -121,12 +121,12 @@ namespace engine
 		{
 			D3D12RenderTarget* texture = new D3D12RenderTarget();
 
-			texture->Create(m_device.Get(), width, height, format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			texture->Create(m_device.Get(), width, height, format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, useInShaders ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(srvDescriptorPool);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle{};
 			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU{};
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle{};
-			if (descHeap)
+			if (descHeap && useInShaders)
 				descHeap->GetAvailableHandles(cbvSrvHandle, cbvSrvHandleGPU);
 			D3D12DescriptorHeap* rtvHeap = dynamic_cast<D3D12DescriptorHeap*>(rtvDescriptorPool);
 			rtvHeap->GetAvailableCPUHandle(rtvHandle);
@@ -212,6 +212,10 @@ namespace engine
 			}
 			pass->Create(width, height, rtvFormats, depthRT->m_dxgiFormat, 
 				{ { rtvHandles, rtvColorTextures, depthRT->m_CPURTVHandle, depthRT->m_texture.Get() } });
+			if (depthRT->m_CPUHandle.ptr != 0)
+			{
+				pass->depthInShaders = true;
+			}
 			if(subpasses.size() > 0)
 			pass->SetSubPasses(subpasses);
 			m_renderPasses.push_back(pass);

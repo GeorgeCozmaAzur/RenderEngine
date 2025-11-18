@@ -38,6 +38,10 @@ namespace engine
 					color_rtvHandles.push_back(m_frameBuffers[frameBufferIndex].m_rtvHandles[m_subPasses[subpass].outputAttachmanets[i]]);
 				}
 			}
+			if (depthInShaders)
+			{
+				commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_frameBuffers[frameBufferIndex].m_depthTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+			}
 			commandList->OMSetRenderTargets(color_rtvHandles.size(), color_rtvHandles.data(), FALSE, &m_frameBuffers[frameBufferIndex].m_dsvHandle);
 			//const float clearColoro[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 			//for (int i = 0; i < m_frameBuffers[frameBufferIndex].m_colorTextures.size(); i++)
@@ -57,6 +61,10 @@ namespace engine
 			{
 				if (m_subPasses[subpass].outputAttachmanets[i] < m_frameBuffers[frameBufferIndex].m_colorTextures.size())
 					commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_frameBuffers[frameBufferIndex].m_colorTextures[m_subPasses[subpass].outputAttachmanets[i]], m_stateBeforeRendering, m_stateAfterRendering));
+			}
+			if (depthInShaders)
+			{
+				commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_frameBuffers[frameBufferIndex].m_depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 			}
 		}
 

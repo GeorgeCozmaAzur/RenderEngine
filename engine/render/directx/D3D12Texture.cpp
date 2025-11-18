@@ -219,6 +219,17 @@ namespace engine
                 depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
 
                 device->CreateDepthStencilView(m_texture.Get(), &depthStencilDesc, descriptorRTVHeapAdress);
+
+                if (m_CPUHandle.ptr != 0)
+                {
+                    D3D12_SHADER_RESOURCE_VIEW_DESC srv = {};
+                    srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+                    srv.Format = DXGI_FORMAT_R32_FLOAT;
+                    srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+                    srv.Texture2D.MipLevels = 1;
+
+                    device->CreateShaderResourceView(m_texture.Get(), &srv , m_CPUHandle);
+                }
             }  
         }
 

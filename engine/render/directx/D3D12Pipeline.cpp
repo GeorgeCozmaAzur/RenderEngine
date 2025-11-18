@@ -166,14 +166,17 @@ namespace engine
                 {
                     OutputDebugStringA((char*)errors->GetBufferPointer());
                 }
-                ThrowIfFailed(hr);
+                ThrowIfFailed(hr); 
 
-                hr = D3DCompileFromFile(fileName.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, fragmentEntry.c_str(), "ps_5_0", compileFlags, 0, &pixelShader, &errors);
-                if (errors != nullptr)
+                if (!fragmentEntry.empty())
                 {
-                    OutputDebugStringA((char*)errors->GetBufferPointer());
+                    hr = D3DCompileFromFile(fileName.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, fragmentEntry.c_str(), "ps_5_0", compileFlags, 0, &pixelShader, &errors);
+                    if (errors != nullptr)
+                    {
+                        OutputDebugStringA((char*)errors->GetBufferPointer());
+                    }
+                    ThrowIfFailed(hr);
                 }
-                ThrowIfFailed(hr);
 
                 size_t inputElemntsNo = vlayout->m_components[0].size() + (vlayout->m_components.size() > 1 ? vlayout->m_components[1].size() : 0);
                 std::vector<std::string> componentNames;
@@ -248,7 +251,7 @@ namespace engine
                 psoDesc.InputLayout = { inputElementDescs.data(), (UINT)inputElementDescs.size() };
                 psoDesc.pRootSignature = m_rootSignature.Get();
                 psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
-                psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
+                psoDesc.PS = pixelShader != nullptr ? CD3DX12_SHADER_BYTECODE(pixelShader.Get()) : CD3DX12_SHADER_BYTECODE( nullptr, 0 );
                 psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
                 psoDesc.RasterizerState.CullMode = ToD3DCullMode(properties.cullMode);
                 //psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
@@ -288,6 +291,7 @@ namespace engine
 
         void D3D12Pipeline::LoadCompute(ID3D12Device* device, std::wstring fileName, DescriptorSetLayout* dlayout, size_t constantsSize)
         {
+            isCompute = true;
             D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
 
             // This is the highest version the sample supports. If CheckFeatureSupport succeeds, the HighestVersion returned will not be greater than this.
@@ -304,7 +308,7 @@ namespace engine
             UINT bsrcvb = 0;
             UINT bsruav = 0;
             int i = 0;
-            for (i = 0; i < dlayout->m_bindings.size()+1; i++)
+            for (i = 0; i < dlayout->m_bindings.size(); i++)
             {
                 D3D12_DESCRIPTOR_RANGE_TYPE rangeType;
                 if(i< dlayout->m_bindings.size())
@@ -312,19 +316,19 @@ namespace engine
                 {
                 case DescriptorType::UNIFORM_BUFFER:        ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bsrcvb++, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); break;
                 case DescriptorType::IMAGE_SAMPLER: 
-                case DescriptorType::INPUT_STORAGE_BUFFER:  ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bsrsrv++, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); break;
-                case DescriptorType::OUTPUT_STORAGE_BUFFER: ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, bsruav++, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); break;
+                case DescriptorType::INPUT_STORAGE_BUFFER:  ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bsrsrv++, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE); break;
+                case DescriptorType::OUTPUT_STORAGE_BUFFER: ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, bsruav++, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE); break;
                 }
                 else
                 {
-                    ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
+                   // ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
                 }
 
                 D3D12_SHADER_VISIBILITY sv = D3D12_SHADER_VISIBILITY_ALL;
                 rootParameters[i].InitAsDescriptorTable(1, &ranges[i], sv);
             }
 
-            D3D12_STATIC_SAMPLER_DESC sampler = {};
+           /* D3D12_STATIC_SAMPLER_DESC sampler = {};
             sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
             sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
             sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -337,10 +341,17 @@ namespace engine
             sampler.MaxLOD = D3D12_FLOAT32_MAX;
             sampler.ShaderRegister = 0;
             sampler.RegisterSpace = 0;
-            sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+            sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;*/
+            CD3DX12_STATIC_SAMPLER_DESC sampler(
+                0, // s0
+                D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                D3D12_TEXTURE_ADDRESS_MODE_WRAP
+            );
 
             CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-            rootSignatureDesc.Init_1_1(rootParameters.size(), rootParameters.data(), 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+            rootSignatureDesc.Init_1_1(rootParameters.size(), rootParameters.data(), 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
             ComPtr<ID3DBlob> signature;
             ComPtr<ID3DBlob> error;
@@ -379,7 +390,10 @@ namespace engine
             D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(commandBuffer);
             d3dcommandBuffer->m_commandList->IASetPrimitiveTopology(m_topology);
             d3dcommandBuffer->m_commandList->SetPipelineState(m_pipelineState.Get());
+            if(!isCompute)
             d3dcommandBuffer->m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+            else
+            d3dcommandBuffer->m_commandList->SetComputeRootSignature(m_rootSignature.Get());
         }
 
         void D3D12Pipeline::PushConstants(CommandBuffer* commandBuffer, void* constantsData)

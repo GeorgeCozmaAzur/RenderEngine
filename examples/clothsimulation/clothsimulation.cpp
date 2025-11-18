@@ -20,12 +20,14 @@
 #include "render/vulkan/VulkanCommandBuffer.h"
 #include "ClothCompute.h"
 #include "render/vulkan/VulkanMesh.h"
+#include "render/directx/D3D12CommandBuffer.h"
+#include "render/directx/D3D12Buffer.h"
 
 #define SHADOWMAP_DIM 512
 
 using namespace engine;
 
-class VulkanExample : public VulkanApplication
+class VulkanExample : public D3D12Application
 {
 public:
 
@@ -68,21 +70,21 @@ public:
 	float projectionWidth = 4.0f;
 	float projectionDepth = 5.0f;
 
-	glm::vec4 light_pos = glm::vec4(0.0f, -5.0f, 5.0f, 1.0f);
+	glm::vec4 light_pos = glm::vec4(0.0f, -7.0f, 5.0f, 1.0f);
 	glm::vec4 depthProjectionStart = glm::vec4(0.0f, -5.0f, 0.0f, 1.0f);
 
-	VulkanExample() : VulkanApplication(true)
+	VulkanExample() : D3D12Application(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
 		rotation = glm::vec3(15.0f, 0.f, 0.0f);
 		title = "Render Engine Empty Scene";
 		settings.overlay = true;
-		camera.SetFlipY(false);
+		camera.SetFlipY(true);
 		camera.movementSpeed = 2.5f;
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, 6.0f, -5.0f));
+		camera.SetPosition(glm::vec3(0.0f, -6.0f, -5.0f));
 	}
 
 	~VulkanExample()
@@ -104,7 +106,7 @@ public:
 			{render::DescriptorType::UNIFORM_BUFFER, 6},
 			{render::DescriptorType::INPUT_STORAGE_BUFFER, 2},
 			{render::DescriptorType::OUTPUT_STORAGE_BUFFER, 2},
-			{render::DescriptorType::IMAGE_SAMPLER, 6} 
+			{render::DescriptorType::IMAGE_SAMPLER, 7} 
 			}, 7);
 		descriptorPoolDSV = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 1} }, 1);
 	}
@@ -282,13 +284,13 @@ public:
 
 	void setupPipelines()
 	{
-		std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
+		/*std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+		vertexInputAttributes.push_back(VkVertexInputAttributeDescription{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });*/
 		render::PipelineProperties props;
 		props.depthBias = true;;
-
+		props.cullMode = render::CullMode::NONE;
 		shadowobjects.AddPipeline(m_device->GetPipeline(
-			GetShadersPath() + "shadowmapping/offscreen" + GetVertexShadersExt(), "", "", "",
+			GetShadersPath() + "shadowmapping/offscreen" + GetVertexShadersExt(), "VSMain", "", "",
 			shadowobjects._vertexLayout, shadowobjects._descriptorLayout, props, offscreenPass));
 
 		props.depthBias = false;
@@ -438,6 +440,7 @@ public:
 
 			offscreenPass->Begin(drawShadowCmdBuffers[i], 0);
 
+			descriptorPool->Draw(drawShadowCmdBuffers[i]);
 			shadowobjects.Draw(drawShadowCmdBuffers[i]);
 
 			offscreenPass->End(drawShadowCmdBuffers[i]);
@@ -453,15 +456,40 @@ public:
 		{
 			clothcompute.commandBuffers[i]->Begin();
 
+			descriptorPool->Draw(clothcompute.commandBuffers[i]);
+
 			clothcompute._vulkanPipeline->Draw(clothcompute.commandBuffers[i]);
+
+			render::D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<render::D3D12CommandBuffer*>(clothcompute.commandBuffers[i]);
+
+			render::D3D12Buffer* d3dbufo = dynamic_cast<render::D3D12Buffer*>(clothcompute.storageBuffers.outbuffer);
+			render::D3D12Buffer* d3dbufi = dynamic_cast<render::D3D12Buffer*>(clothcompute.storageBuffers.inbuffer);
 
 			const uint32_t iterations = 64;
 			for (uint32_t j = 0; j < iterations; j++) {
 				readSet = 1 - readSet;
 
-				clothcompute.m_vulkanDescriptorSets[readSet]->Draw(clothcompute.commandBuffers[i], clothcompute._vulkanPipeline);
+				d3dcommandBuffer->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+					readSet == 1 ? d3dbufi->GetD3DBuffer() : d3dbufo->GetD3DBuffer(),
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+					D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+				));
+
+				clothcompute.m_vulkanDescriptorSets[readSet]->Draw(clothcompute.commandBuffers[i], clothcompute._vulkanPipeline);				
 				DispatchCompute(clothcompute.commandBuffers[i], clothcompute.m_gridSize.x / 10, clothcompute.m_gridSize.y / 10, 1);
+
+				d3dcommandBuffer->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+					readSet == 1 ? d3dbufi->GetD3DBuffer() : d3dbufo->GetD3DBuffer(),
+					D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+				));
 			}
+
+			d3dcommandBuffer->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+				d3dbufo->GetD3DBuffer(),
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+				D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
+			));
 
 			PipelineBarrier(clothcompute.commandBuffers[i], { clothcompute.storageBuffers.inbuffer , clothcompute.storageBuffers.outbuffer }, {});
 			clothcompute.commandBuffers[i]->End();
@@ -502,6 +530,9 @@ public:
 
 		float widthSize = projectionWidth * 0.5f;
 		depthProjectionMatrix = glm::ortho(-widthSize, widthSize, -widthSize, widthSize, 0.0f, projectionDepth);
+		if (camera.GetFlipY()) {
+			depthProjectionMatrix[1][1] *= -1.0f;
+		}
 		glm::vec3 lp = glm::vec3(depthProjectionStart);
 		glm::mat4 rotM = glm::mat4(1.0f);
 		rotM = glm::rotate(rotM, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));

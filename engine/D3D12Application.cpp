@@ -509,6 +509,12 @@ void D3D12Application::DrawFullScreenQuad(render::CommandBuffer* commandBuffer)
 	cmdList->DrawInstanced(3, 1, 0, 0);
 }
 
+void D3D12Application::DispatchCompute(render::CommandBuffer* commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+	ID3D12GraphicsCommandList* cmdList = ((render::D3D12CommandBuffer*)commandBuffer)->m_commandList.Get();
+	cmdList->Dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
 const std::string D3D12Application::GetShadersPath()
 {
 	return engine::tools::getAssetPath() + "shaders/hlsl/";

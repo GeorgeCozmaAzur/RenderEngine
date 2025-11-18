@@ -96,6 +96,8 @@ public:
 	/** @brief (Virtual) Called when the UI overlay is updating, can be used to add custom elements to the overlay */
 	//virtual void OnUpdateUIOverlay(engine::scene::UIOverlay *overlay);
 
+	virtual void DispatchCompute(render::CommandBuffer* commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+
 	virtual const std::string GetShadersPath();
 	virtual const std::string GetVertexShadersExt();
 	virtual const std::string GetFragShadersExt();

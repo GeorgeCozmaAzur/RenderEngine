@@ -35,6 +35,7 @@ namespace engine
 			uint32_t currentSubpass = 0;
 			
 		public:
+			bool depthInShaders = false;
 			std::vector<RenderSubpass> m_subPasses;
 			std::vector<DXGI_FORMAT> m_RTVFormats;//TODO make them private
 			std::vector<DirectX::XMFLOAT4> m_clearColors;
