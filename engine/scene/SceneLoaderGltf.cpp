@@ -1,9 +1,9 @@
 #include "SceneLoaderGltf.h"
 
-#include "render/vulkan/VulkanDevice.h"
+//#include "render/vulkan/VulkanDevice.h"
 #include "scene/Timer.h"
 #include "Camera.h"
-#include "render/vulkan/VulkanRenderPass.h"
+//#include "render/vulkan/VulkanRenderPass.h"
 
 #include <algorithm>
 #define TINYGLTF_IMPLEMENTATION
@@ -31,6 +31,9 @@ namespace engine
 			{render::DescriptorType::IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()) },
 			{render::DescriptorType::STORAGE_IMAGE, 2 }
 				}, static_cast<uint32_t>(2 * render_objects.size()) + 5);
+
+			descriptorPoolDSV = _device->GetDescriptorPool({ { render::DescriptorType::DSV ,1 } }, 1);
+			descriptorPoolRTV = _device->GetDescriptorPool({ { render::DescriptorType::RTV ,1 } }, 1);
 		}
 
 		void SceneLoaderGltf::LoadImages(tinygltf::Model& input)
@@ -100,8 +103,9 @@ namespace engine
 
 			uniform_manager.SetDescriptorPool(descriptorPool);
 			uniform_manager.SetEngineDevice(_device);
-			sceneVertexUniformBuffer = deferred == false ? uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION }) :
-				uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_CAMERA_POSITION });
+			sceneVertexUniformBuffer = deferred == false ? (useShadows ==false ? uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION }) :
+																				uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_LIGHT0_SPACE_BIASED ,UNIFORM_LIGHT0_POSITION, UNIFORM_CAMERA_POSITION })) :
+																		uniform_manager.GetGlobalUniformBuffer({ UNIFORM_PROJECTION ,UNIFORM_VIEW, UNIFORM_CAMERA_POSITION });
 			sceneFragmentUniformBuffer = deferred == false ? uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_COLOR }) : nullptr;
 			shadow_uniform_buffer = uniform_manager.GetGlobalUniformBuffer({ UNIFORM_LIGHT0_SPACE });
 
@@ -150,6 +154,11 @@ namespace engine
 			};
 			if(deferred == false)
 				modelbindings.insert(modelbindings.begin()+2, { render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::FRAGMENT });
+
+			for (auto tex : globalTextures)
+			{
+				modelbindings.push_back({ render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT });
+			}
 
 			render::DescriptorSetLayout* currentDesclayoutSimple = _device->GetDescriptorSetLayout(modelbindings);
 			render::DescriptorSetLayout* currentDesclayoutNormalmap = nullptr;
@@ -231,6 +240,11 @@ namespace engine
 				if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) {
 					texturesDescriptors.push_back(modelsTextures[modelsTexturesIds[glTFMaterial.additionalValues["normalTexture"].TextureIndex()]]);
 					hasNormalmap = true;
+				}
+
+				for (auto tex : globalTextures)
+				{
+					texturesDescriptors.push_back(tex);
 				}
 
 				//individualFragmentUniformBuffers[i] = _device->GetUniformBuffer(sizeof(fdata), false, queue, &fdata);
@@ -434,7 +448,8 @@ namespace engine
 				if (inputNode.extensions.find("KHR_lights_punctual") != (inputNode.extensions.end()))
 				{
 					//light_pos = glm::vec4(0.0f,0.0f,0.0f,1.0f) * mymatrix;
-					lightPositions.push_back(glm::vec4(glm::vec3(glm::make_vec3(inputNode.translation.data())), 1.0f));
+					glm::vec3 lightpos = glm::vec3(0.0f);//inputNode.translation.size() > 0 ? glm::make_vec3(inputNode.translation.data()) : glm::vec3(0.0f);
+					lightPositions.push_back(mymatrix * glm::vec4(lightpos, 1.0f));
 					//light_pos.y = -light_pos.y;
 					//glm::quat q = glm::make_quat(inputNode.rotation.data());
 					//glm::mat4 quatmat = glm::mat4(q);
@@ -444,10 +459,11 @@ namespace engine
 		}
 
 		std::vector<RenderObject*> SceneLoaderGltf::LoadFromFile(const std::string& foldername, const std::string& filename, float scale, engine::render::GraphicsDevice* device
-			, render::RenderPass* renderPass, bool deferred)
+			, render::RenderPass* renderPass, bool deferred, bool withShadow)
 		{
 			_device = device;
 			modelsVkRenderPass = renderPass;
+			useShadows = withShadow;
 			//vKpipelineCache = pipelineCache;
 			tinygltf::Model glTFInput;
 			tinygltf::TinyGLTF gltfContext;
@@ -477,6 +493,11 @@ namespace engine
 				return render_objects;
 			}
 			CreateDescriptorPool(glTFInput);
+			if (withShadow)
+			{
+				CreateShadow();
+			}
+			
 			LoadImages(glTFInput);
 			LoadMaterials(glTFInput, deferred);
 
@@ -484,6 +505,11 @@ namespace engine
 			for (size_t i = 0; i < scene.nodes.size(); i++) {
 				const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
 				LoadNode(node, glm::mat4(1.0f), glTFInput);
+			}
+
+			if (withShadow)
+			{
+				CreateShadowObjects();
 			}
 
 			/*for (auto robj : render_objects)
@@ -505,7 +531,7 @@ namespace engine
 		void SceneLoaderGltf::CreateShadow()
 		{
 			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true, VK_IMAGE_ASPECT_DEPTH_BIT, false);
-			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, render::GfxFormat::D32_FLOAT, descriptorPool, descriptorPoolRTV, m_loadingCommandBuffer, true, false);
+			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, render::GfxFormat::D32_FLOAT, descriptorPool, descriptorPoolDSV, m_loadingCommandBuffer, true, false);
 			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true);
 			shadowmapColor = _device->GetRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, render::GfxFormat::R8G8B8A8_UNORM, descriptorPool, descriptorPoolRTV, m_loadingCommandBuffer);
 			/*shadowPass = _device->GetRenderPass({ { shadowmapColor->m_format, shadowmapColor->m_descriptor.imageLayout}, { shadowmap->m_format, shadowmap->m_descriptor.imageLayout} });
@@ -513,6 +539,8 @@ namespace engine
 			shadowPass->AddFrameBuffer(fb);
 			shadowPass->SetClearColor({ 1.0f,1.0f,1.0f }, 0);*/
 			shadowPass = _device->GetRenderPass(SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor }, shadowmap);
+
+			globalTextures.push_back(shadowmap);
 		}
 
 		void SceneLoaderGltf::CreateShadowObjects()
@@ -521,6 +549,11 @@ namespace engine
 			{
 				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX}
 			};
+
+			/*std::vector<render::LayoutBinding> offscreenbindings
+			{
+				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX}
+			};*/
 			render::DescriptorSetLayout* desc_layout = _device->GetDescriptorSetLayout(offscreenbindings);
 
 			std::vector<render::LayoutBinding> offscreencolorbindings
@@ -528,16 +561,21 @@ namespace engine
 				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX},
 				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::FRAGMENT}
 			};
+			/*std::vector<render::LayoutBinding> offscreencolorbindings
+			{
+				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX},
+				{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::FRAGMENT}
+			};*/
 			render::DescriptorSetLayout* descColorLayout = _device->GetDescriptorSetLayout(offscreencolorbindings);
 
-			std::vector<render::VulkanVertexLayout*> vlayouts;
+			std::vector<render::VertexLayout*> vlayouts;
 
 			for (int ro_index = 0; ro_index < render_objects.size(); ro_index++)
 			{
 				RenderObject* ro = render_objects[ro_index];
 				if (!ro)
 					continue;
-				render::VulkanVertexLayout* l = (render::VulkanVertexLayout*)ro->_vertexLayout;//george bad
+				render::VertexLayout* l = (render::VertexLayout*)ro->_vertexLayout;//george bad
 				//it = std::find(vlayouts.begin(), vlayouts.end(), l);
 				int index = -1;
 				for (int i = 0; i < vlayouts.size(); i++)
@@ -563,20 +601,21 @@ namespace engine
 					render::DescriptorSetLayout* currentdescayout = nullptr;
 
 					std::vector<render::Buffer*> buffersDescriptors{ shadow_uniform_buffer };
-					if (individualFragmentUniformBuffers[ro_index])
+					/*if (individualFragmentUniformBuffers[ro_index])
 					{
 						buffersDescriptors.push_back(individualFragmentUniformBuffers[ro_index]);
 						currentdescayout = descColorLayout;
 					}
 					else
-						currentdescayout = desc_layout;
+						currentdescayout = desc_layout;*/
 
+					currentdescayout = desc_layout;
 					sro->SetDescriptorSetLayout(currentdescayout);
 
-					std::string sm_vertex_file(engine::tools::getAssetPath() + std::string("shaders/shadowmapping/offscreen.vert.spv"));
-					std::string sm_fragment_file(engine::tools::getAssetPath() + ((individualFragmentUniformBuffers[ro_index] == nullptr) ? std::string("shaders/shadowmapping/offscreen.frag.spv") : std::string("shaders/shadowmapping/offscreencolor.frag.spv")));
+					std::string sm_vertex_file = shadowmapVS;//(engine::tools::getAssetPath() + std::string("shaders/shadowmapping/offscreen.vert.spv"));
+					std::string sm_fragment_file = shadowmapFS;//(individualFragmentUniformBuffers[ro_index] == nullptr) ? shadowmapFS : shadowmapFSColored;//(engine::tools::getAssetPath() + ((individualFragmentUniformBuffers[ro_index] == nullptr) ? std::string("shaders/shadowmapping/offscreen.frag.spv") : std::string("shaders/shadowmapping/offscreencolor.frag.spv")));
 
-					bool blendenable = areTransparents[ro_index];
+					bool blendenable = false;// areTransparents[ro_index];
 
 					//This one doesn't write to color. Carefull here if we want to use variance shadowmapping or other techniques that require aditional data from the color buffer
 					/*VkPipelineColorBlendAttachmentState opaqueState{};
@@ -621,6 +660,8 @@ namespace engine
 
 		void SceneLoaderGltf::DrawShadowsInSeparatePass(render::CommandBuffer* command_buffer)
 		{
+			if (!useShadows)
+				return;
 			float depthBiasConstant = 0.25f;
 			// Slope depth bias factor, applied depending on polygon's slope
 			float depthBiasSlope = 0.75f;
@@ -633,7 +674,7 @@ namespace engine
 				depthBiasConstant,
 				0.0f,
 				depthBiasSlope);*/
-
+			descriptorPool->Draw(command_buffer);
 			for (auto obj : shadow_objects)
 				obj->Draw(command_buffer);
 
@@ -681,9 +722,9 @@ namespace engine
 			time += timer;
 			//float flicker = 8 + 2 * sin(3.0 * time) + 1 * glm::fract(sin(time * 12.9898) * 43758.5453);
 
-			glm::vec3 ll = lightPositions.size() > 0 ? lightPositions[0] : glm::vec4(0.0f,1.0f,0.0f,1.0f);
+			glm::vec3 ll = glm::vec4(20.0f, 20.0f, 0.0f, 1.0f);//lightPositions.size() > 0 ? lightPositions[0] : glm::vec4(0.0f,1.0f,0.0f,1.0f);
 			float zNear = 10.0f;
-			float zFar = 906.0f;
+			float zFar = 100.0f;
 
 		/*	glm::vec3 offset = glm::vec3(
 				0.1 * sin(time * 2.0) + 0.05 * glm::fract(sin(time * 5.0) * 100.0),
@@ -694,6 +735,8 @@ namespace engine
 
 			// Matrix from light's point of view
 			glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
+			if (m_camera->GetFlipY())
+				depthProjectionMatrix[1][1] *= -1;
 			glm::mat4 depthViewMatrix = glm::lookAt(glm::vec3(ll), glm::vec3(0.0f), glm::vec3(0, 1, 0));
 			glm::mat4 depthModelMatrix = glm::mat4(1.0f);
 

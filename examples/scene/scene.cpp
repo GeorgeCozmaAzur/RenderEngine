@@ -22,7 +22,7 @@
 using namespace engine;
 using namespace engine::render;
 
-class VulkanExample : public D3D12Application
+class VulkanExample : public VulkanApplication
 {
 public:
 
@@ -54,7 +54,7 @@ public:
 	} uboSharedLights;
 	render::Buffer* vsdeferred;
 
-	VulkanExample() : D3D12Application(true)
+	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -62,10 +62,10 @@ public:
 		title = "Vulkan Engine simple post effect";
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
-		camera.SetFlipY(false);
+		camera.SetFlipY(true);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, -1.0f, -6.0f));
+		camera.SetPosition(glm::vec3(103.0f, 4.6f, -40.0f));
 		//settings.overlay = false;
 	}
 
@@ -155,7 +155,7 @@ public:
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "castle.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/mypot/", "mypot.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, m_device, scenepass, true);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/stonedtavern/", "stonedtavern.gltf", 10.0, m_device, scenepass, true);
 		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 

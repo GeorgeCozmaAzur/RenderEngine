@@ -40,6 +40,7 @@ namespace engine
 			std::vector<render::DescriptorSetLayout*> descriptorSetlayouts;
 			render::DescriptorPool* descriptorPool;
 			render::DescriptorPool* descriptorPoolRTV = nullptr;
+			render::DescriptorPool* descriptorPoolDSV = nullptr;
 			std::vector<RenderObject*> render_objects;
 
 			std::string forwardShadersFolder = "scene";
@@ -48,6 +49,9 @@ namespace engine
 			std::string lightingFS = "pbrtextured.frag.spv";
 			std::string normalmapVS = "pbrnormalmap.vert.spv";
 			std::string normalmapFS = "pbrtexturednormalmap.frag.spv";
+			std::string shadowmapVS = "pbrtexturednormalmap.frag.spv";
+			std::string shadowmapFS = "pbrtexturednormalmap.frag.spv";
+			std::string shadowmapFSColored = "pbrtexturednormalmap.frag.spv";
 
 			struct {
 				glm::mat4 depthMVP;
@@ -74,6 +78,7 @@ namespace engine
 
 			float lightFOV = 45.0f;
 			std::vector<glm::vec4> lightPositions;// = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			glm::vec4 directionalLight = glm::vec4(0.5f, 0.5f, 0.0f, 1.0f);
 
 			render::VertexLayout* vertexlayout = nullptr;
 				/*render::VulkanVertexLayout({
@@ -90,6 +95,8 @@ namespace engine
 				}, {});*/
 
 			render::CommandBuffer* m_loadingCommandBuffer = nullptr;
+
+			bool useShadows = false;
 
 			SceneLoaderGltf::~SceneLoaderGltf();
 
@@ -113,6 +120,7 @@ namespace engine
 				engine::render::GraphicsDevice* device
 				, render::RenderPass* renderPass
 				, bool deferred = false
+				, bool withShadow = false
 			);
 
 			void UpdateLights(int index, glm::vec4 position, glm::vec4 color, float timer);

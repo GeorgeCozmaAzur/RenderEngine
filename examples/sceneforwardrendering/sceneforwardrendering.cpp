@@ -50,8 +50,9 @@ public:
 		camera.SetFlipY(false);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, -1.0f, -6.0f));
-		//settings.overlay = false;
+		glm::vec3 campos = glm::vec3(0.0f, -2.6f, -0.0f);
+		if (camera.GetFlipY() != 0) campos.y = -campos.y;
+		camera.SetPosition(campos);
 	}
 
 	~VulkanExample()
@@ -92,17 +93,20 @@ public:
 
 		scene.m_loadingCommandBuffer = m_loadingCommandBuffer;
 		scene.forwardShadersFolder = GetShadersPath() + "scene/";
-		scene.lightingVS = "pbr" + GetVertexShadersExt();
-		scene.lightingFS = "pbrtextured" + GetFragShadersExt();
-		scene.normalmapVS = "pbrnormalmap" + GetVertexShadersExt();
-		scene.normalmapFS = "pbrtexturednormalmap" + GetFragShadersExt();
+		scene.lightingVS = "pbrsm" + GetVertexShadersExt();
+		scene.lightingFS = "pbrtexturedsm" + GetFragShadersExt();
+		scene.normalmapVS = "pbrnormalmapsm" + GetVertexShadersExt();
+		scene.normalmapFS = "pbrtexturednormalmapsm" + GetFragShadersExt();
+		scene.shadowmapVS = GetShadersPath() + "shadowmapping/offscreen" + GetVertexShadersExt();
+		scene.shadowmapFS = GetShadersPath() + "shadowmapping/offscreen" + GetFragShadersExt();
+		scene.shadowmapFSColored = GetShadersPath() + "shadowmapping/offscreencolor" + GetFragShadersExt();
 
 		scene._device = m_device;
 		//scene.CreateShadow();
 		//scene.globalTextures.push_back(scene.shadowmap);
 
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache);
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, m_device, scenepass);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, m_device, scenepass, false, true);
 		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
@@ -152,7 +156,7 @@ public:
 		{
 			m_drawCommandBuffers[i]->Begin();
 			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
-			//scene.DrawShadowsInSeparatePass(drawCommandBuffers[i]);
+			scene.DrawShadowsInSeparatePass(m_drawCommandBuffers[i]);
 
 			scenepass->Begin(m_drawCommandBuffers[i], 0);
 
@@ -223,7 +227,7 @@ public:
 			for (int i = 0; i < scene.lightPositions.size(); i++)
 			{
 				std::string lx = std::string("Light position x ") + std::to_string(i);
-				if (ImGui::SliderFloat(lx.c_str(), &scene.lightPositions[i].x, -50.0f, 50.0f))
+				if (ImGui::SliderFloat(lx.c_str(), &scene.lightPositions[i].x, -50.0f, 100.0f))
 				{
 					scene.Update(0.0f);
 				}
