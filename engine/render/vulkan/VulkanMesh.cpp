@@ -10,6 +10,12 @@ namespace engine
 			if (!m_isVisible)
 				return;
 
+			if (_vertexBuffer==nullptr && _indexBuffer==nullptr)
+			{
+				vkCmdDraw(commandBuffer, m_indexCount, m_instanceNo, 0, 0);
+				return;
+			}
+
 			VkDeviceSize offsets[1] = { 0 };
 			const VkBuffer vertexBuffer = _vertexBuffer->GetVkBuffer();
 			vkCmdBindVertexBuffers(commandBuffer, m_vertexInputBinding, 1, &vertexBuffer, offsets);

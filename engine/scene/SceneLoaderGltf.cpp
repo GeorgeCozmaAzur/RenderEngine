@@ -28,7 +28,7 @@ namespace engine
 
 			descriptorPool = _device->GetDescriptorPool({
 			{ render::DescriptorType::UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size()) },
-			{render::DescriptorType::IMAGE_SAMPLER, 5 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()) },
+			{render::DescriptorType::IMAGE_SAMPLER, 6 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()) },
 			{render::DescriptorType::STORAGE_IMAGE, 2 }
 				}, static_cast<uint32_t>(2 * render_objects.size()) + 5);
 
@@ -464,6 +464,7 @@ namespace engine
 			_device = device;
 			modelsVkRenderPass = renderPass;
 			useShadows = withShadow;
+			m_deferred = deferred;
 			//vKpipelineCache = pipelineCache;
 			tinygltf::Model glTFInput;
 			tinygltf::TinyGLTF gltfContext;
@@ -540,7 +541,8 @@ namespace engine
 			shadowPass->SetClearColor({ 1.0f,1.0f,1.0f }, 0);*/
 			shadowPass = _device->GetRenderPass(SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor }, shadowmap);
 
-			globalTextures.push_back(shadowmap);
+			if(!m_deferred)
+				globalTextures.push_back(shadowmap);
 		}
 
 		void SceneLoaderGltf::CreateShadowObjects()

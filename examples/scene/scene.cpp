@@ -42,6 +42,7 @@ public:
 	render::Texture* sceneLightscolor;
 
 	scene::DeferredLights deferredLights;
+	scene::DeferredLightDirectional deferredLight;
 
 	render::DescriptorPool* descriptorPoolPostEffects;
 	render::DescriptorPool* descriptorPoolRTV;
@@ -54,6 +55,13 @@ public:
 	} uboSharedLights;
 	render::Buffer* vsdeferred;
 
+	struct UBOLightsDir {
+		glm::mat4 depthMVP;
+		glm::vec4 lightDir;
+		glm::vec3 cameraPosition;
+	} uboSharedLight;
+	render::Buffer* fsdeferreddir;
+
 	VulkanExample() : VulkanApplication(true)
 	{
 		zoom = -3.75f;
@@ -65,8 +73,9 @@ public:
 		camera.SetFlipY(true);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(103.0f, 4.6f, -40.0f));
-		//settings.overlay = false;
+		//camera.SetPosition(glm::vec3(103.0f, 4.6f, -40.0f));
+		glm::vec3 campos = glm::vec3(0.0f, -2.6f, -0.0f);
+		if (camera.GetFlipY() != 0) campos.y = -campos.y;
 	}
 
 	~VulkanExample()
@@ -86,10 +95,10 @@ public:
 		descriptorPoolPostEffects = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);*/
 		descriptorPoolPostEffects = m_device->GetDescriptorPool(
 			{
-			{render::DescriptorType::UNIFORM_BUFFER, 2},
+			{render::DescriptorType::UNIFORM_BUFFER, 3},
 			{render::DescriptorType::IMAGE_SAMPLER, 2},
-			{render::DescriptorType::INPUT_ATTACHMENT, 4}
-			}, 2);
+			{render::DescriptorType::INPUT_ATTACHMENT, 8}
+			}, 3);
 		descriptorPoolRTV = m_device->GetDescriptorPool({ {render::DescriptorType::RTV, 5} }, 5);
 		descriptorPoolPostEffectsDSV = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 1} }, 1);
 	}
@@ -147,6 +156,9 @@ public:
 		scene.lightingFS = "basic" + GetFragShadersExt();
 		scene.normalmapVS = "normalmap" + GetVertexShadersExt();
 		scene.normalmapFS = "normalmap" + GetFragShadersExt();
+		scene.shadowmapVS = GetShadersPath() + "shadowmapping/offscreen" + GetVertexShadersExt();
+		scene.shadowmapFS = GetShadersPath() + "shadowmapping/offscreen" + GetFragShadersExt();
+		scene.shadowmapFSColored = GetShadersPath() + "shadowmapping/offscreencolor" + GetFragShadersExt();
 
 		scene._device = m_device;
 		//scene.CreateShadow();
@@ -155,7 +167,7 @@ public:
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "castle.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/mypot/", "mypot.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/stonedtavern/", "stonedtavern.gltf", 10.0, m_device, scenepass, true);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, m_device, scenepass, true, true);
 		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
@@ -207,7 +219,7 @@ public:
 		{
 			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 			m_drawCommandBuffers[i]->Begin();
-			//scene.DrawShadowsInSeparatePass(drawCommandBuffers[i]);
+			scene.DrawShadowsInSeparatePass(m_drawCommandBuffers[i]);
 
 			scenepass->Begin(m_drawCommandBuffers[i], 0);
 
@@ -218,7 +230,9 @@ public:
 			scenepass->NextSubPass(m_drawCommandBuffers[i]);
 			//vkCmdNextSubpass(drawCommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
 			//vkCmdSetDepthTestEnable(drawCmdBuffers[i],true);
+
 			descriptorPoolPostEffects->Draw(m_drawCommandBuffers[i]);
+			deferredLight.Draw(m_drawCommandBuffers[i]);
 			deferredLights.Draw(m_drawCommandBuffers[i]);
 
 			scenepass->End(m_drawCommandBuffers[i]);
@@ -252,6 +266,7 @@ public:
 		/*vsdeferred = m_device->GetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(uboSharedLights));*/
 		vsdeferred = m_device->GetUniformBuffer(sizeof(uboSharedLights), nullptr, descriptorPoolPostEffects);
+		fsdeferreddir = m_device->GetUniformBuffer(sizeof(uboSharedLight), nullptr, descriptorPoolPostEffects);
 
 		//VK_CHECK_RESULT(vsdeferred->Map());
 		deferredLights._commandBuffer = m_loadingCommandBuffer;
@@ -259,6 +274,11 @@ public:
 		deferredLights.vertext = GetVertexShadersExt();
 		deferredLights.fragext = GetFragShadersExt();
 		deferredLights.Init(vsdeferred, m_device, descriptorPoolPostEffects, scenepass, scene.lightPositions.size(), scenepositions, scenenormals, sceneroughnessmetallic, scenecolor);
+		deferredLight._commandBuffer = m_loadingCommandBuffer;
+		deferredLight.shadersPath = GetShadersPath();
+		deferredLight.vertext = GetVertexShadersExt();
+		deferredLight.fragext = GetFragShadersExt();
+		deferredLight.Init(fsdeferreddir, m_device, descriptorPoolPostEffects, scenepass, scenepositions, scenenormals, sceneroughnessmetallic, scenecolor, scene.shadowmap);
 	}
 
 	void Prepare()
@@ -278,8 +298,19 @@ public:
 
 		uboSharedLights.projection = perspectiveMatrix;
 		uboSharedLights.view = viewMatrix;
-		uboSharedLights.cameraPosition = camera.GetPosition();
+		uboSharedLights.cameraPosition = -camera.GetPosition();
 		vsdeferred->MemCopy(&uboSharedLights, sizeof(uboSharedLights));
+
+		uboSharedLight.lightDir = glm::vec4(0.5,0.5,0.0,1.0);
+		uboSharedLight.cameraPosition = -camera.GetPosition();
+		glm::mat4 depthbiasMatrix = glm::mat4(
+			glm::vec4(0.5, 0.0, 0.0, 0.0),
+			glm::vec4(0.0, 0.5, 0.0, 0.0),
+			glm::vec4(0.0, 0.0, 1.0, 0.0),
+			glm::vec4(0.5, 0.5, 0.0, 1.0)
+		);
+		uboSharedLight.depthMVP = depthbiasMatrix * scene.uboShadowOffscreenVS.depthMVP;
+		fsdeferreddir->MemCopy(&uboSharedLight, sizeof(uboSharedLight));
 
 		time += dt;
 		float flicker = 8 + 2 * sin(3.0 * time) + 1 * glm::fract(sin(time * 12.9898) * 43758.5453);

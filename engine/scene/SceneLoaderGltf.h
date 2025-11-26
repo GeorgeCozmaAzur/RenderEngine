@@ -97,6 +97,7 @@ namespace engine
 			render::CommandBuffer* m_loadingCommandBuffer = nullptr;
 
 			bool useShadows = false;
+			bool m_deferred = false;
 
 			SceneLoaderGltf::~SceneLoaderGltf();
 

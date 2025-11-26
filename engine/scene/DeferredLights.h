@@ -28,5 +28,18 @@ namespace engine
 			void Update();
 			~DeferredLights();
 		};
+
+		class DeferredLightDirectional : public RenderObject
+		{
+		public:
+			glm::vec4 m_light;
+			std::string shadersPath;
+			std::string vertext;
+			std::string fragext;
+
+			class render::CommandBuffer* _commandBuffer = nullptr;
+			void Init(render::Buffer* ub, render::GraphicsDevice* device, render::DescriptorPool* descriptorPool, render::RenderPass* renderPass,
+				render::Texture* positions, render::Texture* normals, render::Texture* roughnessMetallic = nullptr, render::Texture* albedo = nullptr, render::Texture* shadowmap = nullptr);
+		};
 	}
 }

@@ -22,10 +22,6 @@ namespace engine
 				});
 
 			std::vector<render::MeshData*> meshDatas = LoadGeometry(engine::tools::getAssetPath() + "models/sphere.obj", _vertexLayout, 0.05f, lightsNumber, glm::vec3(0.0, 0.0, 0.0));
-
-			std::string shaderVertexName = shadersPath + "basicdeferred/deferredlights" + vertext;
-			std::string shaderFragmentName = shadersPath + "basicdeferred/deferredlights" + fragext;
-
 			
 			m_pointLights.resize(lightsNumber * 2);
 			for (int i=0;i< m_pointLights.size();i++)
@@ -61,6 +57,8 @@ namespace engine
 			};*/
 			std::vector<render::Texture*> texturesDescriptors = { positions, normals };
 
+			std::string shaderVertexName = shadersPath + "basicdeferred/deferredlights" + vertext;
+			std::string shaderFragmentName = shadersPath + "basicdeferred/deferredlights" + fragext;
 			//we have a pbr lighting system
 			if (roughnessMetallic && albedo)
 			{
@@ -90,7 +88,7 @@ namespace engine
 			props.topology = render::PrimitiveTopolgy::TRIANGLE_LIST;
 			props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 			props.pAttachments = blendAttachmentStates.data();
-			props.depthTestEnable = true;
+			props.depthTestEnable = false;
 			props.depthWriteEnable = false;
 			props.subpass = 1U;
 			props.cullMode = render::CullMode::BACK;
@@ -112,6 +110,50 @@ namespace engine
 		DeferredLights::~DeferredLights()
 		{
 			//delete _vertexLayout;
+		}
+
+		void DeferredLightDirectional::Init(render::Buffer* ub, render::GraphicsDevice* device, render::DescriptorPool* descriptorPool, render::RenderPass* renderPass, render::Texture* positions, render::Texture* normals, render::Texture* roughnessMetallic, render::Texture* albedo, render::Texture* shadowmap)
+		{
+			//vulkanDevice = device;
+			_vertexLayout = device->GetVertexLayout({					},{					});
+			render::MeshData mdata;
+			mdata.m_indexCount = 0;
+			m_geometries.push_back(device->GetMesh(&mdata, _vertexLayout, _commandBuffer));
+			m_geometries[0]->m_indexCount = 3;
+			std::vector<render::LayoutBinding> modelbindings{
+						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::FRAGMENT},
+						{render::DescriptorType::INPUT_ATTACHMENT, render::ShaderStage::FRAGMENT},
+						{render::DescriptorType::INPUT_ATTACHMENT, render::ShaderStage::FRAGMENT}
+			};
+			std::vector<render::Texture*> texturesDescriptors = { positions, normals };
+			std::string shaderVertexName = shadersPath + "basicdeferred/deferredlightdirectional" + vertext;
+			std::string shaderFragmentName = shadersPath + "basicdeferred/deferredlightdirectional" + fragext;
+
+			//we have a pbr lighting system
+			if (roughnessMetallic && albedo)
+			{
+				modelbindings.push_back({ render::DescriptorType::INPUT_ATTACHMENT, render::ShaderStage::FRAGMENT });
+				modelbindings.push_back({ render::DescriptorType::INPUT_ATTACHMENT, render::ShaderStage::FRAGMENT });
+				texturesDescriptors.insert(texturesDescriptors.begin(), albedo);
+				texturesDescriptors.push_back(roughnessMetallic);
+				shaderVertexName = shadersPath + "basicdeferred/deferredlightdirectionalpbr" + vertext;
+				shaderFragmentName = shadersPath + "basicdeferred/deferredlightdirectionalpbr" + fragext;
+			}
+			if (shadowmap)
+			{
+				modelbindings.push_back({ render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT });
+				texturesDescriptors.push_back(shadowmap);
+			}
+			_descriptorLayout = device->GetDescriptorSetLayout(modelbindings);
+			m_descriptorSets.push_back(device->GetDescriptorSet(_descriptorLayout, descriptorPool, { ub }, texturesDescriptors));
+
+			render::PipelineProperties props;
+			props.blendEnable = true;
+			props.depthTestEnable = false;
+			props.depthWriteEnable = false;
+			props.subpass = 1U;
+			_pipeline = device->GetPipeline(shaderVertexName, "VSMain", shaderFragmentName, "PSMain",
+				_vertexLayout, _descriptorLayout, props, renderPass);
 		}
 	}
 }

@@ -47,6 +47,12 @@ namespace engine
 
         void D3D12Mesh::Draw(ID3D12GraphicsCommandList* commandList, const std::vector<MeshPart>& parts)
         {
+            if (_vertexBuffer == nullptr && _indexBuffer == nullptr)
+            {
+                commandList->DrawInstanced(m_indexCount, m_instanceNo, 0, 0);
+                return;
+            }
+
             commandList->IASetIndexBuffer(&_indexBuffer->m_view);
             commandList->IASetVertexBuffers(0, 1, &_vertexBuffer->m_view);
             if(_instanceBuffer)
