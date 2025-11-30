@@ -22,7 +22,7 @@
 using namespace engine;
 using namespace engine::render;
 
-class VulkanExample : public VulkanApplication
+class VulkanExample : public D3D12Application
 {
 public:
 
@@ -39,7 +39,7 @@ public:
 
 	render::DescriptorSet* pfdesc = nullptr;
 
-	VulkanExample() : VulkanApplication(true)
+	VulkanExample() : D3D12Application(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -47,7 +47,7 @@ public:
 		title = "Vulkan Engine simple post effect";
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
-		camera.SetFlipY(true);
+		camera.SetFlipY(false);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		glm::vec3 campos = glm::vec3(0.0f, -2.6f, -0.0f);

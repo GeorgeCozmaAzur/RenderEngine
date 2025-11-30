@@ -133,7 +133,7 @@ namespace engine
 			texture->CreateDescriptor(m_device.Get(), cbvSrvHandle, cbvSrvHandleGPU, rtvHandle);
 
 			m_textures.push_back(texture);
-			return texture;
+			return texture; 
 		}
 
 		DescriptorPool* D3D12Device::GetDescriptorPool(std::vector<DescriptorPoolSize> poolSizes, uint32_t maxSets)

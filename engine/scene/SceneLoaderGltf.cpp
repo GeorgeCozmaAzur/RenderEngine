@@ -531,6 +531,8 @@ namespace engine
 
 		void SceneLoaderGltf::CreateShadow()
 		{
+			if (m_deferred)
+				return;
 			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true, VK_IMAGE_ASPECT_DEPTH_BIT, false);
 			shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, render::GfxFormat::D32_FLOAT, descriptorPool, descriptorPoolDSV, m_loadingCommandBuffer, true, false);
 			//shadowmap = _device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, true);
@@ -541,8 +543,8 @@ namespace engine
 			shadowPass->SetClearColor({ 1.0f,1.0f,1.0f }, 0);*/
 			shadowPass = _device->GetRenderPass(SHADOWMAP_DIM, SHADOWMAP_DIM, { shadowmapColor }, shadowmap);
 
-			if(!m_deferred)
-				globalTextures.push_back(shadowmap);
+			//if(!m_deferred)
+			globalTextures.push_back(shadowmap);
 		}
 
 		void SceneLoaderGltf::CreateShadowObjects()

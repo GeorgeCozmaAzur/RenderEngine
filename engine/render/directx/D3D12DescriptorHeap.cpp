@@ -23,7 +23,8 @@ namespace engine
 			else
 			if(dsv_count > 0)
 			{
-				heapDesc.NumDescriptors = dsv_count;
+				heapDesc.NumDescriptors = std::accumulate(m_poolSizes.begin(), m_poolSizes.end(), 0,
+					[](int acc, const auto& thepair) {return thepair.type == DescriptorType::DSV ? acc + thepair.size : 0; });
 				heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 			}
 			else

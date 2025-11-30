@@ -16,13 +16,15 @@
 #include "D3D12Application.h"
 #include "scene/SceneLoaderGltf.h"
 #include "scene/DeferredLights.h"
+#include "render/directx/D3D12DescriptorHeap.h"
 
 #define FB_COLOR_HDR_FORMAT VK_FORMAT_R32G32B32A32_SFLOAT
+#define SHADOWMAP_DIM 1024
 
 using namespace engine;
 using namespace engine::render;
 
-class VulkanExample : public VulkanApplication
+class VulkanExample : public D3D12Application
 {
 public:
 
@@ -58,11 +60,11 @@ public:
 	struct UBOLightsDir {
 		glm::mat4 depthMVP;
 		glm::vec4 lightDir;
-		glm::vec3 cameraPosition;
+		glm::vec4 cameraPosition;
 	} uboSharedLight;
 	render::Buffer* fsdeferreddir;
 
-	VulkanExample() : VulkanApplication(true)
+	VulkanExample() : D3D12Application(true)
 	{
 		zoom = -3.75f;
 		rotationSpeed = 0.5f;
@@ -70,7 +72,7 @@ public:
 		title = "Vulkan Engine simple post effect";
 		settings.overlay = true;
 		camera.movementSpeed = 20.5f;
-		camera.SetFlipY(true);
+		camera.SetFlipY(false);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		//camera.SetPosition(glm::vec3(103.0f, 4.6f, -40.0f));
@@ -95,12 +97,12 @@ public:
 		descriptorPoolPostEffects = vulkanDevice->CreateDescriptorSetsPool(poolSizes, 2);*/
 		descriptorPoolPostEffects = m_device->GetDescriptorPool(
 			{
-			{render::DescriptorType::UNIFORM_BUFFER, 3},
-			{render::DescriptorType::IMAGE_SAMPLER, 2},
+			{render::DescriptorType::UNIFORM_BUFFER, 4},
+			{render::DescriptorType::IMAGE_SAMPLER, 4},
 			{render::DescriptorType::INPUT_ATTACHMENT, 8}
-			}, 3);
-		descriptorPoolRTV = m_device->GetDescriptorPool({ {render::DescriptorType::RTV, 5} }, 5);
-		descriptorPoolPostEffectsDSV = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 1} }, 1);
+			}, 4);
+		descriptorPoolRTV = m_device->GetDescriptorPool({ {render::DescriptorType::RTV, 6} }, 6);
+		descriptorPoolPostEffectsDSV = m_device->GetDescriptorPool({ {render::DescriptorType::DSV, 2} }, 2);
 	}
 
 	void init()
@@ -149,6 +151,14 @@ public:
 		sceneLightscolor = m_device->GetRenderTarget(width, height, render::GfxFormat::R8G8B8A8_UNORM, descriptorPoolPostEffects, descriptorPoolRTV, m_loadingCommandBuffer, cc);
 		render::Texture* scenedepth = m_device->GetDepthRenderTarget(width, height, render::GfxFormat::D32_FLOAT, descriptorPoolPostEffects, descriptorPoolPostEffectsDSV, m_loadingCommandBuffer, false, false);
 		scenepass = m_device->GetRenderPass(width, height, { scenecolor ,scenepositions, scenenormals, sceneroughnessmetallic, sceneLightscolor }, scenedepth, { render::RenderSubpass({}, {0,1,2,3,5}), render::RenderSubpass({0,1,2,3}, {4}) });
+		
+		bool deferred = true;
+		if (deferred)
+		{
+			scene.shadowmap = m_device->GetDepthRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, render::GfxFormat::D32_FLOAT, descriptorPoolPostEffects, descriptorPoolPostEffectsDSV, m_loadingCommandBuffer, true, false);
+			scene.shadowmapColor = m_device->GetRenderTarget(SHADOWMAP_DIM, SHADOWMAP_DIM, render::GfxFormat::R8G8B8A8_UNORM, descriptorPoolPostEffects, descriptorPoolRTV, m_loadingCommandBuffer);
+			scene.shadowPass = m_device->GetRenderPass(SHADOWMAP_DIM, SHADOWMAP_DIM, { scene.shadowmapColor }, scene.shadowmap);
+		}
 
 		scene.m_loadingCommandBuffer = m_loadingCommandBuffer;
 		scene.deferredShadersFolder = GetShadersPath() + "scenedeferred/";
@@ -167,7 +177,7 @@ public:
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle2/", "castle.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/castle/", "modular_fort_01_4k.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
 		//scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/mypot/", "mypot.gltf", 10.0, vulkanDevice, queue, scenepass->GetRenderPass(), pipelineCache, true);
-		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, m_device, scenepass, true, true);
+		scene_render_objects = scene.LoadFromFile(engine::tools::getAssetPath() + "models/tavern/", "tavern.gltf", 10.0, m_device, scenepass, deferred, true);
 		//scene.light_pos = glm::vec4(0.0f, -3.0f, 0.0f, 1.0f);
 		//scene.light_pos = glm::vec4(.0f, .0f, .0f, 1.0f);
 
@@ -219,6 +229,7 @@ public:
 		{
 			//VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 			m_drawCommandBuffers[i]->Begin();
+			scene.descriptorPool->Draw(m_drawCommandBuffers[i]);
 			scene.DrawShadowsInSeparatePass(m_drawCommandBuffers[i]);
 
 			scenepass->Begin(m_drawCommandBuffers[i], 0);
@@ -232,6 +243,12 @@ public:
 			//vkCmdSetDepthTestEnable(drawCmdBuffers[i],true);
 
 			descriptorPoolPostEffects->Draw(m_drawCommandBuffers[i]);
+			/*D3D12CommandBuffer* d3dcommandBuffer = static_cast<D3D12CommandBuffer*>(m_drawCommandBuffers[i]);
+			D3D12DescriptorHeap* dh = static_cast<D3D12DescriptorHeap*>(descriptorPoolPostEffects);
+			D3D12DescriptorHeap* dhs = static_cast<D3D12DescriptorHeap*>(scene.descriptorPool);
+			ID3D12DescriptorHeap* heaps[] = { dhs->m_heap.Get(), dh->m_heap.Get() };
+			d3dcommandBuffer->m_commandList->SetDescriptorHeaps(2, heaps);*/
+
 			deferredLight.Draw(m_drawCommandBuffers[i]);
 			deferredLights.Draw(m_drawCommandBuffers[i]);
 
@@ -301,8 +318,6 @@ public:
 		uboSharedLights.cameraPosition = -camera.GetPosition();
 		vsdeferred->MemCopy(&uboSharedLights, sizeof(uboSharedLights));
 
-		uboSharedLight.lightDir = glm::vec4(0.5,0.5,0.0,1.0);
-		uboSharedLight.cameraPosition = -camera.GetPosition();
 		glm::mat4 depthbiasMatrix = glm::mat4(
 			glm::vec4(0.5, 0.0, 0.0, 0.0),
 			glm::vec4(0.0, 0.5, 0.0, 0.0),
@@ -310,6 +325,8 @@ public:
 			glm::vec4(0.5, 0.5, 0.0, 1.0)
 		);
 		uboSharedLight.depthMVP = depthbiasMatrix * scene.uboShadowOffscreenVS.depthMVP;
+		uboSharedLight.lightDir = glm::vec4(0.5, 0.5, 0.0, 1.0);
+		uboSharedLight.cameraPosition = glm::vec4(-camera.GetPosition(), 1.0);
 		fsdeferreddir->MemCopy(&uboSharedLight, sizeof(uboSharedLight));
 
 		time += dt;

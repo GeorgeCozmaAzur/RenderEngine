@@ -73,7 +73,8 @@ void main()
     vec3 radiance = global_frag_ubo.light0Color.rgb * attenuation;
 	Lo += BRDF(lightDir, viewDir, N, albedo, metallic, roughness) * radiance;
 	
-	float shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
+	vec4 shadowCoord = inShadowCoord / inShadowCoord.w;
+	float shadow = textureProj(shadowCoord, vec2(0.0));
 	//ambient
 	vec3 ambient = albedo * shadow;
 
@@ -84,7 +85,7 @@ void main()
     // gamma correct
     color = pow(color, vec3(1.0/2.2)); 
 	
-	//outFragColor = vec4(color, 1.0);
+	outFragColor = vec4(color, 1.0);
 	//outFragColor = vec4(inTangent.xyz, 1.0);
-	outFragColor = vec4(inPosition, 1.0);
+	//outFragColor = vec4(inPosition, 1.0);
 }

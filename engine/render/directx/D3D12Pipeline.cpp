@@ -258,9 +258,9 @@ namespace engine
                 //if (texturesNo == 0)
                 if(properties.depthBias == true)
                 {
-                    psoDesc.RasterizerState.DepthBias = 0.0f;
-                    psoDesc.RasterizerState.DepthBiasClamp = 0.1f;
-                    psoDesc.RasterizerState.SlopeScaledDepthBias = 0.01f;
+                    psoDesc.RasterizerState.DepthBias = 2500;
+                    psoDesc.RasterizerState.DepthBiasClamp = 0.0f;
+                    psoDesc.RasterizerState.SlopeScaledDepthBias = 2.0f;
                 }
                 psoDesc.BlendState = blendDesc;
                 psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
