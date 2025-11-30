@@ -1,8 +1,8 @@
 # Render Engine
 
-A small engine that renders stuff. 
+A small engine that loads models textures, organizes the render into uniform buffers, descriptors and pielines. 
 
-It is written in vulkan for now and contains several projects that showcases popular render techniques. 
+It is written in Vulkan and Directx12 with an abstraction layer and contains several projects that showcases popular render techniques. 
 
 Some of the utility files are from https://github.com/SaschaWillems/Vulkan.
 
