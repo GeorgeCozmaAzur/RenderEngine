@@ -222,11 +222,11 @@ namespace engine
                     {                      
                         rtBlend.BlendEnable = TRUE;
                         rtBlend.LogicOpEnable = FALSE;
-                        rtBlend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
-                        rtBlend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+                        rtBlend.SrcBlend = properties.pAttachments[i].additive ? D3D12_BLEND_ONE : D3D12_BLEND_SRC_ALPHA;
+                        rtBlend.DestBlend = properties.pAttachments[i].additive ? D3D12_BLEND_ONE : D3D12_BLEND_INV_SRC_ALPHA;
                         rtBlend.BlendOp = D3D12_BLEND_OP_ADD;
                         rtBlend.SrcBlendAlpha = D3D12_BLEND_ONE;
-                        rtBlend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+                        rtBlend.DestBlendAlpha = properties.pAttachments[i].additive ? D3D12_BLEND_ONE : D3D12_BLEND_INV_SRC_ALPHA;
                         rtBlend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
                         rtBlend.LogicOp = D3D12_LOGIC_OP_NOOP;
                         rtBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;

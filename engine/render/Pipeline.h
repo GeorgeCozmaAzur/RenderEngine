@@ -24,6 +24,7 @@ namespace engine
 		struct BlendAttachmentState
 		{
 			bool blend_enable = false;
+			bool additive = false;
 		};
 
 		struct PipelineProperties

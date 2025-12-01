@@ -28,7 +28,9 @@ void main()
 	vec3 L = inCenterPosition.xyz - position;
 	// Distance from light to fragment position
 	float dist = length(L);
-	float atten = inCenterPosition.w / (pow(dist, 2.0) + 1.0);
+	//float atten = inCenterPosition.w / (pow(dist, 2.0) + 1.0);
+	float x = dist / inCenterPosition.w;
+    float atten = clamp((1.0 - x * x), 0.0, 1.0);//input.centerPosition.w / (dist * dist + 1.0);
 	
 	L = normalize(L);
 	vec3 N = normalize(normal);
@@ -48,7 +50,7 @@ void main()
     // gamma correct
     light = pow(light, vec3(1.0/2.2)); 
 	
-	float alpha = clamp(1.0-dist/inCenterPosition.w, 0.0, 1.0);
+	float alpha = atten;//clamp(1.0-dist/inCenterPosition.w, 0.0, 1.0);
 	
 	outFragColor  = vec4(light, alpha);	
 }

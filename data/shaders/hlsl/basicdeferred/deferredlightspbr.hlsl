@@ -75,7 +75,8 @@ float4 PSMain(PSInput input) : SV_Target
 
     float3 L = input.centerPosition.xyz - position;
     float dist = length(L);
-    float atten = input.centerPosition.w / (dist * dist + 1.0);
+	float x = dist / input.centerPosition.w;
+    float atten = saturate(1.0 - x * x);//input.centerPosition.w / (dist * dist + 1.0);
     L = normalize(L);
     float3 N = normalize(normal);
     float NdotL = weHaveNormal * max(0.1, dot(N, L));
@@ -91,7 +92,7 @@ float4 PSMain(PSInput input) : SV_Target
     // gamma correction
     light = pow(light, 1.0 / 2.2);
 
-    float alpha = saturate(1.0 - dist / input.centerPosition.w);
+    float alpha = atten;//saturate(1.0 - dist / input.centerPosition.w);
     //return float4(albedo, 1.0);//float4(light, alpha);
     return float4(light, alpha);
 }

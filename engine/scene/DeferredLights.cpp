@@ -82,13 +82,13 @@ namespace engine
 				VK_BLEND_OP_ADD,
 				0xf
 				} };*/
-			std::vector <render::BlendAttachmentState> blendAttachmentStates{ {true} };
+			std::vector <render::BlendAttachmentState> blendAttachmentStates{ {true,true} };
 			render::PipelineProperties props;
 			props.blendEnable = true;
 			props.topology = render::PrimitiveTopolgy::TRIANGLE_LIST;
 			props.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 			props.pAttachments = blendAttachmentStates.data();
-			props.depthTestEnable = false;
+			props.depthTestEnable = true;
 			props.depthWriteEnable = false;
 			props.subpass = 1U;
 			props.cullMode = render::CullMode::BACK;

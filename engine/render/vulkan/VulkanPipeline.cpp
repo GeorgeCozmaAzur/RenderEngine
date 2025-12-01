@@ -109,7 +109,13 @@ namespace engine
 					VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ZERO,
 					VK_BLEND_OP_ADD,
 					0xf };
-			blendAttachmentState.blendEnable = VkBool32(properties.blendEnable);
+			VkPipelineColorBlendAttachmentState blendAttachmentStateAdditive{ VK_TRUE,
+					VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE,
+					VK_BLEND_OP_ADD,
+					VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE,
+					VK_BLEND_OP_ADD,
+					0xf };
+			blendAttachmentState.blendEnable = blendAttachmentStateAdditive.blendEnable = VkBool32(properties.blendEnable);
 
 			std::vector<VkPipelineColorBlendAttachmentState> attachments{ blendAttachmentState };
 
@@ -121,7 +127,7 @@ namespace engine
 				attachments.clear();
 				for (int i = 0; i < properties.attachmentCount; i++)
 				{
-					VkPipelineColorBlendAttachmentState newblendAttachmentState = blendAttachmentState;
+					VkPipelineColorBlendAttachmentState newblendAttachmentState = properties.pAttachments[i].additive ? blendAttachmentStateAdditive : blendAttachmentState;
 					newblendAttachmentState.blendEnable = VkBool32(properties.pAttachments[i].blend_enable);
 					attachments.push_back(newblendAttachmentState);
 				}

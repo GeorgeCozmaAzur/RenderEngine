@@ -50,6 +50,7 @@ namespace engine
 				if (m_subPasses[subpass].outputAttachmanets[i] < m_frameBuffers[frameBufferIndex].m_rtvHandles.size())
 				commandList->ClearRenderTargetView(m_frameBuffers[frameBufferIndex].m_rtvHandles[m_subPasses[subpass].outputAttachmanets[i]], reinterpret_cast<const float*>(&m_clearColors[m_subPasses[subpass].outputAttachmanets[i]]), 0, nullptr);
 			}
+			//if(subpass == 0)
 			commandList->ClearDepthStencilView(m_frameBuffers[frameBufferIndex].m_dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 		}
 
@@ -65,6 +66,14 @@ namespace engine
 			if (depthInShaders)
 			{
 				commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_frameBuffers[frameBufferIndex].m_depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+			}
+			else
+			{
+				commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+					m_frameBuffers[frameBufferIndex].m_depthTexture,
+					D3D12_RESOURCE_STATE_DEPTH_WRITE,     // from last pass
+					D3D12_RESOURCE_STATE_DEPTH_READ       // read-only depth test
+				));
 			}
 		}
 
