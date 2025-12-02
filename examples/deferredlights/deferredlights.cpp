@@ -21,7 +21,7 @@ using namespace engine;
 
 #define LIGHTS_NO 500
 
-class VulkanExample : public VulkanApplication
+class VulkanExample : public D3D12Application
 {
 public:
 
@@ -121,7 +121,7 @@ public:
 	glm::vec3 light_colors[LIGHTS_NO];
 	std::vector<glm::vec3> models_positions;
 
-	VulkanExample() : VulkanApplication(true)
+	VulkanExample() : D3D12Application(true)
 	{
 		zoom = -60.75f;
 		rotationSpeed = 0.5f;
@@ -130,10 +130,13 @@ public:
 		settings.overlay = true;
 
 		camera.movementSpeed = 20.5f;
-		camera.SetFlipY(false);
+		camera.SetFlipY(true);
 		camera.SetPerspective(60.0f, (float)width / (float)height, 0.1f, 1024.0f);
 		camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		camera.SetPosition(glm::vec3(0.0f, 1.0f,-5.0f));
+		//camera.SetPosition(glm::vec3(0.0f, 1.0f,-5.0f));
+		glm::vec3 campos = glm::vec3(0.0f, 2.6f, -5.0f);
+		if (camera.GetFlipY() != 0) campos.y = -campos.y;
+		camera.SetPosition(campos);
 		rotation.x = -20.0;
 		rotation.y = -10.0;
 	}

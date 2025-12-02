@@ -168,17 +168,17 @@ namespace engine
 			{
 				if (layout->m_bindings[i].descriptorType == UNIFORM_BUFFER)
 				{
-					bufferHandles[buffer_index] = dynamic_cast<D3D12UniformBuffer*>(buffers[i])->m_GPUHandle;
+					bufferHandles[buffer_index] = dynamic_cast<D3D12UniformBuffer*>(buffers[buffer_index])->m_GPUHandle; buffer_index++;
 				}else
 				if (layout->m_bindings[i].descriptorType == INPUT_STORAGE_BUFFER)
 				{
-					bufferHandles[buffer_index] = dynamic_cast<D3D12StorageVertexBuffer*>(buffers[i])->m_srvGPUHandle;
+					bufferHandles[buffer_index] = dynamic_cast<D3D12StorageVertexBuffer*>(buffers[buffer_index])->m_srvGPUHandle; buffer_index++;
 				}else
 				if (layout->m_bindings[i].descriptorType == OUTPUT_STORAGE_BUFFER)
 				{
-					bufferHandles[buffer_index] = dynamic_cast<D3D12StorageVertexBuffer*>(buffers[i])->m_uavGPUHandle;
+					bufferHandles[buffer_index] = dynamic_cast<D3D12StorageVertexBuffer*>(buffers[buffer_index])->m_uavGPUHandle; buffer_index++;
 				}
-				buffer_index++;
+				
 			}
 			/*for (int i = 0; i < buffers.size(); i++)
 			{
