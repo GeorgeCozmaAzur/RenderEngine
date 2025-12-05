@@ -1,8 +1,4 @@
 #include "D3D12Texture.h"
-//#if !defined(__ANDROID__)
-//#define STB_IMAGE_IMPLEMENTATION
-//#include <stb_image.h>
-//#endif
 
 namespace engine
 {
@@ -22,16 +18,18 @@ namespace engine
             }
         }
 
-        void D3D12Texture::Create(ID3D12Device* device, uint32_t width, uint32_t height, GfxFormat format, D3D12_RESOURCE_FLAGS resourceFlags, D3D12_RESOURCE_STATES resourceState)
+        void D3D12Texture::Create(ID3D12Device* device, uint32_t width, uint32_t height, uint16_t layersCount, uint32_t mipCount, GfxFormat format, D3D12_RESOURCE_FLAGS resourceFlags, D3D12_RESOURCE_STATES resourceState)
         {
             m_width = width;
             m_height = height;
+            m_layerCount = layersCount;
+            m_mipLevelsCount = mipCount;
             m_resourceFlags = resourceFlags;
             m_dxgiFormat = ToDxgiFormat(format);
             const D3D12_RESOURCE_DESC textureDesc = CD3DX12_RESOURCE_DESC::Tex2D(m_dxgiFormat,
                 static_cast<UINT64>(width),
                 static_cast<UINT>(height),
-                1, 1, 1, 0, resourceFlags);
+                m_layerCount, m_mipLevelsCount, 1, 0, resourceFlags);
 
             D3D12_CLEAR_VALUE* clearValuep = nullptr;
             D3D12_CLEAR_VALUE clearValue = {};
@@ -63,32 +61,38 @@ namespace engine
 
         UINT64 D3D12Texture::GetSize()
         {
-            return GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
+            return GetRequiredIntermediateSize(m_texture.Get(), 0, m_layerCount*m_mipLevelsCount);
         }
 
         void D3D12Texture::Upload(ID3D12Resource* staggingBuffer, ID3D12GraphicsCommandList* commandList, TextureExtent** extents, void *data)
         {
-           // const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
+           m_TexturePixelSize = extents[0][0].size / (extents[0][0].width * extents[0][0].height);
 
-            // Create the GPU upload buffer.
-           /* device->CreateCommittedResource(
-                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-                D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr,
-                IID_PPV_ARGS(&m_textureUploadHeap));*/
+            std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+            subresources.resize(m_layerCount * m_mipLevelsCount);
 
-            // Copy data to the intermediate upload heap and then schedule a copy 
-            // from the upload heap to the Texture2D.
-           // std::vector<UINT8> texture = GenerateTextureData();
+            UINT index = 0;
 
-            D3D12_SUBRESOURCE_DATA textureData = {};
-            textureData.pData = data;//&texture[0];
-            textureData.RowPitch = extents[0][0].width * m_TexturePixelSize;
-            textureData.SlicePitch = textureData.RowPitch * extents[0][0].height;
+            for (UINT face = 0; face < m_layerCount; ++face)
+            {
+                for (UINT mip = 0; mip < m_mipLevelsCount; ++mip)
+                {
+                    D3D12_SUBRESOURCE_DATA& sr = subresources[index++];
 
-            UpdateSubresources(commandList, m_texture.Get(), staggingBuffer, 0, 0, 1, &textureData);
+                    sr.pData = extents[face][mip].data ? extents[face][mip].data : data;
+                    sr.RowPitch = extents[face][mip].width * m_TexturePixelSize;   // UNCOMPRESSED RULE
+                    sr.SlicePitch = sr.RowPitch * extents[face][mip].height;
+                }
+            }
+            UpdateSubresources(
+                commandList,
+                m_texture.Get(),
+                staggingBuffer,
+                0, 0,
+                (UINT)subresources.size(),
+                subresources.data()
+            );
+
             commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
         }
 
@@ -98,106 +102,24 @@ namespace engine
             D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
             srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             srvDesc.Format = m_dxgiFormat;
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-            srvDesc.Texture2D.MipLevels = 1;
+            if (m_layerCount == 1)
+            {
+                srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+                srvDesc.Texture2D.MipLevels = m_mipLevelsCount;
+                srvDesc.Texture2D.MostDetailedMip = 0;
+            }
+            else
+                if (m_layerCount > 1)
+                {
+                    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+                    srvDesc.TextureCube.MipLevels = m_mipLevelsCount;
+                    srvDesc.TextureCube.MostDetailedMip = 0;
+                }
             //device->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
             device->CreateShaderResourceView(m_texture.Get(), &srvDesc, descriptorHeapAdress);
 
             m_CPUHandle = descriptorHeapAdress;
             m_GPUHandle = descriptorGPUHeapAdress;
-        }
-
-        void D3D12Texture::Load(ID3D12Device* device, std::string fileName, ID3D12GraphicsCommandList* commandList, D3D12_CPU_DESCRIPTOR_HANDLE descriptorHeapAdress, D3D12_GPU_DESCRIPTOR_HANDLE descriptorGPUHeapAdress)
-        {
-            // Note: ComPtr's are CPU objects but this resource needs to stay in scope until
-           // the command list that references it has finished executing on the GPU.
-           // We will flush the GPU at the end of this method to ensure the resource is not
-           // prematurely destroyed.
-
-           /* tdata = new Texture2DData();
-            tdata->LoadFromFile(fileName, GfxFormat::R8G8B8A8_UNORM);
-
-            Create(device,tdata->m_width,tdata->m_height,tdata->m_format, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
-            Upload(device,commandList,tdata->m_extents,tdata->m_ram_data);//TODO george
-            CreateDescriptor(device, descriptorHeapAdress, descriptorGPUHeapAdress);*/
-
-            /*int texChannels;
-            stbi_uc* pixels = stbi_load(fileName.c_str(), &m_Width, &m_Height, &texChannels, STBI_rgb_alpha);
-
-            assert(pixels);
-
-            int m_imageSize = m_Width * m_Height * 4;
-
-            m_ram_data = new char[m_imageSize];
-            memcpy(m_ram_data, pixels, m_imageSize);
-
-            stbi_image_free(pixels);*/
-
-            //m_width = static_cast<uint32_t>(texWidth);
-           // m_height = static_cast<uint32_t>(texHeight);
-           // Microsoft::WRL::ComPtr<ID3D12Resource> m_textureUploadHeap;
-            // Create the texture.
-            {
-                // Describe and create a Texture2D.
-              /*  D3D12_RESOURCE_DESC textureDesc = {};
-                textureDesc.MipLevels = 1;
-                textureDesc.Format = ToDxgiFormat(GfxFormat::R8G8B8A8_UNORM);
-                textureDesc.Width = tdata.m_width;
-                textureDesc.Height = tdata.m_height;
-                textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-                textureDesc.DepthOrArraySize = 1;
-                textureDesc.SampleDesc.Count = 1;
-                textureDesc.SampleDesc.Quality = 0;
-                textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;*/
-
-               // const D3D12_RESOURCE_DESC textureDesc = CD3DX12_RESOURCE_DESC::Tex2D(ToDxgiFormat(GfxFormat::R8G8B8A8_UNORM),
-               //     static_cast<UINT64>(tdata.m_width),
-               //     static_cast<UINT>(tdata.m_height),
-               //     1, 1, 1, 0, D3D12_RESOURCE_FLAG_NONE);
-
-               // device->CreateCommittedResource(
-               //     &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-               //     D3D12_HEAP_FLAG_NONE,
-               //     &textureDesc,
-               //     D3D12_RESOURCE_STATE_COPY_DEST,
-               //     nullptr,
-               //     IID_PPV_ARGS(&m_texture));
-
-               // const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
-
-               // // Create the GPU upload buffer.
-               // device->CreateCommittedResource(
-               //     &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-               //     D3D12_HEAP_FLAG_NONE,
-               //     &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
-               //     D3D12_RESOURCE_STATE_GENERIC_READ,
-               //     nullptr,
-               //     IID_PPV_ARGS(&m_textureUploadHeap));
-
-               // // Copy data to the intermediate upload heap and then schedule a copy 
-               // // from the upload heap to the Texture2D.
-               //// std::vector<UINT8> texture = GenerateTextureData();
-
-               // D3D12_SUBRESOURCE_DATA textureData = {};
-               // textureData.pData = tdata.m_ram_data;//&texture[0];
-               // textureData.RowPitch = tdata.m_width * m_TexturePixelSize;
-               // textureData.SlicePitch = textureData.RowPitch * tdata.m_height;
-
-               // UpdateSubresources(commandList, m_texture.Get(), m_textureUploadHeap.Get(), 0, 0, 1, &textureData);
-               // commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-
-               // //// Describe and create a SRV for the texture.
-               // D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-               // srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-               // srvDesc.Format = textureDesc.Format;
-               // srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-               // srvDesc.Texture2D.MipLevels = 1;
-               // //device->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
-               // device->CreateShaderResourceView(m_texture.Get(), &srvDesc, descriptorHeapAdress);
-
-               // m_CPUHandle = descriptorHeapAdress;
-               // m_GPUHandle = descriptorGPUHeapAdress;
-            }
         }
 
         void D3D12RenderTarget::CreateDescriptor(ID3D12Device* device, D3D12_CPU_DESCRIPTOR_HANDLE descriptorHeapAdress, D3D12_GPU_DESCRIPTOR_HANDLE descriptorGPUHeapAdress, D3D12_CPU_DESCRIPTOR_HANDLE descriptorRTVHeapAdress)

@@ -54,6 +54,7 @@ set(EXAMPLES
 	d3dexpgen
 	deferred
 	deferredlights
+	dfobjectlighting
 	dfs
 	clothsimulation
 	emptyproject

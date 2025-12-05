@@ -27,6 +27,7 @@ namespace engine
 			int width;
 			int height;
 			size_t size;
+			void* data = nullptr;
 		};
 
 		struct TextureData

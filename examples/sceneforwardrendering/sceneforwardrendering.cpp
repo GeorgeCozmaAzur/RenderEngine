@@ -16,6 +16,7 @@
 #include "D3D12Application.h"
 #include "scene/SceneLoaderGltf.h"
 #include "render/vulkan/VulkanCommandBuffer.h"
+#include "scene/SimpleModel.h"
 
 #define FB_COLOR_HDR_FORMAT VK_FORMAT_R32G32B32A32_SFLOAT
 
@@ -38,6 +39,20 @@ public:
 	render::Pipeline* blackandwhitepipeline = nullptr;
 
 	render::DescriptorSet* pfdesc = nullptr;
+
+	struct {
+		glm::mat4 projection;
+		glm::mat4 model;
+	} modelUniformVS;
+	render::Buffer* modelSBVertexUniformBuffer;
+	struct {
+		glm::vec4 lights[4];
+		float exposure = 4.5f;
+		float gamma = 2.2f;
+	} modelSBUniformFS;
+	render::Buffer* modelSBFragmentUniformBuffer;
+	render::Texture* envMap;
+	scene::SimpleModel skybox;
 
 	VulkanExample() : D3D12Application(true)
 	{
@@ -112,6 +127,35 @@ public:
 
 		//scene.CreateShadowObjects(pipelineCache);
 
+		render::TextureCubeMapData data;
+		data.LoadFromFile(engine::tools::getAssetPath() + "textures/hdr/gcanyon_cube.ktx", render::GfxFormat::R16G16B16A16_SFLOAT);
+		envMap = m_device->GetTexture(&data, scene.descriptorPool, m_loadingCommandBuffer);
+		skybox._vertexLayout = m_device->GetVertexLayout({
+		render::VERTEX_COMPONENT_POSITION
+			}, {});
+		std::vector<render::MeshData*> skymd = skybox.LoadGeometry(engine::tools::getAssetPath() + "models/cube.obj", skybox._vertexLayout, 20.0f, 1, glm::vec3(0.0f), glm::vec3(1.0f), glm::vec2(-1.0f, -1.0f));
+		for (auto geo : skymd)
+		{
+			skybox.AddGeometry(m_device->GetMesh(geo, skybox._vertexLayout, m_loadingCommandBuffer));
+			delete geo;
+		}
+		modelSBVertexUniformBuffer = m_device->GetUniformBuffer(sizeof(modelUniformVS), &modelUniformVS, scene.descriptorPool);;
+		modelSBFragmentUniformBuffer = m_device->GetUniformBuffer(sizeof(modelSBUniformFS), &modelSBUniformFS, scene.descriptorPool);
+		std::vector<render::LayoutBinding> skyboxbindings{
+						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::VERTEX},
+						{render::DescriptorType::UNIFORM_BUFFER, render::ShaderStage::FRAGMENT},
+						{render::DescriptorType::IMAGE_SAMPLER, render::ShaderStage::FRAGMENT}
+		};
+		skybox.SetDescriptorSetLayout(m_device->GetDescriptorSetLayout(skyboxbindings));
+		skybox.AddDescriptor(m_device->GetDescriptorSet(skybox._descriptorLayout, scene.descriptorPool, { modelSBVertexUniformBuffer, modelSBFragmentUniformBuffer },
+			{ envMap }));
+		render::PipelineProperties props2;
+		props2.cullMode = render::CullMode::NONE;
+		
+		skybox.AddPipeline(m_device->GetPipeline(
+			GetShadersPath() + "basic/skybox" + GetVertexShadersExt(), "VSMain", GetShadersPath() + "basic/skybox" + GetFragShadersExt(), "PSMain",
+			skybox._vertexLayout, skybox._descriptorLayout, props2, scenepass));
+
 		/*std::vector<std::pair<VkDescriptorType, VkShaderStageFlags>> blurbindings
 		{
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
@@ -164,6 +208,7 @@ public:
 			for (int j = 0; j < scene_render_objects.size(); j++) {
 				scene_render_objects[j]->Draw(m_drawCommandBuffers[i]);
 			}
+			skybox.Draw(m_drawCommandBuffers[i]);
 
 			scenepass->End(m_drawCommandBuffers[i]);
 
@@ -213,6 +258,13 @@ public:
 
 		scene.UpdateLights(0, glm::vec4(offset, 1.0f), glm::vec4(flicker),dt);
 		//scene.Update(dt, queue);
+
+		glm::mat4 perspectiveMatrix = camera.GetPerspectiveMatrix();
+		glm::mat4 viewMatrix = camera.GetViewMatrix();
+		modelUniformVS.projection = perspectiveMatrix;
+		modelUniformVS.model = glm::mat4(glm::mat3(viewMatrix));
+		modelSBVertexUniformBuffer->MemCopy(&modelUniformVS, sizeof(modelUniformVS));
+		modelSBFragmentUniformBuffer->MemCopy(&modelSBUniformFS, sizeof(modelSBUniformFS));
 	}
 
 	virtual void ViewChanged()

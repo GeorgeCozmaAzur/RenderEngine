@@ -27,8 +27,8 @@ namespace engine
 			render_objects.resize(input.materials.size());
 
 			descriptorPool = _device->GetDescriptorPool({
-			{ render::DescriptorType::UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size()) },
-			{render::DescriptorType::IMAGE_SAMPLER, 6 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()) },
+			{ render::DescriptorType::UNIFORM_BUFFER, 5 * static_cast<uint32_t>(render_objects.size()+2) },
+			{render::DescriptorType::IMAGE_SAMPLER, 6 * static_cast<uint32_t>(render_objects.size() + globalTextures.size()+1) },
 			{render::DescriptorType::STORAGE_IMAGE, 2 }
 				}, static_cast<uint32_t>(2 * render_objects.size()) + 5);
 

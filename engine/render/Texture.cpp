@@ -187,6 +187,8 @@ namespace engine
 			m_height = static_cast<uint32_t>(texCube.extent().y);
 			m_mips_no = static_cast<uint32_t>(texCube.levels());
 			m_layers_no = static_cast<uint32_t>(texCube.faces());
+			gli::texture::format_type f = texCube.format();
+			
 
 			m_imageSize = texCube.size();
 			m_ram_data = new char[m_imageSize];
@@ -204,7 +206,9 @@ namespace engine
 				{
 					m_extents[face][level].width = texCube[face][level].extent().x;
 					m_extents[face][level].height = texCube[face][level].extent().y;
-					m_extents[face][level].size = texCube[face][level].size();
+					m_extents[face][level].size = texCube[face][level].size(); 
+					m_extents[face][level].data = new char[texCube[face][level].size()];//texCube[face][level].data();
+					memcpy(m_extents[face][level].data, texCube[face][level].data(), texCube[face][level].size());
 				}
 			}
 		}
@@ -215,6 +219,11 @@ namespace engine
 			{
 				for (uint32_t i = 0; i < m_layers_no; i++)
 				{
+					for (uint32_t j = 0; j < m_mips_no; j++)
+					{
+						if(m_extents[i][j].data)
+						delete[]m_extents[i][j].data;
+					}
 					delete[]m_extents[i];
 				}
 				delete[]m_extents;

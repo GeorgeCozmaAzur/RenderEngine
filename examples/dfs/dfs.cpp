@@ -160,7 +160,7 @@ public:
 			raymarchdescriptorSetLayout->m_descriptorSetLayout, raymarchdescriptorSetLayout->m_setLayoutBindings);*/
 
 		std::string fileName = engine::tools::getAssetPath() + "shaders/computeshader/" + "generatedf" + ".comp.spv";
-		lightinjectionpipeline = vulkanDevice->GetComputePipeline(fileName, device, lightinjectiondescriptorSetLayout->m_descriptorSetLayout, pipelineCache);
+		lightinjectionpipeline = vulkanDevice->GetComputePipeline(fileName, lightinjectiondescriptorSetLayout->m_descriptorSetLayout, pipelineCache);
 
 		/*fileName = engine::tools::getAssetPath() + "shaders/computeshader/" + "raymarch" + ".comp.spv";
 		raymarchpipeline = vulkanDevice->GetComputePipeline(fileName, device, raymarchdescriptorSetLayout->m_descriptorSetLayout, pipelineCache);*/
@@ -224,7 +224,7 @@ public:
 		descriptorPool = vulkanDevice->GetDescriptorPool({
 			{ render::DescriptorType::UNIFORM_BUFFER, 1 },
 			{render::DescriptorType::IMAGE_SAMPLER, 2 },
-			{render::DescriptorType::STORAGE_BUFFER, 2 },
+			{render::DescriptorType::INPUT_STORAGE_BUFFER, 2 },
 			{render::DescriptorType::STORAGE_IMAGE, 2 }
 			}, 4);
 	}

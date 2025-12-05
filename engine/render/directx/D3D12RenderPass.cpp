@@ -69,11 +69,11 @@ namespace engine
 			}
 			else
 			{
-				commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
-					m_frameBuffers[frameBufferIndex].m_depthTexture,
-					D3D12_RESOURCE_STATE_DEPTH_WRITE,     // from last pass
-					D3D12_RESOURCE_STATE_DEPTH_READ       // read-only depth test
-				));
+				//commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+				//	m_frameBuffers[frameBufferIndex].m_depthTexture,
+				//	D3D12_RESOURCE_STATE_DEPTH_WRITE,     // from last pass
+				//	D3D12_RESOURCE_STATE_DEPTH_READ       // read-only depth test
+				//));
 			}
 		}
 

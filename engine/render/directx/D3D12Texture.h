@@ -46,11 +46,10 @@ namespace engine
 
             UINT64 GetSize();
 
-            void Create(ID3D12Device* device, uint32_t width, uint32_t height, GfxFormat format, D3D12_RESOURCE_FLAGS resourceFlags, D3D12_RESOURCE_STATES resourceState);
+            void Create(ID3D12Device* device, uint32_t width, uint32_t height, uint16_t layersCount, uint32_t mipCount, GfxFormat format, D3D12_RESOURCE_FLAGS resourceFlags, D3D12_RESOURCE_STATES resourceState);
             void Upload(ID3D12Resource* staggingBuffer, ID3D12GraphicsCommandList* commandList, TextureExtent** extents, void* data);
             void CreateDescriptor(ID3D12Device* device, D3D12_CPU_DESCRIPTOR_HANDLE descriptorHeapAdress, D3D12_GPU_DESCRIPTOR_HANDLE descriptorGPUHeapAdress);
 
-            void Load(ID3D12Device* device, std::string fileName, ID3D12GraphicsCommandList* commandList, D3D12_CPU_DESCRIPTOR_HANDLE descriptorHeapAdress, D3D12_GPU_DESCRIPTOR_HANDLE descriptorGPUHeapAdress);
             void FreeRamData();
         };
 

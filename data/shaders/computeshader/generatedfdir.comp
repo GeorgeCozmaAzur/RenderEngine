@@ -1,0 +1,160 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive : enable
+#include "common.glsl"
+
+#define COMPUTE_GROUP_SIZE 8
+#define COMPUTE_GROUP_SIZE_Z 8
+#define EPSILON 0.0001f
+#define TEX_WIDTH 128.0
+#define TEX_HEIGHT 128.0
+#define TEX_DEPTH 128.0
+
+layout (local_size_x = COMPUTE_GROUP_SIZE, local_size_y = COMPUTE_GROUP_SIZE, local_size_z = COMPUTE_GROUP_SIZE_Z) in;
+layout(std430, binding = 0) buffer VertexBuffer {
+    vec4 vertices[];
+};
+
+layout(std430, binding = 1) buffer IndexBuffer {
+    int indices[];
+};
+//layout (binding = 0) uniform sampler2D sampleShadow;
+//layout (binding = 1) uniform sampler2D sampleShadowColor;
+//layout (binding = 2) uniform sampler2DArray s_BlueNoise;
+//layout (binding = 3) uniform sampler3D s_History;
+
+layout (binding = 2) uniform UBO 
+{
+	float textureWidth;
+		float textureHeight;
+		float textureDepth ;
+		int triangleCount;
+} ubo;
+
+layout (binding = 3, rgba16f) uniform image3D resultImage;
+
+vec3 UVToWorld(vec3 p)
+{
+	vec3 minBound = vec3(-3.0, -3.0, -3.0); 
+	vec3 maxBound = vec3(3.0, 3.0, 3.0); 
+	vec3 w = minBound + p * (maxBound - minBound);
+	return w;
+}
+ // Closest to edge or vertex
+    float edgeDist(vec3 p, vec3 a, vec3 b) {
+        vec3 ab = b - a;
+        float t = clamp(dot(p - a, ab) / dot(ab, ab), 0.0, 1.0);
+        return length(p - (a + t * ab));
+    }
+// Compute distance from point to triangle
+float pointToTriangleDist(vec3 p, vec3 a, vec3 b, vec3 c) {
+    vec3 ba = b - a;
+    vec3 ca = c - a;
+    vec3 pa = p - a;
+
+    float baba = dot(ba, ba);
+    float baca = dot(ba, ca);
+    float caca = dot(ca, ca);
+    float papa_ba = dot(pa, ba);
+    float papa_ca = dot(pa, ca);
+
+    float denom = baba * caca - baca * baca;
+    float u = (caca * papa_ba - baca * papa_ca) / denom;
+    float v = (baba * papa_ca - baca * papa_ba) / denom;
+
+    // Inside triangle?
+    if (u >= 0.0 && v >= 0.0 && (u + v) <= 1.0) {
+        vec3 proj = a + u * ba + v * ca;
+        return length(p - proj);
+    }
+
+    return min(min(edgeDist(p, a, b), edgeDist(p, b, c)), edgeDist(p, c, a));
+}
+
+bool isBackfaceCulled(vec3 p, vec3 v0, vec3 v1, vec3 v2) {
+	vec3 edge1 = v1 - v0;
+    vec3 edge2 = v2 - v0;
+    vec3 triNormal = normalize(cross(edge1, edge2));
+    vec3 dir = normalize(p - v0);
+    return dot(triNormal, dir) > 0.0;
+}
+
+float WindingNumber(vec3 p) {
+    float wn = 0.0;
+    for (int i = 0; i < ubo.triangleCount; i+=3) {
+        uvec3 tri = uvec3(indices[i],indices[i+1],indices[i+2]);
+		vec3 v0 = vertices[tri.x].xyz;
+        vec3 v1 = vertices[tri.y].xyz;
+        vec3 v2 = vertices[tri.z].xyz;
+		
+        vec3 r0 = normalize(v0 - p);
+        vec3 r1 = normalize(v1 - p);
+        vec3 r2 = normalize(v2 - p);
+        float solidAngle = atan(dot(r0, cross(r1, r2)), dot(r0, r1) + dot(r1, r2) + dot(r2, r0) + 1.0);
+        wn += solidAngle;
+    }
+	float PI = 3.14;
+    return wn / (4.0 * PI);  // ~1.0 inside, ~0.0 outside
+}
+
+
+// Signed or unsigned distance field mapping function
+vec4 map(vec3 p) {
+    float minDist = 1e10;
+	float wn = 0.0;
+	vec3 tnormal = vec3(0.0, 0.0, 0.0);
+
+    for (int i = 0; i < ubo.triangleCount; i+=3) {
+        uvec3 tri = uvec3(indices[i],indices[i+1],indices[i+2]);
+
+        vec3 a = vertices[tri.x].xyz;
+        vec3 b = vertices[tri.y].xyz;
+        vec3 c = vertices[tri.z].xyz;
+		
+		vec3 r0 = normalize(a - p);
+        vec3 r1 = normalize(b - p);
+        vec3 r2 = normalize(c - p);
+        float solidAngle = atan(dot(r0, cross(r1, r2)), dot(r0, r1) + dot(r1, r2) + dot(r2, r0) + 1.0);
+        wn += solidAngle;
+		
+		vec3 ab = normalize(a-b);
+		vec3 ac = normalize(a-c);
+		
+		
+		//if(isBackfaceCulled(p,a,b,c))
+		//	continue;
+
+        float d = pointToTriangleDist(p, a, b, c);
+		if(d < minDist)
+		{
+			minDist = d;
+			tnormal = cross(ab, ac);
+		}
+        //minDist = min(minDist, d);
+		
+    }
+	
+	float PI = 3.14;
+    wn = wn / (4.0 * PI);  // ~1.0 inside, ~0.0 outside
+	
+	if (wn > 0.33) minDist = -minDist;
+	//if (WindingNumber(p) > 0.33) minDist = -minDist;
+
+    return vec4(tnormal, minDist);
+}
+
+void main()
+{	
+    vec3 xyz_float = vec3(float(gl_GlobalInvocationID.x) / TEX_WIDTH, float(gl_GlobalInvocationID.y) / TEX_HEIGHT, float(gl_GlobalInvocationID.z) / TEX_DEPTH);
+	
+	vec3 center = vec3(0.5,0.5,0.5);
+	float radius = 0.25;
+	float dist = length(xyz_float - center)-radius;
+	
+	ivec3 coord = ivec3(gl_GlobalInvocationID.xyz);
+	
+	vec4 res = map(UVToWorld(xyz_float));
+	
+	imageStore(resultImage, coord, res);
+	
+}

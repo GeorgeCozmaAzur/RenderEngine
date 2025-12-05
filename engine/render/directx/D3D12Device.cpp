@@ -76,7 +76,7 @@ namespace engine
 		{
 			D3D12Texture* texture = new D3D12Texture();
 
-			texture->Create(m_device.Get(), data->m_width, data->m_height, data->m_format, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
+			texture->Create(m_device.Get(), data->m_width, data->m_height, data->m_layers_no, data->m_mips_no, data->m_format, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
 
 			D3D12CommandBuffer* d3dcommandBuffer = dynamic_cast<D3D12CommandBuffer*>(commandBuffer);
 			D3D12Buffer* staggingBuffer = new D3D12Buffer();
@@ -102,7 +102,7 @@ namespace engine
 				memcpy(texture->m_ClearColor, clearValues, sizeof(float)*4);//TODO a little unsafe
 			}
 
-			texture->Create(m_device.Get(), width, height, format, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			texture->Create(m_device.Get(), width, height, 1, 1, format, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(srvDescriptorPool);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle{};
 			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU{};
@@ -121,7 +121,7 @@ namespace engine
 		{
 			D3D12RenderTarget* texture = new D3D12RenderTarget();
 
-			texture->Create(m_device.Get(), width, height, format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, useInShaders ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			texture->Create(m_device.Get(), width, height, 1, 1, format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, useInShaders ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			D3D12DescriptorHeap* descHeap = dynamic_cast<D3D12DescriptorHeap*>(srvDescriptorPool);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cbvSrvHandle{};
 			CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvHandleGPU{};
